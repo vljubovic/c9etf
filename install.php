@@ -28,7 +28,7 @@ foreach($user_writable as $path) {
 
 // Directories and files that should be writable from web
 $web_writable = array("register", "log/admin.php.log", "log/autotest.log");
-foreach($web_readable as $path) {
+foreach($web_writable as $path) {
 	if (!file_exists("$conf_base_path/$path")) `touch $conf_base_path/$path`;
 	`chown www-data $conf_base_path/$path`;
 	`chmod 755 $conf_base_path/$path`;
