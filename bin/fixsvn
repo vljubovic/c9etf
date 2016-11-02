@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/bin/php /usr/local/webide/bin/fixsvn.php $1 $2

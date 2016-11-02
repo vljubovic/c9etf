@@ -1,0 +1,44 @@
+﻿table {
+    border-collapse: collapse;
+    border: 2px solid gray;
+}
+.tekst {
+	font-family: Verdana;
+	font-size: 14px;
+}
+.info {
+	font-style: italic;
+}
+.celija {
+	padding: 5px;
+	white-space: nowrap;
+	border: 1px solid gray;
+	vertical-align: top;
+}
+.stronger {
+	font-weight: bolder;
+}
+.bigger {
+	font-size: 15px;
+}
+.smaller {
+	font-size: 12px;
+}
+.zelena {
+	color: darkgreen;
+	font-family: monospace;
+}
+.plava {
+	color: darkblue;
+}
+form {
+	margin: 0;
+	padding: 0;
+	display: inline;
+}
+input[type="button"]{
+	cursor: pointer;
+}
+input[type="submit"]{
+	cursor: pointer;
+}

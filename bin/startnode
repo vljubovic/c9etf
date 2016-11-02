@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd $1 
+/home/c9/.c9/node/bin/node server.js -p $2 -a : -l $3 -w $4 &>> $5 &
+echo $! > $6

@@ -1,0 +1,332 @@
+{
+    "id": 1092,
+    "name": "Tehnike programiranja (2015\/2016), Zada\u0107a 1, zadatak 4",
+    "language": "C++",
+    "required_compiler": "g++",
+    "preferred_compiler": "g++",
+    "compiler_features": [],
+    "compiler_options": "-std=c++11 -O1 -Wall -Wuninitialized -Winit-self -Wfloat-equal -Wno-sign-compare -Werror=implicit-function-declaration -Werror=vla -pedantic -lm -pass-exit-codes",
+    "compiler_options_debug": "-std=c++11 -ggdb -lm -pass-exit-codes",
+    "compile": "false",
+    "run": "false",
+    "test": "false",
+    "debug": "false",
+    "profile": "false",
+    "test_specifications": [
+        {
+            "id": 1130,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"J\",\n{\n})<<std::endl<<IstakniFraze(\n\t\"S\",\n{\n\t\"S\",\n});",
+            "global_above_main": "dfdfdf",
+            "global_top": "fdfdf",
+            "running_params": {
+                "timeout": "33",
+                "vmem": "666",
+                "stdin": ""
+            },
+            "expected": [
+                "J\\n(S)"
+            ],
+            "expected_exception": "true",
+            "expected_crash": "true",
+            "ignore_whitespace": "true",
+            "regex": "true",
+            "substring": "true"
+        },
+        {
+            "id": 1131,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"aaaaa\",\n{\n\t\"a\"\n})<<std::endl<<IstakniFraze(\n\t\"aaaaa\",\n{\n\t\"aa\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(a)(a)(a)(a)(a)\\n(aa)(aa)a"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1148,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"jedan jedan jedan\",\n{\n\t\"jedan\"\n})<<std::endl<<IstakniFraze(\n\t\"jedan dva jedan\",\n{\n\t\"jedan\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(jedan) (jedan) (jedan)\\n(jedan) dva (jedan)"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1149,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"broj 34511 3456 34 5423 6576457 475624104\",\n{\n\t\"1\",\n\t\"34\",\n\t\"broj\"\n})<<std::endl<<IstakniFraze(\n\t\"da li se jedno te isto slovo i moze naci u recenici vise puta?\",\n{\n\t\"i\",\n\t\"e\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(broj) (34)5(1)(1) (34)56 (34) 5423 6576457 475624(1)04\\nda l(i) s(e) j(e)dno t(e) (i)sto slovo (i) moz(e) nac(i) u r(e)c(e)n(i)c(i) v(i)s(e) puta?"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1150,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Najgore je kad ljudi cute, kad se ne objasne, pa svaka sumnja ima pravo na zivot. I moja i tvoja...\",\n{\n\t\"Najgoreje\",\n\t\"kadljudi\",\n\t\"nista ovo nije\"\n})<<std::endl<<IstakniFraze(\n\t\"neka recenica\",\n{\n\t\"ovu frazu necete naci u ovoj receici\",\n\t\"nigdje\",\n\t\" neka\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "Najgore je kad ljudi cute, kad se ne objasne, pa svaka sumnja ima pravo na zivot. I moja i tvoja...\\nneka recenica"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1151,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Vise je dobrih ljudi na svijetu nego zlih. Mnogo vise! Samo se zli dalje cuju i teze osjecaju. Dobri cute\",\n{\n\t\"Vise\",\n\t\"dobrih ljudi\",\n\t\"zlih\",\n\t\"dalje cuju\",\n\t\"teze osjecaju\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(Vise) je (dobrih ljudi) na svijetu nego (zlih). Mnogo vise! Samo se zli (dalje cuju) i (teze osjecaju). Dobri cute"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1162,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Text file streams are those where the ios::binary flag is not included in their opening mode. These files are designed to store text and thus all values that are input or output from\/to them can suffer some formatting transformations, which do not necessarily correspond to their literal binary value.\",\n{\n\t\"ios::binary flag\",\n\t\"text\",\n\t\"formatting transformations\",\n\t\"input\",\n\t\"output\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "Text file streams are those where the (ios::binary flag) is not included in their opening mode. These files are designed to store (text) and thus all values that are (input) or (output) from\/to them can suffer some (formatting transformations), which do not necessarily correspond to their literal binary value."
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1163,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"File text Text file\",\n{\n\t\"file\",\n\t\"text\"\n})<<std::endl<<IstakniFraze(\n\t\"OVO JE RECENICA NAPISANA VELIKIM SLOVIMA\",\n{\n\t\"JE\",\n\t\"VELIKIM\",\n\t\"slovima\",\n\t\"ovo\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "File (text) Text (file)\\nOVO (JE) RECENICA NAPISANA (VELIKIM) SLOVIMA"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1164,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Svaka nepravda je jednaka, a covjeku se cini da je najveca koja je njemu ucinjena. A ako mu se cini, onda i jeste tako, jer ne moze se misliti tudjom glavom.\",\n{\n\t\"Svaka nepravda\",\n\t\"najveca\",\n\t\"njemu ucinjena\",\n\t\"onda i jeste\",\n\t\"ne moze\",\n\t\"tudjom glavom\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(Svaka nepravda) je jednaka, a covjeku se cini da je (najveca) koja je (njemu ucinjena). A ako mu se cini, (onda i jeste) tako, jer (ne moze) se misliti (tudjom glavom)."
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1165,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Od svih predmeta na ovom fakultetu uvod u C++ daje samo predmet Tehnike programiranja.\",\n{\n\t\"svih predmeta\",\n\t\"uvod\",\n\t\"C++\",\n\t\"Tehnike programiranja\",\n\t\"nisi\",\n\t\"ili jesi\",\n\t\"F\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "Od (svih predmeta) na ovom fakultetu (uvod) u (C++) daje samo predmet (Tehnike programiranja)."
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1166,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"rijec RIJEC Rijec, SVE je to JEDNA te ista rijeC, a mozda i nije sve jedna te ista rijec\",\n{\n\t\"rijec\",\n\t\"jedna\",\n\t\"SVE\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "(rijec) RIJEC Rijec, (SVE) je to JEDNA te ista rijeC, a mozda i nije sve (jedna) te ista (rijec)"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1167,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "std::cout<<IstakniFraze(\n\t\"Ako nisi uspio da naucis po jedno predavanje svake sedmice, kako ocekujes da ces sva predavanja spremiti za 1 dan?\",\n{\n\t\"jedno predavanje\",\n\t\"kako ocekujes\",\n\t\"Po\"\n});",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": ""
+            },
+            "expected": [
+                "Ako nisi uspio da naucis po (jedno predavanje) svake sedmice, (kako ocekujes) da ces sva predavanja spremiti za 1 dan?"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1168,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "_main();",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": "Postoje dva nacina izgradnje softvera: Jedan je napraviti ga toliko prostim da ocigledno nema nedostaka, a drugi je napraviti ga toliko komplikovanim da nema ociglednih nedostataka. Prva metoda je puno teza.\ndva nacina\nprostim\nnedostaka\nkomplikovanim\npuno teza\n\n"
+            },
+            "expected": [
+                "Unesite recenicu:\\nUnesite fraze:\\nRecenica nakon modifikacije:\\nPostoje (dva nacina) izgradnje softvera: Jedan je napraviti ga toliko (prostim) da ocigledno nema (nedostaka), a drugi je napraviti ga toliko (komplikovanim) da nema ociglednih (nedostataka). Prva metoda je (puno teza)."
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1169,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "_main();",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": "Izbrisan kod je debagovan kod.\nkod\nKod\ncamac\nreljef\n\n"
+            },
+            "expected": [
+                "Unesite recenicu:\\nUnesite fraze:\\nRecenica nakon modifikacije:\\nIzbrisan (kod) je debagovan (kod)."
+            ],
+            "expected_exception": "false",
+            "expected_crash": "false",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        },
+        {
+            "id": 1170,
+            "require_symbols": [],
+            "replace_symbols": [],
+            "code": "_main();",
+            "global_above_main": "",
+            "global_top": "",
+            "running_params": {
+                "timeout": "10",
+                "vmem": "1000000",
+                "stdin": "231 34 4768563 23 2385569 petsest\n2\n48\ntest\n27\npet\n\n"
+            },
+            "expected": [
+                "Unesite recenicu:\\nUnesite fraze:\\nRecenica nakon modifikacije:\\n(2)31 34 4768563 (2)3 (2)385569 (pet)sest"
+            ],
+            "expected_exception": "false",
+            "expected_crash": "true",
+            "ignore_whitespace": "false",
+            "regex": "false",
+            "substring": "false"
+        }
+    ]
+}

@@ -1,0 +1,144 @@
+
+
+/* Log aktivnosti */
+
+.log {
+	border-radius: 10px;
+	padding: 2px;
+}
+
+.log-login {
+	background: #fbf;
+}
+
+.log-login:before {
+	content: '\f08b';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-edit {
+	background: #cfc;
+}
+
+.log-edit:before {
+	content: '\f044';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-paste {
+	background: #fcc;
+}
+
+.log-paste:before {
+	content: '\f0ea';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-create {
+	background: #ff0;
+}
+
+.log-create:before {
+	content: '\f016';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-delete {
+	background: #f00;
+}
+
+.log-delete:before {
+	content: '\f12d';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-build {
+	background: #faa;
+}
+
+.log-build:before {
+	content: '\f0ad';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-run {
+	background: #4f0;
+}
+
+.log-run:before {
+	content: '\f013';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-test {
+	background: #bf7;
+}
+
+.log-test:before {
+	content: '\f00c';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+.log-rename {
+	background: #999;
+}
+
+.log-rename:before {
+	content: '\f0ec';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
+/*.log-lijevo {
+	float: left;
+}*/
+
+.log-detalji-link {
+	float: right;
+	color: #595959;
+}
+.log-detalji-link:hover {
+	text-decoration: underline;
+}
+
+
+/* Log detalji */
+.log-detalji {
+	display: none;
+}
+.log-detalji1 {
+	margin-left: 30px;
+}
+.log-detalji1-add { font-family: monospace; background-color: #dfd; }
+.log-detalji1-remove { font-family: monospace; background-color: #fdd; }
+.log-detalji1-change { font-family: monospace; background-color: #ffd; }
+.log-detalji1-lines { font-family: monospace; }
+
+
+
+.diff_delete {
+    background: #ffaaaa;
+}
+.diff_add {
+    background: #aaffaa;
+}
+.diff_change {
+    background: #ffffaa;
+}

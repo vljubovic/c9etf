@@ -1,0 +1,469 @@
+@import url(font-awesome.min.css);
+[class*="fontawesome-"]:before {
+    font-family: 'FontAwesome', sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+.hidden{
+    visibility: hidden;
+}
+tr td {
+    border: 1px solid #C4C4C4;
+}
+table {
+    border-collapse: collapse;
+    margin-left: 20px;
+}
+
+.form--login {
+    font-family: Arial, Helvetica, sans-serif;
+    text-align: right;
+}
+.form--login > h1{
+    text-align: left;
+    margin-left: 5px;
+}
+.grid_container{
+    margin: 0 auto;
+}
+.site__container{
+    margin: 0 auto;
+    width: 340px;
+    text-align: center;
+}
+.form__field{
+    margin-bottom: 1.1em;
+    margin-top: 10px;
+}
+.form__field > label {
+    width: 15px;
+    text-align: right;
+    background-color: #666666;
+    border-bottom-left-radius: 5px;
+    border-top-left-radius: 5px;
+    padding: 10px 15px;
+    color: #ffffff;
+    margin-right: -5px;
+    display: inline-block;
+    border: 1px solid #C4C4C4;
+}
+
+.form__field > input[type="text"],
+.form__field > input[type="password"] {
+    width: 290px;
+    padding: 11px 5px;
+    border: 1px solid #C4C4C4;
+}
+.form__field > input[type="submit"] {
+    padding: 12px 5px;
+    width: 98%;
+    background-color: #2E92DF;
+    color: #ffffff;
+    text-transform: uppercase;
+    border-radius: 5px;
+    margin-left: 5px;
+    font-size: 15px;
+    border: 2px solid #2E92DF;
+}
+.form__field > input[type="submit"]:hover{
+
+    color: #2E92DF;
+    background-color: #ffffff;
+    cursor: pointer;
+    cursor: hand;
+}
+
+a.grouplnk, a.grouplnk:active, a.grouplnk:visited, a.grouplnk:link{
+    color: #3C4042;
+    text-decoration: none;
+}
+a.grouplnk:hover{
+    color: #0875C8;
+}
+#p-login{
+    color: #8E8E8E;
+}
+#p-login > span{
+    font-weight: bold;
+    color: #000000;
+}
+#p-login>a,
+#p-login>a:visited,
+#p-login>a:link,
+#p-login>a:active{
+    color: #ffffff;
+    background-color: #0875C8;
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 2px solid #0875C8;
+}
+#p-login>a:hover{
+    color: #0875C8;
+    background-color: #ffffff;
+}
+ul.groups {
+    list-style-type: none;
+    margin: 0;
+    padding-left: 60px;
+    padding-top: 10px;
+}
+ul.groups > li{
+    padding-bottom: 3px;
+}
+a.grouplnk:before {
+    content: '\f0a9';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    margin-left: -1.2em;
+}
+ul li a:hover:before {
+    color: #0875C8;
+}
+h1{
+    padding: 15px 20px;
+    margin: 0;
+    background-color: #4A5A6D;
+    color: #ffffff;
+}
+#p-login{
+    background-color: #f5f8fa;
+    color: #8E8E8E;
+    padding: 10px 20px;
+    margin: 0;
+}
+#p-login:before {
+    content: '\f007';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #8E8E8E;
+}
+#p-clear {
+    padding: 10px 20px;
+}
+#p-clear > a,
+#p-clear > a:link,
+#p-clear > a:active,
+#p-clear > a:visited{
+    color: #ffffff;
+    background-color: #DF2E43;
+    text-decoration: none;
+    padding: 8px 20px;
+    border-radius: 3px;
+    border: 2px solid #DF2E43;
+}
+#p-clear > a:hover{
+    color: #DF2E43;
+    background-color: #ffffff;
+
+}
+#p-return{
+    padding-left: 20px;
+    margin: 0;
+    display: inline-block;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-weight: bold;
+}
+#p-return > a,
+#p-return > a:link,
+#p-return > a:visited,
+#p-return > a:active{
+    text-decoration: none;
+    color: #0875C8;
+}
+#p-return > a:before {
+    content: '\f060';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #0875C8;
+    margin-left: -7px;
+}
+#p-return > a:hover{
+    border-bottom: 3px solid #0875C8;
+    padding: 5px 0;
+}
+.users-table {
+    margin-left: 20px;
+    font-size: 0.9em;
+}
+.users-table th{
+    background-color: #f5f8fa;
+    border-top: 1px solid #C4C4C4;
+    border-left: 1px solid #C4C4C4;
+    border-right: 1px solid #C4C4C4;
+    border-bottom: 2px solid #C4C4C4;
+    padding: 0 3px;
+    /*color: #49D454;*/
+    color: #0E910C;
+
+}
+.users-table tr:nth-child(odd){
+    background-color: #f9f9f9;
+}
+.users-table td{
+    padding: 3px;
+    border: 1px solid #C4C4C4;
+    color: #666666;
+}
+.users-table td a,
+.users-table td a:link,
+.users-table td a:active,
+.users-table td a:visited{
+    text-decoration: none;
+    color: #0875C8;
+}
+.users-table td a:hover{
+    color: #07438C;
+}
+.single-student{
+    font-size: 1em;
+}
+.single-student tr th,
+.single-student tr td{
+    padding: 5px;
+}
+
+
+/* Lista fajlova */
+
+.filelist {
+    margin: 0;
+    padding: 0;
+    font-weight: normal;
+    padding-left: 20px;
+    color: #595959;
+    font-size: 1.1em;
+}
+.filelist a {
+    color: #595959;
+    text-decoration: none
+}
+.filelist a:hover {
+    text-decoration: underline
+}
+.filelist-file:before {
+    content: '\f016';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #595959;
+}
+.filelist-folder:before {
+    content: '\f07b';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #595959;
+}
+.filelist-deleted:before {
+    content: '\f016';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #999999;
+}
+.filelist-deleted a {
+    color: #999;
+    text-decoration: none
+}
+div.filelist-folder-content {
+    display: block;
+    margin-left: 20px;
+}
+
+.filelist-selected a {
+    color: #fff;
+}
+h2.filelist-selected {
+    background-color: #aaa;
+}
+
+span.tree-button {
+    height: 32px;
+}
+.tree-button:hover {
+    background-color: #ccc;
+}
+
+.tree-button a {
+    color: #595959;
+    text-decoration: none;
+    font-size: 0.9em;    
+}
+
+#phpwebide_tree {
+    width: 200px;
+    min-height: 400px;
+}
+
+#phpwebide_toolbar {
+	position: absolute;
+	top: 180px;
+	right: 50px;
+	left: 200px;
+}
+
+#editor {
+	position: absolute;
+	top: 210px;
+	right: 50px;
+	left: 200px;
+}
+
+
+
+
+#copyright {
+	bottom:0;
+	left:0;
+	width: 100%;
+	margin:30px;
+	text-align: center;
+	font-size: small;
+	color: #999999;
+}
+
+@media only screen and (max-width: 500px){
+    #p-povratak{
+        position: relative;
+        background-color: #f5f8fa;
+        width: 100%;
+        margin: 0;
+        padding: 10px 0 10px 40px;
+    }
+}
+
+
+/* Tabovi */
+
+
+.tabs-container {
+	clear: both;
+}
+
+.tabs-menu {
+    height: 30px;
+    float: left;
+    clear: both;
+}
+
+ul.tabs-menu {
+    list-style-type: none;
+}
+
+.tabs-menu li {
+    height: 30px;
+    line-height: 30px;
+    float: left;
+    margin-right: 10px;
+    background-color: #ccc;
+    border-top: 1px solid #d4d4d1;
+    border-right: 1px solid #d4d4d1;
+    border-left: 1px solid #d4d4d1;
+}
+
+.tabs-menu li.current {
+    position: relative;
+    background-color: #fff;
+    border-bottom: 1px solid #fff;
+    z-index: 5;
+}
+
+.tabs-menu li a {
+    padding: 10px;
+    text-transform: uppercase;
+    color: #fff;
+    text-decoration: none; 
+}
+
+.tabs-menu .current a {
+    color: #2e7da3;
+}
+
+.tab {
+    margin-right: 10px;
+    margin-top: 0px;
+    border: 1px solid #d4d4d1;
+    background-color: #fff;
+    margin-bottom: 20px;
+    width: 100%;
+    height: 0px;
+    overflow-y: scroll;
+}
+
+.tab-content {
+    width: 100%;
+    padding: 20px;
+    display: none;
+}
+
+#tab-1 {
+ display: block;   
+}
+
+#msgDisplay {
+	position: absolute; 
+	top: 0px; 
+	left: 20px; 
+	width: 300px; 
+	height: 40px; 
+	visibility: hidden; 
+	border: solid gray 1px; 
+	background: #ffe;
+	text-align: center;
+	line-height: 40px
+}
+
+
+/* Progress bar window */
+#progressWindow {
+	visibility: hidden;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 500px;
+	height: 150px;
+	background-color: #eee;
+	box-shadow: 10px 10px 5px #888888;
+	border: 1px solid #ccc;
+}
+
+#progressBarMsg {
+	position: relative;
+	margin-top: 15px;
+	margin-bottom: 15px;
+	margin-left: 15px;
+	width: 470px;
+}
+
+#myProgress {
+	position: relative;
+	margin-left: 15px;
+	width: 470px;
+	height: 30px;
+	background-color: #ddd;
+}
+
+#myBar {
+	position: absolute;
+	width: 10%;
+	height: 100%;
+	background-color: #4CAF50;
+}
+
+#progressBarLabel {
+	text-align: center;
+	line-height: 30px;
+	color: white;
+}

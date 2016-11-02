@@ -1,0 +1,133 @@
+#!/bin/bash
+
+if [ $# -lt 3 ]
+then
+	echo ERROR: Insufficient parameters
+	exit 1
+fi
+
+user="$1"
+cmd="$2"
+relpath="$3"
+slovo=$(echo $user | cut -c 1)
+
+workspace="/rhome/$slovo/$1/workspace"
+path="$workspace/$relpath"
+
+if [ $user = "all-users" ]
+then
+	for i in $(awk -F':' '/1002/{print $1}' /etc/passwd)
+	do
+		echo Executing for user $i
+		if [ $# -eq 4 ]
+		then
+			/usr/local/webide/bin/wsaccess $i $cmd "$relpath" "$4"
+		else
+			/usr/local/webide/bin/wsaccess $i $cmd "$relpath"
+		fi
+	done
+	exit 0
+fi
+
+
+if [ ! -d "$workspace" ]
+then
+	echo ERROR: Workspace doesn\'t exist
+	exit 1
+fi
+
+case $cmd in
+	read)
+		if [ ! -e "$path" ]
+		then
+			echo ERROR: File doesn\'t exist
+			exit 2
+		fi
+		cat "$path"
+		;;
+	write)
+		while read x
+		do
+			echo $x >> "$relpath"
+		done
+		;;
+	zip)
+		zipfile="$4"
+		if [ ! -d "$path" ]
+		then
+			echo ERROR: Not a directory or path doesn\'t exist
+			exit 3
+		fi
+		rm -f "$zipfile"
+		cd "$path"
+		zip -r "$zipfile" *
+		chmod 644 "$zipfile"
+		cat "$zipfile"
+		;;
+	list)
+		if [ ! -d "$path" ]
+		then
+			echo ERROR: Not a directory or path doesn\'t exist
+			exit 3
+		fi
+		ls -a "$path"
+		;;
+	isdir)
+		if [ -d "$path" ]
+		then
+			echo 1
+		else
+			echo 0
+		fi
+		;;
+	exists)
+		if [ -e "$path" ]
+		then
+			echo 1
+		else
+			echo 0
+		fi
+		;;
+	filemtime)
+		if [ ! -e "$path" ]
+		then
+			echo ERROR: File doesn\'t exist
+			exit 2
+		fi
+		stat -c %Y "$path"
+		;;
+	deploy)
+		srcfile="$4"
+		dest="$path"
+		path=`dirname "$path"`
+		if [ ! -d "$path" ]
+		then
+			echo ERROR: Not a directory or path doesn\'t exist $path
+			exit 3
+		fi
+		if [ ! -e "$srcfile" ]
+		then
+			echo ERROR: Source file doesn\t exist $srcfile
+			exit 4
+		fi
+		cp "$srcfile" "$dest"
+		chown $user "$dest"
+		chmod 644 "$dest"
+		;;
+	svnrestore)
+		revision="$4"
+		head=`svn info "$path" | grep "Revision" | cut -d " " -f 2`
+		svn merge -r$head:$revision "$path" 2>&1
+		chown $user "$path"
+		chmod 600 "$path"
+		;;
+		
+	git-log)
+		su $user -c "cd \"$workspace\"; git log \"$path\""
+		;;
+		
+	git-show)
+		revision="$4"
+		su $user -c "cd \"$workspace\"; git show \"$revision:$relpath\""
+		;;
+esac

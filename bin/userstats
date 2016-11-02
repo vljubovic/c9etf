@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo hello > /tmp/userstats.log
+sleep 0.2
+/usr/bin/php /usr/local/webide/bin/userstats.php $1 $2

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sleep 0.2
+/usr/bin/php /usr/local/webide/bin/syncsvn.php $1 &

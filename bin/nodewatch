@@ -1,0 +1,29 @@
+#!/bin/sh
+
+user=$1
+port=$2
+listen_addr="127.0.0.1"
+c9user="c9"
+c9group="c9"
+nodeworkpath="/home/c9/fork"
+nodepath="/home/c9/.c9/node/bin/node"
+student_workspace="/home/c9/workspace/$user"
+base_path="/usr/local/webide"
+log_path="$base_path/log/$user"
+pid_path="$base_path/watch/$user.node.pid"
+
+PID=$(cat $pid_path)
+
+echo Start nodewatch $user $port $PID
+
+while true
+do
+	while ps -p $PID > /dev/null
+	do
+		sleep 1
+	done
+	cd $nodeworkpath
+	$nodepath server.js -p $port -a : -l $listen_addr -w $student_workspace 2>&1 >> $log_path &
+	PID=$!
+	echo $PID > $pid_path
+done

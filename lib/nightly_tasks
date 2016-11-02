@@ -1,0 +1,69 @@
+#!/bin/sh
+
+bcfile="/usr/local/webide/broadcast.txt"
+echo Restart servera za 5 minuta... > $bcfile
+chmod 644 $bcfile
+sleep 60
+mount -o remount /rhome
+echo Restart servera za 4 minuta... > $bcfile
+chmod 644 $bcfile
+sleep 60
+echo Restart servera za 3 minuta... > $bcfile
+chmod 644 $bcfile
+sleep 60
+echo Restart servera za 2 minuta... > $bcfile
+chmod 644 $bcfile
+sleep 60
+echo Restart servera za 1 minut... > $bcfile
+chmod 644 $bcfile
+sleep 30
+echo Restart servera za 30 sekundi... > $bcfile
+chmod 644 $bcfile
+sleep 15
+echo Restart servera za 15 sekundi... > $bcfile
+chmod 644 $bcfile
+sleep 15
+rm $bcfile
+
+# Zadaci za koje svi moraju biti logoutovani
+echo kada se zavrsi redovno dnevno odrzavanje \(minut-dva\) > /usr/local/webide/razlog_nerada.txt
+echo Clear server
+echo Clear server >> /usr/local/webide/log/webidectl.log
+/usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
+echo 21 clear
+echo 21 clear >> /usr/local/webide/log/webidectl.log
+ssh 172.16.20.21 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
+echo 22 clear
+echo 22 clear >> /usr/local/webide/log/webidectl.log
+ssh 172.16.20.22 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
+echo 91 clear
+echo 91 clear >> /usr/local/webide/log/webidectl.log
+ssh 172.16.20.91 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
+echo 91 restart
+echo 91 restart >> /usr/local/webide/log/webidectl.log
+ssh 172.16.20.91 /etc/init.d/nfs-kernel-server restart &>> /usr/local/webide/log/webidectl.log
+echo rm fr
+rm -fr /tmp/buildservice
+rm -fr /tmp/submit*
+rm -fr /usr/local/webide/watch/*
+rm -fr /tmp/web-background/*
+echo > /usr/local/webide/razlog_nerada.txt
+
+#echo 91 nightly
+#echo 91 nightly >> /usr/local/webide/log/webidectl.log
+#ssh 172.16.20.91 "/usr/local/webide/lib/nightly-tasks" &>> /usr/local/webide/log/webidectl.log
+
+#echo update-all-stats
+#echo update-all-stats >> /usr/local/webide/log/webidectl.log
+#/usr/local/webide/bin/webidectl update-all-stats
+#echo git commit
+#echo git commit >> /usr/local/webide/log/webidectl.log
+#/usr/local/webide/bin/webidectl git-commit
+echo kill-inactive
+echo kill-inactive >> /usr/local/webide/log/webidectl.log
+/usr/local/webide/bin/webidectl kill-inactive
+#echo clean-inodes
+#echo clean-inodes >> /usr/local/webide/log/webidectl.log
+#/usr/local/webide/bin/webidectl clean-inodes
+#cd /usr/local/webide/web/buildservice
+#php pull.php wait 5 >/usr/local/webide/log/pull_php.log &

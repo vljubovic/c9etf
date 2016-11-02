@@ -1,0 +1,35 @@
+#!/bin/bash
+
+student=$1
+slovo=$(echo $student | cut -c 1)
+
+student_home="/home/$slovo/$student"
+student_workspace="$student_home/workspace"
+old_student_workspace="/home/c9/workspace/$student"
+
+default_home="/usr/local/webide/defaults/home"
+default_workspace="/usr/local/webide/defaults/workspace"
+default_c9="/usr/local/webide/defaults/c9"
+
+fork_path="/usr/local/webide/c9fork"
+
+svn_path="/home/c9/svn/$student"
+
+useradd -d $student_home -g c9 -k $default_home -m $student
+mv $old_student_workspace $student_workspace
+
+rm -fr $student_workspace/.c9
+rm -fr $student_workspace/.user
+cp -R $default_workspace/.c9 $student_workspace
+cp -R $default_workspace/.user $student_workspace
+
+chown $student:c9 $student_workspace -R
+chmod 700 $student_workspace
+
+chown $student:c9 $svn_path -R
+
+cd $student_home; cp -R $default_c9 .c9
+chown $student:c9 $student_home/.c9 -R
+su $student -c "cd $student_home; ln -s $fork_path fork"
+
+su $student -c "cd $student_home; svn propset svn:ignore \"core\" .; svn propset svn:ignore \"*.core*\" ."
