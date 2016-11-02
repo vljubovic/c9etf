@@ -1,0 +1,67 @@
+INSTALL INSTRUCTIONS
+
+Install the following packages on Ubuntu 14.04 LTS:
+build-essential
+gdb
+nodejs
+nginx
+php5-fpm 
+php5-cli
+inotify-tools
+subversion
+php5-svn
+php5-ldap
+git
+apache2-utils
+
+Optional:
+sqlite3 - for debugging svn
+valgrind
+gdbserver
+
+
+OPERATING SYSTEM CONFIGURATION
+
+To disable apport and enable core dump detection do the following:
+
+1. Edit /etc/default/apport modify it so that it reads
+enabled=0
+2. In /etc/sysctl.d create a new file named 60-core-pattern.conf with contents:
+kernel.core_pattern = core
+3. To apply the changes immediately run:
+sudo sysctl --system
+
+To prevent users from reading eachothers files, edit /etc/login.defs, find line
+that says:
+UMASK		022
+and set it to:
+UMASK		077
+
+Create a "c9" user on your system:
+useradd c9
+
+
+C9 INSTALLATION
+
+1. Clone c9etf repository in a folder, e.g. /usr/local/webide. Note that if you just 
+changed the umask, you will have to do something like 
+
+chmod 755 * -R
+
+so that files would be accessible to other users.
+
+2. Copy file lib/config.php.default to lib/config.php and edit it to your needs.
+Defaults are just fine for test install.
+
+3. Run install.php:
+
+php install.php
+
+4. Create a local user named 'admin' so you could access the admin web interface:
+
+/usr/local/webide/bin/webidectl add-local-user admin PASSWORD
+
+Instead of PASSWORD insert the password that you wish to use.
+
+5. Visit webpage
+http://yourhost/admin.php

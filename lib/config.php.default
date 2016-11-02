@@ -1,0 +1,129 @@
+<?php
+
+// =========================================
+// WebIDE configuration
+// =========================================
+
+
+
+// ENTER YOUR REAL IP ADDRESS HERE!
+$conf_my_address = "127.0.0.1";
+
+
+// IMPORTANT PATHS FOR SYSTEM
+
+// Path where c9 is installed
+$conf_base_path = "/usr/local/webide";
+
+// Path for user homes (this will be exported via NFS)
+//$conf_home_path = "/rhome";
+$conf_home_path = "/home";
+
+// Shared data path (accessible from all nodes, presumably under conf_home_path
+$conf_shared_path = $conf_home_path . "/c9";
+
+// Path where SVN repos are stored
+$conf_svn_path  = $conf_shared_path . "/svn";
+
+// Location of processed stats
+$conf_stats_path = $conf_shared_path . "/stats";
+
+// Location of default user files
+$conf_defaults_path = $conf_base_path . "/defaults";
+
+// Old v1 workspaces (for migration)
+$conf_v1_workspace_path = $conf_shared_path . "/workspace"; // For migration
+
+
+// OTHER CONFIGURATION
+
+// System users for c9 processes
+$conf_c9_user = $conf_c9_group = "c9";
+
+// Ports range for nodejs
+$conf_port_lower = 35000;
+$conf_port_upper = 36000;
+
+// If memory usage crosses this limit, enter "emergency mode"
+// - In normal mode cleanup operation is slow and non-intrusive, but sometimes it can cause system to slow down
+// and use even more memory. In emergency mode idle processes are just killed at once, which guarantees
+// quick recovery of RAM.
+$conf_memory_emergency = 10; // in GB
+
+// Start cleaning backups if diskpace in home partition drops below this limit
+$conf_diskspace_cleanup = 5000; // in MB
+
+// If any system stat cross these limits, stop accepting new logins (use 0 for unlimited)
+$conf_limit_memory = 0; // in GB
+$conf_limit_loadavg = 0; // 
+$conf_limit_users = 0;
+$conf_limit_active_users = 0;
+$conf_limit_diskspace = 100; // in MB
+$conf_limit_inodes = 10000;
+
+// If users home+SVN repo cross these limits, SVN reinstall is triggered which regains space/inodes but
+// drops SVN history (this is not a problem since history is preserved in more efficient PHP format)
+$conf_max_user_inodes = 0; // 5000;
+$conf_max_user_svn_disk_usage = 50000; // in kB
+
+// Log files
+$conf_svn_problems_log = $conf_base_path . "/log/svn_problems.log";
+$conf_syncsvn_log = $conf_home_path . "/c9/monitor.out"; // This must be in home path so it would be visible from control server
+
+
+$conf_nginx_conf_path = "/etc/nginx/sites-enabled/default";
+
+$conf_nodes = array( 
+	array("name" => "c9", "address" => "127.0.0.1", "type" => array( "control", "compute", "storage", "svn" ) ),
+);
+
+
+
+// =========================================
+// Web interface configuration
+// =========================================
+
+// NOTICE! Settings given here don't affect webidectl, only frontend
+
+// Path for storing web-accessible data files
+$conf_data_path = $conf_base_path . "/data";
+
+// Path for temporary files created by web scripts
+$conf_web_background = "/tmp/web-background";
+
+// Access denied for these users
+$conf_deny_users = array();
+
+// If this array isn't empty, only users in array are allowed
+$conf_allow_users = array();
+
+// Message that user will see as reason why they are blocked
+$conf_deny_reason = "scheduled maintenance";
+
+// Only users in this list are allowed to access admin interface
+$conf_admin_users = array('admin');
+
+// Users with maximum privileges on admin interface
+$conf_sysadmins = array('admin');
+
+// Resource limits for web interface (control node), to ensure that web is somewhat responsive
+$conf_limit_loadavg_web = 13;
+$conf_limit_users_web = 300;
+$conf_limit_memory_web = 13; // in GB
+
+$conf_current_year = 1; // ID of current academic year
+
+// Zamger web services for: authentication, list of courses and members
+$conf_zamger = false;
+
+
+
+// =========================================
+// Install.php configuration
+// =========================================
+
+$cloud9_git_url = "https://github.com/vljubovic/core";
+$buildservice_git_url = "https://github.com/etf-sarajevo/buildservice";
+
+
+?>
