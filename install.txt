@@ -37,9 +37,6 @@ UMASK		022
 and set it to:
 UMASK		077
 
-Create a "c9" user on your system:
-useradd c9
-
 
 C9 INSTALLATION
 
@@ -50,18 +47,34 @@ chmod 755 * -R
 
 so that files would be accessible to other users.
 
+
 2. Copy file lib/config.php.default to lib/config.php and edit it to your needs.
 Defaults are just fine for test install.
 
-3. Run install.php:
+
+3. Run install.php. This script will make various changes to your system:
 
 php install.php
 
-4. Create a local user named 'admin' so you could access the admin web interface:
+
+4. A user is created on your system named "c9" (or something else that you set in
+config.php as $conf_c9_user). Now you need to run Cloud9 as this user and visit 
+the web directly so that you could finish the install procedure.
+ # su c9
+ $ cd /home/c9/fork
+ $ nodejs server.js -p 10000 -a : -l YOURIP -w /home/c9/workspace
+Instead of YOURIP specify the IP address that you use to reach your server. If 
+server started correctly, you can now open
+ http://YOURIP:10000/
+
+
+5. Create a local user named 'admin' so you could access the admin web interface:
 
 /usr/local/webide/bin/webidectl add-local-user admin PASSWORD
 
 Instead of PASSWORD insert the password that you wish to use.
 
-5. Visit webpage
+
+6. Visit webpage
+http://yourhost/
 http://yourhost/admin.php
