@@ -46,9 +46,9 @@ foreach($web_readable as $path) {
 // INSTALLATION
 
 // Install Cloud9
-echo Downloading Cloud9 IDE
+echo "Downloading Cloud9 IDE";
 `git clone $cloud9_git_url $conf_base_path/c9fork`;
-echo Installing Cloud9 IDE
+echo "Installing Cloud9 IDE";
 `cd $conf_base_path/c9fork; ./scripts/install_sdk.sh`;
 `chmod 755 $conf_base_path/c9fork -R`;
 `cd /home/$conf_c9_user; ln -s $conf_base_path/c9fork fork`;
@@ -63,7 +63,7 @@ echo Installing Cloud9 IDE
 `ln -s $conf_base_path/c9fork/plugins $conf_base_path/web/static/plugins`;
 
 // Install Buildservice
-echo Downloading Buildservice
+echo "Downloading Buildservice";
 `git clone $buildservice_git_url $conf_base_path/web/buildservice`;
 `cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
 `rm -fr $conf_base_path/web/buildservice.c9`;
