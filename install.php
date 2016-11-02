@@ -7,21 +7,43 @@ require("lib/config.php");
 `groupadd $conf_c9_group`;
 `useradd $conf_c9_user -g $conf_c9_group -m`;
 `mkdir /home/$conf_c9_user/workspace`;
-`chown $conf_c9_user /home/$conf_c9_user/workspace`;
+`chown $conf_c9_user:$conf_c9_group /home/$conf_c9_user/workspace`;
 
-// Create some directories and set permissions (git doesn't permit empty directories)
-$directories=array("log", "watch", "data", "c9fork", "web/buildservice");
+
+// PERMISSIONS SETUP
+
+// Create some directories (git doesn't permit empty directories)
+$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice");
 foreach($directories as $dir) {
 	`mkdir $conf_base_path/$dir`;
-	`chgrp $conf_c9_group $conf_base_path/$dir`;
-	`chmod 775 $conf_base_path/$dir`;
+	`chmod 755 $conf_base_path/$dir`;
 }
 
-// FIXME?
-`touch $conf_base_path/log/admin.php.log`;
-`chown www-data log/admin.php.log`;
-`touch $conf_base_path/log/autotest.log`;
-`chown www-data log/autotest.log`;
+// Directories and files that should be writable by user processes
+$user_writable=array("log", "watch", "last");
+foreach($user_writable as $path) {
+	`chgrp $conf_c9_group $conf_base_path/$path`;
+	`chmod 775 $conf_base_path/$path`;
+}
+
+// Directories and files that should be writable from web
+$web_writable = array("register", "log/admin.php.log", "log/autotest.log");
+foreach($web_readable as $path) {
+	if (!file_exists("$conf_base_path/$path")) `touch $conf_base_path/$path`;
+	`chown www-data $conf_base_path/$path`;
+	`chmod 755 $conf_base_path/$path`;
+}
+
+// Directories and files that should be readable from web but not by users
+$web_readable = array("users");
+foreach($web_readable as $path) {
+	if (!file_exists("$conf_base_path/$path")) `touch $conf_base_path/$path`;
+	`chgrp www-data $conf_base_path/$path`;
+	`chmod 750 $conf_base_path/$path`;
+}
+
+
+// INSTALLATION
 
 // Install Cloud9
 echo Downloading Cloud9 IDE
@@ -48,7 +70,7 @@ echo Downloading Buildservice
 
 // Prepare SVN path
 `mkdir $conf_svn_path`;
-`chown $c9user:$c9group $conf_svn_path`;
+`chown $conf_c9_user:$conf_c9_group $conf_svn_path`;
 
 // Allow web scripts to use sudo to execute system-level webide commands
 `echo >> /etc/sudoers`;
