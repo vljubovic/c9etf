@@ -39,6 +39,7 @@
 			zavrsi();
 		}
 		print "File je obrisan!";
+		admin_log("delete at file $fileData");
 	} else if ($mod==0) { // Mod za Edit svih autotestova zajedno
 		// Treba primljene podatke sacuvati u file kao json
 		$json=json_decode(file_get_contents($fileData),true);
@@ -183,6 +184,7 @@
 		// Kreiran je json
 		saveJson($fileData, $json);	
 		print "Editovanje izvršeno!";	
+		admin_log("edit at file $fileData (mod=$mod)");
 	} else if ($mod==2) { // Edit pojedinacnog autotesta
 		// Treba primljene podatke sacuvati u file kao json
 		$json=json_decode(file_get_contents($fileData),true);
@@ -280,6 +282,7 @@
 		$json["test_specifications"][$i]["substring"]=$substring;								
 		// Kreiran je json
 		saveJson($fileData, $json);	
+		admin_log("edit at file $fileData (mod=$mod)");
 		print "Editovanje izvršeno!";	
 	} else if ($mod==3) { // Brisanje pojedinacnog autotesta
 		$json=json_decode(file_get_contents($fileData),true);
@@ -309,6 +312,7 @@
 		array_splice($json["test_specifications"], $brATova); // Izbacimo zadnji element
 		saveJson($fileData, $json);	
 		print "Brisanje izvršeno!";
+		admin_log("delete single at, file $fileData (mod=$mod)");
 	} else if ($mod==4) { // Dodavanje jednog autotesta
 		$newATjson=json_decode(getDefAT(),true);
 		$json=json_decode(file_get_contents($fileData),true);
@@ -324,6 +328,7 @@
 			<input type="submit" value="Izmijeni novi AT">
 		</form><br>
 		<?php
+		admin_log("add single at, file $fileData (mod=$mod)");
 	} else if ($mod==5) { // Izmjena zajednickih postavki za dati fajl
 		$json=json_decode(file_get_contents($fileData),true);
 		
@@ -375,7 +380,18 @@
 		// Kreiran je json
 		saveJson($fileData, $json);	
 		print "Editovanje izvršeno!";
+		admin_log("edit at file $fileData (mod=$mod)");
 	}
+	
+	
+
+function admin_log($msg) {
+	$login = $_SESSION['login'];
+	$conf_base_path = "/usr/local/webide";
+	$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
+	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
+}
+
 ?>
 <br>
 <input type='button' onclick='safeLinkBackForw(-1);' value='Nazad'>
