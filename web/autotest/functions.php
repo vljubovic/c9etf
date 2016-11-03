@@ -1,4 +1,15 @@
 ﻿<?php
+	// Check session
+	session_start();
+	require_once("../../lib/config.php");
+	require_once("../../lib/webidelib.php");
+	require_once("../login.php");
+	$login = $_SESSION['login'];
+	if (!in_array($login, $conf_admin_users)) {
+		print "<p><b><font color=\"red\">Access denied!</font></b></p>\n";
+		exit(0);
+	}
+	
 	$fileLastId="last_id.txt";
 	$fileData=getVar("fileData");
 	if (!file_exists($fileData)) {
