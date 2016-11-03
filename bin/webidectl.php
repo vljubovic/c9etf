@@ -339,6 +339,10 @@ switch($action) {
 				print "$username:\n";
 				$msg = date("d.m.Y", time() - 60*60*24);
 				$workspace = setup_paths($username)['workspace'];
+				if (!file_exists($workspace)) {
+					print "Workspace not found for $username...\n";
+					continue;
+				}
 				if (!file_exists($workspace . "/.git")) {
 					print "Creating git for user $username...\n";
 					git_init($username);
@@ -599,20 +603,24 @@ switch($action) {
 	// Revert to older revision on svn
 	case "is-node-up":
 		$userdata = setup_paths($username);
-		$server = $users[$username]['server'];
-		
-		if (is_local($server)) {
-			// Is node server up?
-			$nodeup = false;
-			if (file_exists($userdata['node_watch'])) {
-				$pid = trim(file_get_contents($userdata['node_watch']));
-				if (file_exists("/proc/$pid"))
-					$nodeup = true;
-			}
+		if ($users[$username]["status"] != "active")
+			print "false\n";
+		else {
+			$server = $users[$username]['server'];
 			
-			if ($nodeup) print "true\n"; else print "false\n";
-		} else
-			print run_on($server, "$conf_base_path/bin/webidectl is-node-up " . $userdata['esa']);
+			if (is_local($server)) {
+				// Is node server up?
+				$nodeup = false;
+				if (file_exists($userdata['node_watch'])) {
+					$pid = trim(file_get_contents($userdata['node_watch']));
+					if (file_exists("/proc/$pid"))
+						$nodeup = true;
+				}
+				
+				if ($nodeup) print "true\n"; else print "false\n";
+			} else
+				print run_on($server, "$conf_base_path/bin/webidectl is-node-up " . $userdata['esa']);
+		}
 		
 		break;
 		
