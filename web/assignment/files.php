@@ -52,6 +52,14 @@ function assignment_files($course, $year, $external) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
+
+	function admin_log($msg) {
+		$login = $_SESSION['login'];
+		$conf_base_path = "/usr/local/webide";
+		$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
+		file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
+	}
+
 	global $conf_admin_users, $conf_data_path;
 	
 	header('Content-Encoding: none;');
@@ -212,15 +220,6 @@ function assignment_files_change() {
 
 
 if (isset($_REQUEST['files_action']) && $_REQUEST['files_action'] == "change") assignment_files_change();
-
-if (!function_exists('admin_log')) {
-	function admin_log($msg) {
-		$login = $_SESSION['login'];
-		$conf_base_path = "/usr/local/webide";
-		$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
-		file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
-	}
-}
 
 
 ?>
