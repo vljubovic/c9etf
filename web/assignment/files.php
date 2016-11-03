@@ -159,6 +159,7 @@ function assignment_files_change() {
 	}
 	if ($_REQUEST['action'] == "Delete") {
 		unlink($file_path);
+		admin_log("delete $file_path");
 		print "<p>File deleted</p>";
 		print "<p><a href=\"$backlink\">Back</a></p>\n";
 		
@@ -198,6 +199,7 @@ function assignment_files_change() {
 			file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
 		}
 
+		admin_log("upload $destination_path");
 		print "<p>File uploaded.</p>\n";
 		print "<p><a href=\"$backlink\">Back</a></p>\n";
 	}
