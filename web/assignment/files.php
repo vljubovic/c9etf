@@ -213,6 +213,14 @@ function assignment_files_change() {
 
 if (isset($_REQUEST['files_action']) && $_REQUEST['files_action'] == "change") assignment_files_change();
 
+if (!function_exists('admin_log')) {
+	function admin_log($msg) {
+		$login = $_SESSION['login'];
+		$conf_base_path = "/usr/local/webide";
+		$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
+		file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
+	}
+}
 
 
 ?>
