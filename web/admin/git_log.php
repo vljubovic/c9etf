@@ -1,10 +1,10 @@
 <?php
 
 
-function admin_git_log($korisnik, $putanja) {
+function admin_git_log($user, $path) {
 	global $conf_base_path;
 	
-	$git_log = shell_exec("sudo $conf_base_path/bin/wsaccess $korisnik git-log $putanja 2>&1");
+	$git_log = shell_exec("sudo $conf_base_path/bin/wsaccess $user git-log $path 2>&1");
 	$history = array(); $commit = array();
 	foreach (explode("\n", $git_log) as $line) {
 		if(strpos($line, 'commit')===0){
@@ -37,10 +37,10 @@ function admin_git_log($korisnik, $putanja) {
 			<ul>
 		<?php
 //		foreach($entry['paths'] as $path) {
-			$the_path = $putanja;
+			$the_path = $path;
 //			if ($the_path[0] == "/") $the_path = substr($the_path, 1);
 			?>
-			<li><a href="?korisnik=<?=$korisnik?>&amp;putanja=<?=urlencode($the_path)?>&amp;git_rev=<?=$entry['hash']?>"><?=$the_path?></a></li>
+			<li><a href="?user=<?=$user?>&amp;path=<?=urlencode($the_path)?>&amp;git_rev=<?=$entry['hash']?>"><?=$the_path?></a></li>
 			<?php
 	//	}
 		print "</ul></li>\n";
