@@ -275,6 +275,13 @@ if ($logged_in) {
 	}
 
 
+	
+	else if (isset($_REQUEST['buildservice_stats'])) {
+		admin_log("buildservice stats");
+		admin_bsstats();
+	}
+	
+	
 	// Show data for single user
 	else if (isset($_REQUEST['user'])) {
 		$user = str_replace("../", "", $_REQUEST['user']);

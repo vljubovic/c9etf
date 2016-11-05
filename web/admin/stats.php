@@ -141,4 +141,27 @@ function admin_stats() {
 	<?php
 }
 
+
+function admin_bsstats() {
+	global $conf_base_path;
+	$bs_path = "/tmp/buildservice";
+	$queue = `cat /tmp/buildservice/queuefile | wc -l`;
+	$stats = json_decode(file_get_contents("/tmp/buildservice/stats"), true);
+	
+	// Show statistics
+	?>
+	<p id="p-return"><a href="admin.php">Return to courses list</a></p>
+	<h1>Buildservice stats</h1>
+	<p>Tasks in queue: <?=$queue?></p>
+	<h2>Build hosts:</h2>
+	<table><tr><th>Name:</th><th>IP address:</th><th>Last build time:</th></tr>
+	<?php
+	foreach ($stats as $name => $data) {
+		print "<tr><td>$name</td><td>".$data['ip']."</td><td>".date("d.m.Y H:i:s", $data['time'])."</td></tr>\n";
+	}
+	?>
+	</table>
+	<?php
+}
+
 ?>
