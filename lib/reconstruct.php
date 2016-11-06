@@ -91,12 +91,29 @@ function reconstruct_file($username, $filename, $timestamp) {
 		
 		if (array_key_exists("change", $file_log[$i]['diff']))
 			foreach($file_log[$i]['diff']['change'] as $lineno => $text) {
+				// Editing last line - special case!
+				if ($lineno-1 == count($work_file)) $lineno--;
 				// Since php arrays are associative, we must initialize missing members in correct order
-				if ($lineno-1 > count($work_file))
-					for ($j=count($work_file); $j<$lineno; $j++)
-						$work_file[$j] = "\n";
+				if ($lineno-1 > count($work_file)) {
+					if ($lineno == 2) $lineno=1;
+					else {
+						for ($j=count($work_file); $j<$lineno; $j++)
+							$work_file[$j] = "\n";
+					}
+				}
 				$work_file[$lineno-1] = $text . "\n";
 			}
+		if (array_key_exists("add_lines", $file_log[$i]['diff'])) {
+			$offset=1;
+			foreach($file_log[$i]['diff']['add_lines'] as $lineno => $text) {
+				if ($offset == 0 && $lineno == 0) $offset=1;
+				if ($lineno-$offset > count($work_file))
+					for ($j=count($work_file); $j<$lineno-$offset+1; $j++)
+						$work_file[$j] = "\n";
+				array_splice($work_file, $lineno-$offset, 1);
+				$offset++;
+			}
+		}
 		if (array_key_exists("remove_lines", $file_log[$i]['diff'])) {
 			$offset=-1;
 			foreach($file_log[$i]['diff']['remove_lines'] as $lineno => $text) {
@@ -105,21 +122,8 @@ function reconstruct_file($username, $filename, $timestamp) {
 						$work_file[$j] = "\n";
 				if ($text == "false" || $text === false) $text = "";
 				array_splice($work_file, $lineno+$offset, 0, $text . "\n");
-				//$offset++;
 			}
 		}
-		if (array_key_exists("add_lines", $file_log[$i]['diff'])) {
-			$offset=-1;
-			foreach($file_log[$i]['diff']['add_lines'] as $lineno => $text) {
-				if ($lineno-$offset > count($work_file))
-					for ($j=count($work_file); $j<$lineno-$offset+1; $j++)
-						$work_file[$j] = "\n";
-				array_splice($work_file, $lineno-$offset, 1);
-				$offset++;
-			}
-				if ($i == 870) { print "lineno $lineno offset $offset\n"; break; }
-		}
-//		if ($i == 878) { break; }
 	}
 	
 	$output_path = "/tmp/reconstruct";
