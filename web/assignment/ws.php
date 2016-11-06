@@ -294,12 +294,12 @@ function ws_deploy() {
 	
 	proc_close(proc_open("sudo $conf_base_path/bin/wsaccess all-users deploy \"$destination_path\" \"$found_file_path\" >$log_file &", array(), $foo));
 	
+	$msg = date("Y-m-d H:i:s") . " - $login - deploy all-users $destination_path\n";
+	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
+	
 	$result = ok("");
 	$result['data'] = $log_filename;
 	json($result);
-	
-	$msg = date("Y-m-d H:i:s") . " - $login - deploy all-users $destination_path\n";
-	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
 }
 
 
