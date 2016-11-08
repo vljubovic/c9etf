@@ -440,6 +440,7 @@ switch($action) {
 			if ($do_reinstall) {
 				print " - resetting svn\n";
 				print "Update stats\n";
+				bfl_lock();
 				exec("$conf_base_path/bin/userstats " . escapeshellarg($username));
 				print "Reinstall svn\n";
 				user_reinstall_svn($username);
@@ -451,6 +452,7 @@ switch($action) {
 				sleep(5);
 				bfl_lock();
 				read_files();
+				bfl_unlock();
 			}
 		}
 		break;
