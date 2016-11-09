@@ -32,7 +32,7 @@ $skip_bfl = array(
 	"last-update", "broadcast",
 	// Commands that take a long time and are executed on a regular basis
 	// but users complain if they can't login during that time
-	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup"
+	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup", "clean-inodes"
 );
 
 
