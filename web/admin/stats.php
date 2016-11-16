@@ -42,15 +42,19 @@ function admin_stats() {
 		
 		data.addRows([
 		<?php
-		foreach(file($conf_base_path . "/user_stats.log") as $logline) {
-			$realno=-1;
-			$parts = explode(" ", trim($logline));
-			$sec = $parts[0];
-			$no = $parts[1];
-			if (count($parts)>2) $realno = $parts[2];
-			if (!isset($realno) || $realno==-1) $realno=$no;
-			if ($sec < $sec_min) continue;
-			print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $no, $realno ],\n";
+		$handle = fopen($conf_base_path . "/user_stats.log", "r");
+		if ($handle) {
+			while (($logline = fgets($handle, 4096)) !== false) {
+				$realno=-1;
+				$parts = explode(" ", trim($logline));
+				$sec = $parts[0];
+				$no = $parts[1];
+				if (count($parts)>2) $realno = $parts[2];
+				if (!isset($realno) || $realno==-1) $realno=$no;
+				if ($sec < $sec_min) continue;
+				print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $no, $realno ],\n";
+			}
+			fclose($handle);
 		}
 		?>
 		]);
@@ -75,15 +79,19 @@ function admin_stats() {
 		
 		data2.addRows([
 		<?php
-		foreach(file($conf_base_path . "/load_stats.log") as $logline) {
-			$storage = $prim = $second = 0;
-			$ar = explode(" ", trim($logline));
-			$sec = intval($ar[0]); $c9 = floatval($ar[1]);
-			if (count($ar)>2) $storage = floatval($ar[2]); 
-			if (count($ar)>3) $prim = floatval($ar[3]); 
-			if (count($ar)>4) $second = floatval($ar[4]); 
-			if ($sec < $sec_min) continue;
-			print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $c9, $storage, $prim, $second ],\n";
+		$handle = fopen($conf_base_path . "/load_stats.log", "r");
+		if ($handle) {
+			while (($logline = fgets($handle, 4096)) !== false) {
+				$storage = $prim = $second = 0;
+				$ar = explode(" ", trim($logline));
+				$sec = intval($ar[0]); $c9 = floatval($ar[1]);
+				if (count($ar)>2) $storage = floatval($ar[2]); 
+				if (count($ar)>3) $prim = floatval($ar[3]); 
+				if (count($ar)>4) $second = floatval($ar[4]); 
+				if ($sec < $sec_min) continue;
+				print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $c9, $storage, $prim, $second ],\n";
+			}
+			fclose($handle);
 		}
 		?>
 		]);
@@ -108,19 +116,22 @@ function admin_stats() {
 		
 		data3.addRows([
 		<?php
-		$storage = $prim = $second = 0;
-		foreach(file($conf_base_path . "/mem_stats.log") as $logline) {
-			$ar = explode(" ", trim($logline));
-			$sec = intval($ar[0]); $c9 = floatval($ar[1]);
-			if (count($ar)>2) $storage = floatval($ar[2]); 
-			if (count($ar)>3) $prim = floatval($ar[3]); 
-			if (count($ar)>4) $second = floatval($ar[4]); 
-			if ($sec < $sec_min) continue;
-			$c9 = round(($c9 / 1024) / 1024, 3);
-			$storage = round(($storage / 1024) / 1024, 3);
-			$prim = round(($prim / 1024) / 1024, 3);
-			$second = round(($second / 1024) / 1024, 3);
-			print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $c9, $storage, $prim, $second ],\n";
+		$handle = fopen($conf_base_path . "/mem_stats.log", "r");
+		if ($handle) {
+			while (($logline = fgets($handle, 4096)) !== false) {
+				$ar = explode(" ", trim($logline));
+				$sec = intval($ar[0]); $c9 = floatval($ar[1]);
+				if (count($ar)>2) $storage = floatval($ar[2]); 
+				if (count($ar)>3) $prim = floatval($ar[3]); 
+				if (count($ar)>4) $second = floatval($ar[4]); 
+				if ($sec < $sec_min) continue;
+				$c9 = round(($c9 / 1024) / 1024, 3);
+				$storage = round(($storage / 1024) / 1024, 3);
+				$prim = round(($prim / 1024) / 1024, 3);
+				$second = round(($second / 1024) / 1024, 3);
+				print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $c9, $storage, $prim, $second ],\n";
+			}
+			fclose($handle);
 		}
 		?>
 		]);
