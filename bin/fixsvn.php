@@ -102,7 +102,15 @@ function fixsvn($command) {
 		preg_match("/Tree conflict can only be resolved to 'working' state: '(.*?)' not resolved/", $line, $matches)) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
-			fixsvn("svn resolve --accept mine-full \"$wsname\"");
+			fixsvn("svn resolve --accept working \"$wsname\"");
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		else if (preg_match("/Tree conflict can only be resolved to .*? state: '(.*?)' not resolved/", $line, $matches)) {
+			$filename = basename($matches[1]);
+			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
+			fixsvn("svn resolve --accept working \"$wsname\"");
 			fixsvn($command);
 			$ok = true;
 			break;
@@ -183,7 +191,8 @@ function fixsvn($command) {
 			$ok = true;
 			break;
 		}
-		else if (preg_match("/Can't move '.*?' to '(.*?)': Permission denied/", $line, $matches)) {
+		else if (preg_match("/Can't move '.*?' to '(.*?)': Permission denied/", $line, $matches) ||
+			preg_match("/Can't open file '(.*?)': Permission denied/", $line, $matches)) {
 			$path = dirname($matches[1]);
 			exec("chown -R $username:$conf_c9_group ".escapeshellarg($path));
 			fixsvn($command);
