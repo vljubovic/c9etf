@@ -42,10 +42,11 @@ then
 else
 	ulimit -c unlimited
 	nice -n 10 valgrind --leak-check=full --log-file="$valgrindout" "$exefile"
-	for file in `ls "$corefile"* 2>/dev/null`
+	shopt -s nullglob
+	for file in "$corefile"*
 	do
 		#echo Debugging $file
-		gdb --batch -ex "bt 100" --core=$file "$exefile" 2>&1 >"$gdbout"
+		gdb --batch -ex "bt 100" --core="$file" "$exefile" 2>&1 >"$gdbout"
 		rm "$file"
 	done
 fi
