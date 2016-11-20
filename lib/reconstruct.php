@@ -23,8 +23,7 @@ $username = $argv[1];
 $filename = $argv[2];
 $timestamp = $argv[3];
 
-//$action = $argv[2];
-//$prefix = "/$username"; // Ukloniti kada svaki user bude imao svoj repo
+if (intval($timestamp) < 100) $timestamp = strtotime($timestamp);
 
 read_stats($username);
 reconstruct_file($username, $filename, $timestamp);
