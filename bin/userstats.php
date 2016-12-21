@@ -100,10 +100,11 @@ function write_stats($username) {
 				unset($stats_goto[$key]);
 			}
 		}
-		file_put_contents( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
+		
+		ensure_write( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
 		chmod($goto_file, 0644);
 	}
-	file_put_contents( $conf_stats_path . "/$username_efn.stats", "\$stats = " . var_export($stats, true) . ";" );
+	ensure_write( $conf_stats_path . "/$username_efn.stats", "\$stats = " . var_export($stats, true) . ";" );
 }
 
 // Remove unwanted stuff from stats file
@@ -660,6 +661,16 @@ function compressed_diff($diff_text) {
 	if (count($result['add_lines']) == 0) unset($result['add_lines']);
 	
 	return $result;
+}
+
+
+function ensure_write($filename, $content) {
+	$retry = 1;
+	while(true) {
+		if (file_put_contents($filename, $content)) return;
+		print "Error writing $filename... retry in $retry seconds\n";
+		sleep($retry);
+	}
 }
 
 
