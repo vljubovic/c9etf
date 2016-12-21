@@ -205,10 +205,22 @@ function svnsort($a, $b) {
 
 function update_stats($username) {
 	global $username, $conf_svn_path, $stats, $prefix, $vrijeme_kreiranja, $svn_ignore, $vrijeme_limit, $skip_diff, $file_content_limit;
-	//print "AŽURIRAMO...\n";
+	
+	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
+	
+	// Provjeravamo da li je Last_update_rev bitno veći od trenutne revizije
+	$tmp_log = svn_log($svn_path, SVN_REVISION_HEAD, SVN_REVISION_HEAD);
+	if (empty($tmp_log)) {
+		print "SVN repozitorij za $username je prazan!\n";
+		exit(1);
+	}
+	$svn_last_rev = $tmp_log[0]['rev'];
+	if ($svn_last_rev < $stats['last_update_rev']-1) {
+		print "Repozitorij se resetovao u međuvremenu :(\n";
+		$stats['last_update_rev'] = SVN_REVISION_INITIAL;
+	}
 
 	// Uzimamo log sa SVNa
-	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
 	$svn_log = svn_log($svn_path, SVN_REVISION_HEAD, $stats['last_update_rev']);
 	if (!$svn_log || empty($svn_log)) return;
 	foreach($svn_log as &$entry)
