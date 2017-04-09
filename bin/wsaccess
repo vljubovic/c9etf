@@ -68,6 +68,11 @@ case $cmd in
 			echo ERROR: Not a directory or path doesn\'t exist
 			exit 3
 		fi
+		
+		for i in "$path/core*"; do
+			rm -f "$i"
+		done
+		
 		rm -f "$zipfile"
 		cd "$path"
 		zip -r "$zipfile" *
