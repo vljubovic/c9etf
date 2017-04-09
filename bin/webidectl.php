@@ -139,7 +139,7 @@ switch($action) {
 	// Regular cleanup operation every hour
 	case "culling":
 		// FIXME This is done only on control server
-		// If memory is high on control it's high on all others... hopefully
+		// If memory is high on control it's probably high on all others, due to load balancing
 		$active_users = 0;
 		foreach($users as $user) if ($user['status'] == "active") $active_users++;
 		if ($active_users > 170) break; // It just manufactures more load... :( FIXME
@@ -196,6 +196,7 @@ switch($action) {
 			}
 			
 			if (!in_array("compute", $node['type'])) continue;
+			
 			foreach(ps_ax($node['address']) as $process) {
 				if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
 					continue;
@@ -495,7 +496,7 @@ switch($action) {
 		$found_node = false;
 		foreach ($conf_nodes as $node) {
 			if ($argc > 2 && $argv[2] == $node['name']) {
-				print run_on($node['address'], "$conf_base_path/bin/webidectl server-stats");
+				print join(" ", server_stats($node['name']));
 				$found_node = true;
 				break;
 			}
@@ -1456,59 +1457,27 @@ function migrate_v1_v3($username) {
 }
 
 // Some common resource usage stats
-function server_stats() {
+function server_stats($server = "local") {
 	global $users, $conf_home_path, $conf_base_path, $conf_svn_path;
 
 	$stats = array();
+	if ($server == "local")
+		$filename = "server_stats.log";
+	else
+		$filename = $server."_stats.log";
+	$filename = $conf_base_path . "/$filename";
 	
-	// stats[0] : CPU load average
-	$stats[0] = exec("cat /proc/loadavg | cut -d \" \" -f 2");
+	$stats = explode(" ", trim(`tail -1 $filename`));
 	
-	// stats[1] : actually used memory
-	$memtotal = `cat /proc/meminfo | grep MemTotal | cut -c 17-25`;
-	$memfree  = `cat /proc/meminfo | grep MemFree | cut -c 17-25`;
-	$membuf   = `cat /proc/meminfo | grep Buffers | cut -c 17-25`;
-	$memcach  = `cat /proc/meminfo | grep ^Cached | cut -c 17-25`;
-	$memswaptotal = `cat /proc/meminfo | grep SwapTotal | cut -c 17-25`;
-	$memswapfree = `cat /proc/meminfo | grep SwapFree | cut -c 17-25`;
-
-	$stats[1] = $memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
-	
-	// stats[2] : number of logged in users
-	$stats[2] = 0;
-	foreach($users as $user) 
-		if ($user["status"] == "active") $stats[2]++;
-	
-	// stats[3] : number of really active users
-	
-	$stats[3] = 0;
-	foreach (ps_ax("localhost") as $process) {
-		if (strstr($process['cmd'], "node server") || strstr($process['cmd'], "nodejs server"))
-			$stats[3]++;
-	}
-	
-	$min_space = 0;
-	foreach(explode("\n", shell_exec("df")) as $line) {
-		$parts = preg_split("/\s+/", $line);
-		if (count($parts) < 6) continue;
-		if ($parts[5] == "/" || starts_with($parts[5], $conf_home_path) || starts_with($parts[5], $conf_base_path) || starts_with($parts[5], $conf_svn_path))
-			if ($min_space == 0 || $parts[3] < $min_space)
-				$min_space = $parts[3];
-	}
-	$stats[4] = $min_space / 1024;
-	
-	$min_space = 0;
-	foreach(explode("\n", shell_exec("df -i")) as $line) {
-		$parts = preg_split("/\s+/", $line);
-		if (count($parts) < 6) continue;
-		if ($parts[5] == "/" || starts_with($parts[5], $conf_home_path) || starts_with($parts[5], $conf_base_path) || starts_with($parts[5], $conf_svn_path))
-			if ($min_space == 0 || $parts[3] < $min_space)
-				$min_space = $parts[3];
-	}
-	$stats[5] = $min_space;
+	// Reorder stats because legacy code expects it like this
+	$cpuidle = array_shift($stats);
+	$blocking = array_shift($stats);
+	$stats[6] = $cpuidle;
+	$stats[7] = $blocking;
 	
 	return $stats;
 }
+
 
 // Check if server stats exceed one of the allowed values
 function check_limits($stats, $output) {
