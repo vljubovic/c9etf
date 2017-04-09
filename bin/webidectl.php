@@ -33,6 +33,8 @@ $skip_bfl = array(
 	// Commands that take a long time and are executed on a regular basis
 	// but users complain if they can't login during that time
 	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup", "clean-inodes", "storage-nightly"
+	// Implement locking manually (for performance reasons)
+	"verify-user"
 );
 
 
@@ -1191,6 +1193,7 @@ function verify_user($username) {
 	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users;
 	
 	$userdata = setup_paths($username);
+	if (!array_key_exists('server', $users[$username])) return;
 	$server = $users[$username]['server'];
 	
 	if (is_local($server) && $is_compute_node) {
@@ -1200,6 +1203,16 @@ function verify_user($username) {
 			$pid = trim(file_get_contents($userdata['node_watch']));
 			if (file_exists("/proc/$pid"))
 				$nodeup = true;
+		}
+		debug_log ("verify_user $username nodeup $nodeup");
+		
+		// If it is, return port
+		$port = intval($users[$username]['port']);
+		if ($nodeup) {
+			if ($port > 2)
+				print "Node running - Found port: $port\n";
+			else
+				$nodeup = false; // Invalid port, restart
 		}
 		
 		// It isn't, restart
@@ -1218,25 +1231,32 @@ function verify_user($username) {
 			$inuse = `tail -20 $log_path | grep EADDRINUSE`;
 			if (!empty(trim($inuse))) {
 				$port = find_free_port(); 
-				print "Found port: $port\n";
+				print "Starting node - Found port: $port\n";
 				$users[$username]['port'] = $port;
+				bfl_lock();
 				write_files();
 				if ($is_control_node) write_nginx_config();
-			}
+				bfl_unlock();
+			} else
+				print "Restarting existing node ($port)\n";
 			
 			// Restart node
-			print "Starting node for $username...\n";
 			start_node($username);
+			debug_log ("restart node user $username port $port");
 		}
 	}
 	else if ($is_control_node) {
 		$output = run_on($server, "$conf_base_path/bin/webidectl verify-user " . $userdata['esa']);
-		if (strstr($output, "Found port:")) {
-			$port = intval(substr($output, 11));
+		debug_log ("verify_user $username server $server output " .str_replace("\n", "", $output));
+		if ($substr = strstr($output, "Found port:")) {
+			$port = intval(substr($substr, 11));
 			if (intval($port) == 0) $port = 1;
 			$users[$username]['port'] = $port;
+			debug_log ("resetting port to $port");
+			bfl_lock();
 			write_files();
 			write_nginx_config();
+			bfl_unlock();
 		}
 	}
 	
@@ -1259,7 +1279,6 @@ function verify_user($username) {
 		}
 	}
 	else if ($is_control_node) {
-		run_on($svn_node_addr, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
 		run_on($svn_node_addr, "$conf_base_path/bin/webidectl verify-user " . $userdata['esa']);
 	}
 }
