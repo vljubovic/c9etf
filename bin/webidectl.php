@@ -26,8 +26,8 @@ exec("echo $mypid > $watchfile");
 
 // Following webidectl commands are not locked with bfl
 $skip_bfl = array(
-	// Readonly commands
-	"list-active", "last", "server-stats", "is-node-up", "help",
+	// Readonly commands (for webide files)
+	"list-active", "last", "server-stats", "is-node-up", "help", "reset-nginx", "svnrestore",
 	// Commands that happen very often and don't really need to be locked
 	"last-update", "broadcast",
 	// Commands that take a long time and are executed on a regular basis
