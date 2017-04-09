@@ -1919,7 +1919,10 @@ function personalize($username, $infile, $outfile) {
 	
 	$port = $users[$username]['port'];
 	$debug_port = ( $port - $conf_port_lower ) * 2 + $conf_port_upper;
-	$realname = $users[$username]['realname'];
+	if (array_key_exists('realname', $users[$username])) 
+		$realname = $users[$username]['realname'];
+	else
+		$realname = $username;
 
 	$content = file_get_contents($infile);
 	$content = str_replace("USERNAME", $username, $content);
@@ -1936,42 +1939,6 @@ function read_files() {
 	
 	$users_file = $conf_base_path . "/users";
 	eval(file_get_contents($users_file));
-	
-	/*
-	require("$conf_base_path/web/admin/imena_korisnika.php");
-	
-	foreach ( file( $conf_base_path . "/active_users" ) as $act ) {
-		$aact = explode("\t", trim($act));
-		$username = $aact[0];
-		$realname = "";
-		if (array_key_exists($username, $imena_korisnika)) $realname = $imena_korisnika[$username];
-		$users[$username] = array(
-			"realname" => $realname,
-			"status" => "active",
-			"server" => "127.0.0.1",
-			"port" => $aact[1]
-		);
-	}
-
-	foreach ( file( $conf_base_path . "/inactive_users" ) as $act ) {
-		$aact = explode("\t", trim($act));
-		$username = $aact[0];
-		$realname = "";
-		if (array_key_exists($username, $imena_korisnika)) $realname = $imena_korisnika[$username];
-		$users[$username] = array(
-			"realname" => $realname,
-			"status" => "inactive",
-		);
-	}
-
-	$collaborators = array();
-	foreach ( file( $conf_base_path . "/collaborators" ) as $col ) {
-		$ccol = explode("\t", trim($col));
-		if (!array_key_exists("collaborate", $users[$ccol[0]]))
-			$users[$ccol[0]]["collaborate"] = array();
-		$users[$ccol[0]]["collaborate"][] = $ccol[1];
-	}
-	*/
 }
 
 // Write users file
@@ -2015,7 +1982,7 @@ function write_nginx_config() {
 		
 		$config .= $user_conf . "\n";
 		
-		if (array_key_exists("collaborate", $options))
+		if (array_key_exists("collaborate", $options) && $options['status'] === "active")
 		foreach ($options['collaborate'] as $partner) {
 			$partner_port = 0;
 			foreach($users as $maybe_partner => $partner_options) {
