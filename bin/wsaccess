@@ -51,10 +51,15 @@ case $cmd in
 		cat "$path"
 		;;
 	write)
+		if [ -e "$path" ]
+		then
+			rm "$path"
+		fi
 		while read x
 		do
-			echo $x >> "$relpath"
+			echo $x >> "$path"
 		done
+		chown $user:c9 "$path"
 		;;
 	zip)
 		zipfile="$4"
