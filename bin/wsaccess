@@ -126,8 +126,7 @@ case $cmd in
 			exit 4
 		fi
 		cp "$srcfile" "$dest"
-		chown $user "$dest"
-		chmod 644 "$dest"
+		chown $user "$path" -R
 		;;
 	svnrestore)
 		revision="$4"
