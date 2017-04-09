@@ -1274,10 +1274,10 @@ function verify_user($username) {
 			// Kill related processes
 			stop_node($username, false);
 			
-			// Check to see if port is in use
+			// Check to see if port is in use - sometimes race condition causes this situation
 			$log_path = "$conf_base_path/log/" . $userdata['efn'];
 			$inuse = `tail -20 $log_path | grep EADDRINUSE`;
-			if (!empty(trim($inuse))) {
+			if (!empty(trim($inuse)) || $port <= 2) {
 				$port = find_free_port(); 
 				print "Starting node - Found port: $port\n";
 				$users[$username]['port'] = $port;
@@ -1373,7 +1373,6 @@ function kick_user($username) {
 
 
 
-
 // -------------------------------
 //    LOW LEVEL PROCESS MGMT
 // -------------------------------
@@ -1403,7 +1402,7 @@ function start_node($username) {
 	chmod($log_path, 0644);
 	touch($lastfile);
 	chown($lastfile, $username);
-	chmod($lastfile, 0644);
+	chmod($lastfile, 0666);
 	run_as($username, "$nodecmd $c9_path $port $listen_addr $workspace $log_path $watch_path");
 }
 
@@ -1518,11 +1517,14 @@ function server_stats($server = "local") {
 	return $stats;
 }
 
-
 // Check if server stats exceed one of the allowed values
 function check_limits($stats, $output) {
 	global $conf_limit_memory, $conf_limit_loadavg, $conf_limit_users, $conf_limit_active_users, $conf_limit_diskspace, $conf_limit_inodes;
 	
+	if ($stats[7] > 3) {
+		if ($output) print "ERROR: too many blocking\n";
+		return false;
+	}
 	if ($conf_limit_loadavg > 0 && $stats[0] > $conf_limit_loadavg) {
 		if ($output) print "ERROR: Load average $stats[0] > $conf_limit_loadavg\n";
 		return false;
