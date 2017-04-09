@@ -140,6 +140,10 @@ switch($action) {
 	case "culling":
 		// FIXME This is done only on control server
 		// If memory is high on control it's high on all others... hopefully
+		$active_users = 0;
+		foreach($users as $user) if ($user['status'] == "active") $active_users++;
+		if ($active_users > 170) break; // It just manufactures more load... :( FIXME
+		
 		$stats = server_stats();
 		$memlimit = $conf_memory_emergency * 1024 * 1024;
 		if ($stats[1] > $memlimit) {
