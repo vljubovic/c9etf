@@ -1,16 +1,16 @@
 INSTALL INSTRUCTIONS
 
-Install the following packages on Ubuntu 14.04 LTS:
+Install the following packages on Ubuntu 16.04 LTS:
 build-essential
 gdb
 nodejs
 nginx
-php5-fpm 
-php5-cli
+php-fpm 
+php-cli
 inotify-tools
 subversion
-php5-svn
-php5-ldap
+php-svn
+php-ldap
 git
 apache2-utils
 
@@ -18,6 +18,8 @@ Optional:
 sqlite3 - for debugging svn
 valgrind
 gdbserver
+
+Make sure that nginx and php-fpm processes are started automatically with OS.
 
 
 OPERATING SYSTEM CONFIGURATION
@@ -40,10 +42,14 @@ UMASK		077
 
 C9 INSTALLATION
 
-1. Clone c9etf repository in a folder, e.g. /usr/local/webide. Note that if you just 
-changed the umask, you will have to do something like 
+1. Clone c9etf repository in a folder, e.g. /usr/local/webide. 
 
-chmod 755 * -R
+ $ sudo cd /usr/local
+ $ sudo git clone https://github.com/vljubovic/c9etf webide
+
+Note that if you just changed the umask, you may have to do something like 
+
+ $ chmod 755 webide -R
 
 so that files would be accessible to other users.
 
@@ -54,27 +60,49 @@ Defaults are just fine for test install.
 
 3. Run install.php. This script will make various changes to your system:
 
-php install.php
+ $ cd /usr/local/webide
+ $ sudo php install.php
 
 
 4. A user is created on your system named "c9" (or something else that you set in
 config.php as $conf_c9_user). Now you need to run Cloud9 as this user and visit 
 the web directly so that you could finish the install procedure.
- # su c9
+ $ sudo su c9
  $ cd /home/c9/fork
  $ nodejs server.js -p 10000 -a : -l YOURIP -w /home/c9/workspace
+
 Instead of YOURIP specify the IP address that you use to reach your server. If 
 server started correctly, you can now open
+
  http://YOURIP:10000/
+
+You will see a wizard for "Quickly setup Cloud9 on your workspace". This wizard 
+can not be automated, you need to go through it manually. It configures a 
+default workspace that will be copied to all the other users. Just click Next until
+you see a window that informs you that Cloud9 is successfully installed and click
+the button named Finish.
+
+Now you can safely close the browser window, then interrupt nodejs process in console 
+(just press Ctrl+C) and exit c9 user:
+
+c9@server:~fork$ exit
 
 
 5. Create a local user named 'admin' so you could access the admin web interface:
 
 /usr/local/webide/bin/webidectl add-local-user admin PASSWORD
 
-Instead of PASSWORD insert the password that you wish to use.
+Instead of PASSWORD insert the password that you wish to use. Create another local 
+user so you can test the webide:
+
+/usr/local/webide/bin/webidectl add-local-user test PASSWORD
 
 
 6. Visit webpage
-http://yourhost/
-http://yourhost/admin.php
+
+http://yourhost/ (login as user "test").
+
+http://yourhost/admin.php (login as user "admin")
+
+
+

@@ -13,7 +13,7 @@ require("lib/config.php");
 // PERMISSIONS SETUP
 
 // Create some directories (git doesn't permit empty directories)
-$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice");
+$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice", "localusers", "htpasswd");
 foreach($directories as $dir) {
 	`mkdir $conf_base_path/$dir`;
 	`chmod 755 $conf_base_path/$dir`;
@@ -53,7 +53,8 @@ echo "Installing Cloud9 IDE\n";
 `chmod 755 $conf_base_path/c9fork -R`;
 `cd /home/$conf_c9_user; ln -s $conf_base_path/c9fork fork`;
 
-// Do we need this?
+// This enables wizard to complete
+`chmod 777 $conf_base_path/c9fork/build`;
 `chmod 644 $conf_base_path/c9fork/build/standalone/skin/default/*`;
 
 // Populate "static" folder with symlinks
