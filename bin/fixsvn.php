@@ -36,12 +36,16 @@ if ($users[$username]['status'] == 'active') {
 
 
 // Perform the following actions
-fixsvn("find . -name .valgrind.out.core.* -print0 | xargs -0 --no-run-if-empty svn remove --force");
+fixsvn("ls */*core* | xargs -I {} svn remove --force {}");
+fixsvn("ls */*/*core* | xargs -I {} svn remove --force {}");
+fixsvn("ls */*/*/*core* | xargs -I {} svn remove --force {}");
 fixsvn("svn ci -m fixsvn .");
 fixsvn("svn add *");
 fixsvn("svn add */*");
 fixsvn("svn add */*/*");
+fixsvn("svn add */*/.*");
 fixsvn("svn add */*/*/*");
+fixsvn("svn add */*/*/.*");
 fixsvn("svn ci -m fixsvn .");
 
 
