@@ -1186,20 +1186,34 @@ function remove_user($username) {
 	
 	$userdata = setup_paths($username);
 	
-	if ($is_svn_node)
+	if ($is_svn_node) {
 		exec("rm -fr " . $userdata['svn']);
+		$svn_backup = $userdata['svn'] . ".old";
+		if (file_exists($svn_backup))
+			exec("rm -fr $svn_backup");
+	}
 	
 	if ($is_storage_node) {
 		$archive_path = $conf_shared_path . "/archive";
 		if (!file_exists($archive_path)) mkdir($archive_path);
 		$archive_file = $archive_path . "/" . $userdata['efn'] . ".tar.gz";
 		$user_ws = $userdata['workspace'];
+		if (!file_exists($user_ws)) 
+			// Legacy v1 workspace
+			$user_ws = "/home/c9/workspace/" . $userdata['efn'];
 		
 		// Remove svn and git repos from workspace
 		exec("rm -fr $user_ws/.svn; rm -fr $user_ws/.git");
 		exec("tar czvf $archive_file $user_ws");
 		exec("rm -fr $user_ws");
 		exec("userdel -r " . $userdata['esa']);
+		
+		// Archive & remove stats
+		$stats_paths = "/home/c9/stats/" . $userdata['efn'] . ".stats";
+		$stats_paths .= " /home/c9/stats/*/" . $userdata['efn'] . ".stats";
+		$archive_file = $archive_path . "/" . $userdata['efn'] . ".stats.tar.gz";
+		exec("tar czvf $archive_file $stats_paths");
+		exec("rm $stats_paths");
 	}
 	else 
 		exec("userdel " . $userdata['esa']);
@@ -1209,6 +1223,13 @@ function remove_user($username) {
 	
 	if ($is_control_node) {
 		unlink($userdata['htpasswd']);
+
+		$localuser_file = $conf_base_path . "/localusers/" . $userdata['efn'];
+		if (file_exists($localuser_file)) unlink($localuser_file);
+		
+		$lastfile = $conf_base_path . "/last/$username.last";
+		if (file_exists($lastfile)) unlink($lastfile);
+		
 		foreach($conf_nodes as $node)
 			run_on($node['address'], "$conf_base_path/bin/webidectl remove " . $userdata['esa']);
 	}
