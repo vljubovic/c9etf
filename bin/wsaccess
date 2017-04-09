@@ -43,6 +43,11 @@ case $cmd in
 			echo ERROR: File doesn\'t exist
 			exit 2
 		fi
+		if [ -d "$path" ]
+		then
+			echo ERROR: This is a directory, not a file
+			exit 3
+		fi
 		cat "$path"
 		;;
 	write)
