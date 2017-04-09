@@ -85,7 +85,7 @@ case $cmd in
 			echo ERROR: Not a directory or path doesn\'t exist
 			exit 3
 		fi
-		ls -a "$path"
+		ls -Fa --group-directories-first "$path"
 		;;
 	isdir)
 		if [ -d "$path" ]
