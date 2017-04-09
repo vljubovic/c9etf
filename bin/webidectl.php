@@ -103,7 +103,12 @@ switch($action) {
 
 	// Just stop node
 	case "stop-node":
-		stop_node($username, false); // Force all logout operations, even if we list user as not logged in
+		stop_node($username, false);
+		break;
+
+	// Move user to another server
+	case "kick-user":
+		kick_user($username);
 		break;
 
 	// Remove user from system
@@ -1279,6 +1284,46 @@ function verify_user($username) {
 	else if ($is_control_node) {
 		run_on($svn_node_addr, "$conf_base_path/bin/webidectl verify-user " . $userdata['esa']);
 	}
+}
+
+
+function kick_user($username) {
+	global $conf_nodes, $users, $conf_base_path;
+
+	$best_node = ""; $best_value = 0;
+	foreach($conf_nodes as $node) {
+		if (!in_array("compute", $node['type'])) continue;
+		if ($node['address'] == $users[$username]['server']) continue;
+		
+		if (is_local($node['address']))
+			$stats = server_stats();
+		else
+			$stats = server_stats($node['name']);
+		if (is_local($node['address'])) $stats[1] += 2000000;
+		//if ($node['name'] == "c9prim") $stats[1] += 5000000;
+		//if ($node['name'] == "c9sec") $stats[1] += 2000000;
+		
+		// Skip nodes without minimum level of resources
+		if (!check_limits($stats, false)) {
+			print "Node ".$node['address']." fails limits\n";
+			continue;
+		}
+
+		$value = $stats[1]; // memory
+		print "Node ".$node['address']." value $value\n";
+		
+		if ($best_node == "" || $best_value > $value) {
+			$best_node = $node['address'];
+			$best_value = $value;
+		}
+	}
+	
+	print "Best node is $best_node - go there!\n";
+	
+	$users[$username]['server'] = $best_node;
+	
+	write_files();
+	write_nginx_config();
 }
 
 
