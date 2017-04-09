@@ -122,7 +122,7 @@ $conf_zamger = false;
 // Install.php configuration
 // =========================================
 
-$cloud9_git_url = "https://github.com/vljubovic/core";
+$cloud9_git_url = "https://github.com/c9/core";
 $buildservice_git_url = "https://github.com/etf-sarajevo/buildservice";
 
 

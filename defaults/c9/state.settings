@@ -32,9 +32,9 @@
                             "width": 0,
                             "height": 0,
                             "config": {
-                                "runner": "C (simple)",
+                                "runner": "C",
                                 "command": "hello.c",
-                                "debug": true,
+                                "debug": false,
                                 "name": ""
                             }
                         }

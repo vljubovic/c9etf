@@ -3,6 +3,27 @@
 require("lib/config.php");
 
 
+// CONTINUE STAGE OF INSTALLATION
+
+if ($argc > 2 && $argv[1] == "continue") {
+	echo "Continuing installation of C9@ETF WebIDE...\n";
+
+	// PERMISSIONS SETUP
+	
+	// Files that have to be fixed permissions to 644
+	$user_readable = array("c9fork/build/standalone/skin/default/dark.css");
+	foreach($user_readable as $path) {
+		`chmod 644 $conf_base_path/$path`;
+	}
+	
+	
+	echo "\n\nInstallation of C9@ETF WebIDE is finished!\n";
+	echo "You can now create some users using webidectl\n";
+	exit;
+}
+
+echo "Start installation of C9@ETF WebIDE...\n";
+
 // Create c9 user
 `groupadd $conf_c9_group`;
 `useradd $conf_c9_user -g $conf_c9_group -m`;
@@ -13,7 +34,7 @@ require("lib/config.php");
 // PERMISSIONS SETUP
 
 // Create some directories (git doesn't permit empty directories)
-$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice", "localusers", "htpasswd");
+$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice", "localusers", "htpasswd", "defaults/c9/plugins", "defaults/c9/plugins/_", "defaults/c9/managed", "defaults/c9/managed/plugins", "defaults/c9/dev", "defaults/c9/dev/plugins");
 foreach($directories as $dir) {
 	`mkdir $conf_base_path/$dir`;
 	`chmod 755 $conf_base_path/$dir`;
@@ -83,6 +104,17 @@ echo "Downloading Buildservice\n";
 `echo www-data ALL=NOPASSWD: WEBIDECTL >> /etc/sudoers`;
 `echo www-data ALL=NOPASSWD: USERSTATS >> /etc/sudoers`;
 `echo www-data ALL=NOPASSWD: WSACCESS >> /etc/sudoers`;
+
+
+// Apply patches
+`cd $conf_base_path/c9fork; patch -p1 ../patches/relative_paths.diff`;
+
+// Done
+echo "\n\nDone!\nCloud9 instance is prepared for installation. Now you need to:\n";
+echo "1. Start Cloud9 as \"c9\" user.\n";
+echo "2. Complete the Setup wizard using your web browser.\n";
+echo "3. Come back here and type \"sudo php install.php continue\".\n";
+
 
 
 ?>
