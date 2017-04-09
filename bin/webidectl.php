@@ -953,6 +953,12 @@ function activate_user($username, $password) {
 			}
 		}
 		
+		if ($best_node == "") {
+			print "ERROR: No viable node found.\n";
+			debug_log ("no viable node for $username");
+			return;
+		}
+		
 		print "Best node $best_node value $best_value\n";
 		file_put_contents("$conf_base_path/log/" . $userdata['efn'], "\n\n=====================\nStarting webide at: ".date("d.m.Y H:i:s")."\n\n", FILE_APPEND);
 		$users[$username]['server'] = $best_node;
@@ -966,7 +972,15 @@ function activate_user($username, $password) {
 			$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
 			
 			// We can't allow nginx configuration to be invalid, ever
-			if (intval($port) == 0) $port = 1; else $port = intval($port);
+			$port = intval($port);
+			while (intval($port) == 0) {
+				run_on($best_node, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
+				bfl_unlock();
+				sleep(5);
+				bfl_lock();
+				read_files();
+				$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
+			}
 			print "Port at $best_node is $port\n";
 			$users[$username]['port'] = $port;
 			if ($conf_ssh_tunneling) {
