@@ -551,6 +551,7 @@ switch($action) {
 				} else {
 					$head=exec("svn info \"$path\" | grep \"Revision\" | cut -d \" \" -f 2");
 					run_as($username, "svn merge -r$head:$revision \"$path\"");
+					run_as($username, "svn ci -m svnrestore \"$path\"");
 				}
 			}
 		}
