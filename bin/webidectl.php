@@ -74,16 +74,14 @@ switch($action) {
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {
-				debug_log ("already logged in $username");
+				debug_log ("already logged in $username (".$users[$username]["server"]." ".$users[$username]["port"].")");
 				print $users[$username]["port"]; // Already logged in, print port
 			} else if ($users[$username]["status"] == "inactive") {
 				activate_user($username, $password);
 			}
 		}
 		else {
-			// If old workspace exists, we will migrate
-			if (!file_exists($conf_home_path . "/c9/workspace/" . $userdata['efn']))
-				create_user($username, $password);
+			create_user($username, $password);
 			activate_user($username, $password);
 		}
 		break;
