@@ -23,7 +23,7 @@
 
 	<p><i><big><b>Q:</b> Prilikom otvaranja stranice neprekidno iskače prozor za unos lozinke</big></i></p>
 	<p><b>A:</b> Preglednik bi trebalo da memoriše lozinku kada se prvi put unese. Ako se to nije desilo, mogući razlozi su:<br>
-	- Ovaj problem se zna često dešavati kada više korisnika koristi isti računar. Koristite vlastiti računar. Ako ste nekome posudili računar radi konektovanja na c9, pobrišite historijske podatke (memorisane lozinke i sl.) i trebalo bi da radi poslije toga. U labu je dovoljno napraviti restart operativnog sistema da se lozinka pobriše. Ako više korisnika redovno rijeli računar, napravite odvojene korisničke račune ili barem koristite različite preglednike.<br>
+	- Ovaj problem se zna često dešavati kada više korisnika koristi isti računar. Koristite vlastiti računar. Ako ste nekome posudili računar radi konektovanja na c9, pobrišite historijske podatke (memorisane lozinke i sl.) i trebalo bi da radi poslije toga. U labu je dovoljno napraviti restart operativnog sistema da se lozinka pobriše. Ako više korisnika redovno dijeli računar, napravite odvojene korisničke račune ili barem koristite različite preglednike.<br>
 	- Pobrinite se da ne koristite "Privacy mode" odnosno "Incognito mode".<br>
 	- Provjerite da u opcijama vašeg preglednika nije isključena opcija za memorisanje lozinki na stranicama.</p>
 	<p>&nbsp;</p>
@@ -39,6 +39,11 @@
 	<p>Ako ni to ne pomogne idite na reset konfiguracije (sljedeće pitanje).</p>
 	<p>&nbsp;</p>
 
+	<p><i><big><b>Q:</b> U stablu <i>workspace</i> pokazuju se neke suvišne datoteke i folderi čije ime počinje tačkom (kao na slici).</big></i></p>
+	<p><img src="static/images/content/show_hidden.png" width="258" height="309"></p>
+	<p><b>A:</b> Kliknite na ikonu sa zupčanikom, na slici označenu crvenom strelicom. Zatim pronađite u meniju opciju Show Hidden Files i isključite je.</p>
+	<p>&nbsp;</p>
+
 	<p><i><big><b>Q:</b> Kada probam otvoriti C9 dobijem prozor za ponovnu instalaciju kao na slici ispod.</big></i></p>
 	<p><img src="static/images/content/install.png" width="680" height="412"></p>
 	<p><b>A:</b> Zamolite tutora da uradi <b>reset konfiguracije</b>. To je jedna od opcija koje tutori imaju u admin panelu. Najprije uradite logout, pa neka tutor uradi reset konfiguracije, pa onda opet login. To ne mora biti vaš tutor, bilo ko od korisnika sa admin privilegijama može resetovati konfiguraciju nekog drugog korisnika jer je to generalno neškodljiva operacija (jedino što izgubite su neke prilagodbe koje ste eventualno radili u postavkama).</p>
@@ -52,7 +57,7 @@
 	
 	<p><i><big><b>Q:</b> Kada uspijem ući u okruženje ono je neupotrebljivo, a dobijam grešku kao na slici.</big></i></p>
 	<p><img src="static/images/content/svn-fifo.png"><p>
-	<p>U vašem radnom prostoru nalazi se određeni broj skrivenih (Hidden) fajlova. Ovi fajlovi su skriveni s razlogom - ne biste ih trebali dirati ako ne razumijete o čemu je riječ! Jedan od tih fajlova zove se .svn.fifo i njegovim otvaranjem okruženje postaje privremeno neupotrebljivo jer je to poseban fajl tipa FIFO koji se ne može čitati na uobičajen način, a iz razloga prava pristupa mora nalaziti u vašem folderu. Problem se rješava resetom konfiguracije.</p>
+	<p><b>A:</b> U vašem radnom prostoru nalazi se određeni broj skrivenih (Hidden) fajlova. Ovi fajlovi su skriveni s razlogom - ne biste ih trebali dirati ako ne razumijete o čemu je riječ! Jedan od tih fajlova zove se .svn.fifo i njegovim otvaranjem okruženje postaje privremeno neupotrebljivo jer je to <a href="http://man7.org/linux/man-pages/man7/fifo.7.html" target="_blank">poseban fajl tipa FIFO</a> (poznat još i kao <a href="https://en.wikipedia.org/wiki/Named_pipe" target="_blank">named pipe</a>) koji se ne može čitati na uobičajen način, a iz razloga prava pristupa mora nalaziti u vašem folderu. Problem se rješava resetom konfiguracije.</p>
 	<p>&nbsp;</p>
 	
 	<p><i><big><b>Q:</b> Ne mogu da pošaljem zadaću kroz C9, dobijam poruku da &quot;Trenutno izabrani projekat nije zadaća&quot;.</big></i></p>
@@ -96,6 +101,12 @@
 	<p><b>A:</b> Ovo znači da je testni server nedostupan. Kako bi se rasteretio glavni c9 server testiranje programa se vrši na drugom serveru (testnom serveru). No ako je on isključen onda se programi ne mogu testirati. Pokušaćemo osposobiti testni server u najkraćem roku ali imajte na umu da testiranje u realnom vremenu nije zagarantovano.</p>
 	<p>&nbsp;</p>
 	
+	<p><i><big><b>Q:</b> Debugger se stalno prekida sa porukom sličnom onoj ispod</big></i></p>
+	<p><img src="static/images/content/cant_open_vector.png" width="514" height="158"></p>
+	<p><b>A:</b> Obratite pažnju na razliku između opcija <b>Step Over (F10)</b> i <b>Step Into (F11)</b>. Ako debugger u svom koračanju kroz kod naiđe na poziv funkcije ili metode klase (što uključuje i konstruktor, pa tako npr. i deklaracija vektora je konstruktor), operacija Step Into će &quot;ući&quot; u kod te funkcije, a Step Over će je samo izvršiti i nastaviti dalje na sljedeću liniju ispod linije u kojoj je poziv funkcije. No ako je u pitanju bibliotečna funkcija ili bibliotečna klasa kao što je klasa <b>vector</b>, debugger ne može ući u njen kod. To je značenje greške iznad. Jednostavno u toj liniji nemojte kliknuti na Step Into niti pritisnuti tipku F11, nego kliknite na ikonicu lijevo od nje koja se zove Step Over kao što je ilustrovano na slici ispod, odnosno pritisnite tipku F10.</p>
+	<p><img src="static/images/content/step_over.png" width="173" height="93"></p>
+	<p>&nbsp;</p>
 	
+	<p><small><i>Last update: 23. 3. 2017. 19:30</i></small></p>
 </body>
 </html>
