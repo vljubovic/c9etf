@@ -925,7 +925,7 @@ function activate_user($username, $password) {
 		if ($is_svn_node)
 			syncsvn($username);
 		else
-			run_on($svn_node_addr, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
+			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl login " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 		
 		// Find the compute node to run this on
 		$best_node = ""; $best_value = 0;
@@ -935,7 +935,7 @@ function activate_user($username, $password) {
 			if (is_local($node['address']))
 				$stats = server_stats();
 			else
-				$stats = explode(" ", run_on($node['address'], "$conf_base_path/bin/webidectl server-stats"));
+				$stats = server_stats($node['name']);
 			if (is_local($node['address'])) $stats[1] += 1000000;
 			
 			// Skip nodes without minimum level of resources
@@ -1003,6 +1003,7 @@ function activate_user($username, $password) {
 			$users[$username]['port'] = $port;
 			start_node($username);
 		}
+		debug_log ("activate_user $username $port");
 		write_files();
 	}
 	
@@ -1080,6 +1081,8 @@ function create_user($username, $password) {
 	write_files();
 }
 
+// The philosophy is that deactivate can be called on user who is marked inactive, 
+// to stop whatever running services etc. for this user, except on svn node
 function deactivate_user($username) {
 	global $users, $is_control_node, $is_compute_node, $conf_base_path, $is_svn_node, $svn_node_addr, $conf_svn_problems_log, $conf_ssh_tunneling;
 	
@@ -1088,6 +1091,7 @@ function deactivate_user($username) {
 		if ($users[$username]['status'] == "inactive") return;
 	
 	$userdata = setup_paths($username);
+	debug_log ("deactivate_user $username");
 	
 	// If this is a simple compute node, just kill nodejs
 	if ($is_compute_node && !$is_control_node) {
@@ -1100,7 +1104,6 @@ function deactivate_user($username) {
 	}
 		
 	else if ($is_control_node) {
-		debug_log ("deactivate_user $username");
 		
 		// Update logout file
 		$script = "date > " . $userdata['workspace'] . "/.logout";
@@ -1119,7 +1122,7 @@ function deactivate_user($username) {
 		if (is_local($server) || empty($server))
 			stop_node($username, false);
 		else {
-			run_on($server, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
+			proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 			if ($conf_ssh_tunneling) {
 				foreach (ps_ax("localhost") as $process) {
 					if (strstr($process['cmd'], "ssh -N -L $port"))
@@ -1128,7 +1131,7 @@ function deactivate_user($username) {
 			}
 		}
 		if (!$is_svn_node)
-			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . "\" 2>&1 &", array(), $foo));
+			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 	}
 	
 	if ($is_svn_node) {
