@@ -12,61 +12,9 @@ session_start();
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<link rel="stylesheet" href="static/css/admin.css">
 	<link rel="stylesheet" href="static/css/admin-log.css">
+	<link rel="stylesheet" href="static/css/phpwebide.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-	<script>
-		function confirmation(action, user) {
-			return confirm('Are you sure that you want to perform operation\n'+action+'\non user\n'+user);
-		}
-	
-		// Message popup
-		function showMsg(msg) {
-			var div=document.getElementById('msgDisplay');
-			div.style.left = (window.innerWidth - div.style.width) / 2 + "px";
-			div.style.visibility = "visible";
-			div.innerHTML = msg;
-		}
-		
-		function hideMsg() {
-			var div=document.getElementById('msgDisplay');
-			div.style.visibility = "hidden";
-		}
-		
-		// Progress bar
-		function showProgress(msg) {
-			var progwin = document.getElementById('progressWindow');
-			var doc = document.documentElement;
-			var scrollOffset = (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
-			var newtop = window.innerHeight/2 - progwin.clientHeight/2 + scrollOffset;
-			var newleft = window.innerWidth/2 - progwin.clientWidth/2;
-			
-			console.log("offset "+doc.scrollTop);
-			console.log(newtop);
-			console.log(progwin);
-			progwin.style.visibility = "visible";
-			progwin.style.top = "" + newtop + "px";
-			progwin.style.left = "" + newleft + "px";
-			console.log(newtop);
-			console.log(progwin);
-			console.log(progwin.style.top);
-			console.log(progwin.style.left);
-			
-			var progmsg = document.getElementById('progressBarMsg');
-			progmsg.innerHTML = msg;
-			
-			updateProgress(0);
-		}
-		function hideProgress() {
-			var progwin = document.getElementById('progressWindow');
-			progwin.style.visibility = "hidden";
-		}
-		function updateProgress(percent) {
-			var progbar = document.getElementById('myBar');
-			var proglabel = document.getElementById('progressBarLabel');
-			progbar.style.width = "" + percent + "%";
-			proglabel.innerHTML = percent * 1  + '%';
-		}
-	</script>
-
+	<script src="static/js/tools.js" type="text/javascript" charset="utf-8"></script>
 </head>
 
 
@@ -104,9 +52,7 @@ require_once("admin/notices.php");
 require_once("assignment/table.php");
 require_once("assignment/files.php");
 
-require_once("phpwebide/tree.php");
-require_once("phpwebide/toolbar.php");
-require_once("phpwebide/editor.php");
+require_once("phpwebide/phpwebide.php");
 
 require_once("zamger/status_na_predmetu.php");
 
@@ -289,7 +235,8 @@ if ($logged_in) {
 			$path = $_REQUEST['path'];
 			admin_log("user $user, path $path");
 		} else {
-			$path = "";
+			$path = "TP";
+			$_REQUEST['path'] = "TP";
 			admin_log("user $user");
 		}
 		$backlink = "";
@@ -306,83 +253,9 @@ if ($logged_in) {
 		
 		<h1><?=$user_realname?></h1>
 		<p>&nbsp;</p>
-		
-		<script>
-		function showhide(id) {
-			var o = document.getElementById(id);
-			if (o.style.display=="block"){
-				o.style.display="none";
-			} else {
-				o.style.display="block";
-			}
-		}
-		function tabshow(tabname, clicktab, username, path) {
-			disptab = document.getElementById(tabname);
-			if (disptab.style.display == "block") {
-				clicktab.parentNode.className = "";
-				disptab.style.display = "none";
-				disptab.parentNode.style.height = "0px";
-				return false;
-			}
-			
-			if (disptab.textContent == "Please wait...") {
-				var xmlhttp = new XMLHttpRequest();
-				var url = "admin_show_module.php?module="+tabname+"&user="+username+"&path="+path;
-				xmlhttp.onreadystatechange = function() {
-					if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-						disptab.innerHTML = xmlhttp.responseText;
-					}
-				}
-				xmlhttp.open("GET", url, true);
-				xmlhttp.send();
-			}
-			
-			clicktab.parentNode.className = "current";
-			disptab.style.display = "block";
-			disptab.parentNode.style.height = "600px";
-			
-			sibling = clicktab.parentNode.parentNode.firstChild;
-			for (; sibling; sibling = sibling.nextSibling) {
-				if (sibling.nodeType == 1 && sibling != clicktab.parentNode && sibling.className == "current")
-					sibling.className = "";
-			}
-			
-			sibling = disptab.parentNode.firstChild;
-			for (; sibling; sibling = sibling.nextSibling) {
-				if (sibling.nodeType == 1 && sibling != disptab && sibling.style.display == "block")
-					sibling.style.display = "none";
-			}
-			return false;
-		}
-		</script>
-		
 		<?php
 		
-		pwi_tree($user, $path);
-		pwi_toolbar($user, $path);
-		pwi_editor($user, $path, false);
-		
-		?>
-		
-		<div id="tabs-container">
-			<ul class="tabs-menu">
-				<li><a href="#activity" onclick="return tabshow('activity', this, '<?=urlencode($user)?>', '<?=urlencode($path)?>');">User activity</a></li>
-				<li><a href="#SVN" onclick="return tabshow('svn', this, '<?=urlencode($user)?>', '<?=urlencode($path)?>');">SVN</a></li>
-				<li><a href="#Git" onclick="return tabshow('git', this, '<?=urlencode($user)?>', '<?=urlencode($path)?>');">Git</a></li>
-				<li><a href="#Deleted" onclick="return tabshow('deleted', this, '<?=urlencode($user)?>', '<?=urlencode($path)?>');">Deleted files</a></li>
-			</ul>
-			<div style="clear: both;"></div>
-			<div class="tab">
-				<div id="activity" class="tab-content"><center><img src="static/images/busy-light-84x84.gif" width="84" height="84" align="center">Please wait...</center></div>
-				<div id="svn" class="tab-content"><center><img src="static/images/busy-light-84x84.gif" width="84" height="84" align="center">Please wait...</center></div>
-				<div id="git" class="tab-content"><center><img src="static/images/busy-light-84x84.gif" width="84" height="84" align="center">Please wait...</center></div>
-				<div id="deleted" class="tab-content"><center><img src="static/images/busy-light-84x84.gif" width="84" height="84" align="center">Please wait...</center></div>
-			</div>
-		</div>
-		<div style="clear: both;"></div>
-		<?php
-		
-		admin_user_table(-1, array($user => $user_realname), $backlink);
+		phpwebide($user, $path, false, true);
 	}
 	
 	// Send message to all users
@@ -452,7 +325,7 @@ if ($logged_in) {
 		
 		if ($group > 0) {
 			?>
-			<p><a href="admin.php?action=refresh-stats-group&amp;group=<?=$grupa?>&amp;return=<?=$link_here?>">
+			<p><a href="admin.php?action=refresh-stats-group&amp;group=<?=$group?>&amp;return=<?=$link_here?>">
 				<i class="fa fa-refresh"></i> Update stats for group
 			</a></p>
 			<?php
@@ -463,7 +336,7 @@ if ($logged_in) {
 		admin_user_table($group, $members, $link_here);
 	}
 	
-	// Aktivni
+	// Currently active users
 	else if (isset($_REQUEST['active'])) {
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
@@ -564,7 +437,7 @@ if ($logged_in) {
 			return 0;
 		}
 		
-		// Spisak grupa
+		// List of groups
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
 		<h1><?=$course_data['name']?></h1>
@@ -694,7 +567,7 @@ echo "It spent " . rutime($ru, $rustart, "stime") .
 	
 	?>
 
-	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2016.</div>
+	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2017.</div>
 	</body></html>
 	<?php
 	
@@ -732,7 +605,7 @@ echo "It spent " . rutime($ru, $rustart, "stime") .
     </div>
 
   </div>
-  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2016.</div>
+  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2017.</div>
 </body>
 </html>
 
