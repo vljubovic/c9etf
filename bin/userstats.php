@@ -30,7 +30,7 @@ $username = $argv[1];
 	debug_log("read stats");
 read_stats($username);
 clean_stats();
-	debug_log("azuriraj_statistiku");
+	debug_log("update_stats");
 update_stats($username);
 	debug_log("ksort");
 ksort($stats);
@@ -132,7 +132,7 @@ function clean_stats() {
 					unset($lastpos['del']);
 				}
 				
-				if (array_key_exists('diff', $value['events'][$i])) {
+				if (array_key_exists($i, $value['events']) && array_key_exists('diff', $value['events'][$i])) {
 					$txt = "";
 					if (array_key_exists('add_lines', $value['events'][$i]['diff']))
 						foreach ($value['events'][$i]['diff']['add_lines'] as $line)
@@ -585,8 +585,10 @@ function update_stats($username) {
 
 				$ukupno_testova = count($testovi['test_specifications']);
 				$uspjesnih_testova = 0;
-				foreach ($rezultati_testova['test_results'] as $test) {
-					if ($test['status'] == 1) $uspjesnih_testova++;
+				if (is_array($rezultati_testova) && array_key_exists("test_results", $rezultati_testova) && is_array($rezultati_testova['test_results'])) {
+					foreach ($rezultati_testova['test_results'] as $test) {
+						if ($test['status'] == 1) $uspjesnih_testova++;
+					}
 				}
 				$stats[$filepath]['last_test_results'] = "$uspjesnih_testova/$ukupno_testova";
 				
