@@ -105,6 +105,16 @@ echo "Downloading Buildservice\n";
 `echo www-data ALL=NOPASSWD: USERSTATS >> /etc/sudoers`;
 `echo www-data ALL=NOPASSWD: WSACCESS >> /etc/sudoers`;
 
+// Make a backup of some file that randomly gets deleted (!?)
+`mkdir $conf_base_path/c9util`;
+`cp $conf_base_path/c9fork/node_modules/engine.io-client/engine.io.js $conf_base_path/c9util`;
+
+// Add cron tasks
+`echo 45 *     * * *   root    /usr/local/webide/bin/webidectl culling >> /etc/crontab`;
+`echo 20 3     * * *   root    /usr/local/webide/lib/nightly_tasks >> /etc/crontab`;
+ // This is stupid...
+`echo 0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/node_modules/engine.io-client >> /etc/crontab`;
+
 
 // Apply patches
 `cd $conf_base_path/c9fork; patch -p1 ../patches/relative_paths.diff`;
