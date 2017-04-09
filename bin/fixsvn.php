@@ -62,10 +62,21 @@ function fixsvn($command) {
 		if ($debug) print "$line\n";
 		$matches = array();
 		
+		// Messages that mean everything is ok
 		if (strstr($line, "Committed revision")) {
 			$ok = true;
 			break;
 		}
+		
+		// Root dir itself isn't updated
+		else if (strstr($line, "Directory '/' is out of date")) {
+			fixsvn("svn update .");
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		
+		// Call svn cleanup
 		else if (strstr($line, "Previous operation has not finished")) {
 			fixsvn("svn cleanup");
 			fixsvn($command);
@@ -78,6 +89,8 @@ function fixsvn($command) {
 			$ok = true;
 			break;
 		}
+		
+		// Resolve conflicts
 		else if (preg_match("/File '(.*?)' is out of date/", $line, $matches) ||
 			preg_match("/Base checksum mismatch on '(.*?)'/", $line, $matches)) {
 			$filename = basename($matches[1]);
@@ -103,7 +116,7 @@ function fixsvn($command) {
 			break;
 		}
 		else if (preg_match("/Aborting commit: '(.*?)' remains in conflict/", $line, $matches) ||
-		preg_match("/Tree conflict can only be resolved to 'working' state: '(.*?)' not resolved/", $line, $matches)) {
+		preg_match("/Tree conflict can only be resolved to .*? state: '(.*?)' not resolved/", $line, $matches)) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
 			fixsvn("svn resolve --accept working \"$wsname\"");
@@ -111,19 +124,18 @@ function fixsvn($command) {
 			$ok = true;
 			break;
 		}
-		else if (preg_match("/Tree conflict can only be resolved to .*? state: '(.*?)' not resolved/", $line, $matches)) {
-			$filename = basename($matches[1]);
-			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
-			fixsvn("svn resolve --accept working \"$wsname\"");
-			fixsvn($command);
-			$ok = true;
-			break;
-		}
+		
+		// Missing files
 		else if (preg_match("/Can't change perms of file '(.*?)': No such file or directory/", $line, $matches) ||
 		preg_match("/'(.*?)' is scheduled for addition, but is missing/", $line, $matches)) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
-			run_as($username, "cd " . $userdata['workspace'] . "; touch \"$wsname\"");
+			$response = run_as($username, "cd " . $userdata['workspace'] . "; touch \"$wsname\"  2>&1");
+			if (strstr($response, "No such file or directory")) {
+				$dir = dirname($wsname);
+				run_as($username, "cd " . $userdata['workspace'] . "; mkdir -p \"$dir\"");
+				run_as($username, "cd " . $userdata['workspace'] . "; touch \"$wsname\"");
+			}
 			fixsvn($command);
 			$ok = true;
 			break;
@@ -143,12 +155,12 @@ function fixsvn($command) {
 					// Directory not empty
 					// Copy to tmp, commit file, readd
 					`rm -fr /tmp/$filename`;
-					run_as($username, "mv \"".$matches[1]."\" /tmp/$filename");
+					run_as($username, "mv \"".$matches[1]."\" \"/tmp/$filename\"");
 					run_as($username, "cd " . $userdata['workspace'] . "; touch \"$wsname\"");
 					fixsvn("svn ci -m fixsvn \"$wsname\"");
 					fixsvn("svn remove \"$wsname\"");
 					fixsvn("svn ci -m fixsvn \"$wsname\"");
-					run_as($username, "mv /tmp/$filename \"".$matches[1]."\"");
+					run_as($username, "mv \"/tmp/$filename\" \"".$matches[1]."\"");
 					fixsvn("svn add \"$wsname\"");
 					fixsvn("svn ci -m fixsvn \"$wsname\"");
 				}
@@ -173,6 +185,32 @@ function fixsvn($command) {
 			}
 			break;
 		}
+		
+		// Wrong permissions
+		else if (preg_match("/Can't move '.*?' to '(.*?)': Permission denied/", $line, $matches) ||
+			preg_match("/Can't open file '(.*?)': Permission denied/", $line, $matches)) {
+			$path = dirname($matches[1]);
+			exec("chown -R $username:$conf_c9_group ".escapeshellarg($path));
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		else if (preg_match("/Can't check path '(.*?)': Permission denied/", $line, $matches)) {
+			$path = dirname($matches[1]);
+			exec("chmod 755 ".escapeshellarg($path));
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		else if (preg_match("/Can't read directory '(.*?)': Partial results are valid/", $line, $matches)) {
+			$path = $matches[1];
+			exec("chmod 755 ".escapeshellarg($path));
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		
+		// Illegal filenames
 		else if (preg_match("/Invalid control character '.*?' in path '(.*?)'/", $line, $matches) ||
 			preg_match("/Error converting entry in directory '(.*?)' to/", $line, $matches) ||
 			preg_match("/'(.*?)': a peg revision is not allowed here/", $line, $matches)) {
@@ -195,25 +233,38 @@ function fixsvn($command) {
 			$ok = true;
 			break;
 		}
-		else if (preg_match("/Can't move '.*?' to '(.*?)': Permission denied/", $line, $matches) ||
-			preg_match("/Can't open file '(.*?)': Permission denied/", $line, $matches)) {
-			$path = dirname($matches[1]);
-			exec("chown -R $username:$conf_c9_group ".escapeshellarg($path));
+		
+		// SVN DB corruption
+		else if (preg_match("/Can't install '(.*?)' from pristine store, because no checksum is recorded for this file/", $line, $matches)) {
+			$filename = basename($matches[1]);
+			fixsvn("sqlite3 .svn/wc.db \"delete from work_queue\"");
 			fixsvn($command);
 			$ok = true;
 			break;
 		}
-		else if (strstr($line, "Directory '/' is out of date")) {
-			fixsvn("svn update .");
+		
+		else if (preg_match("/Pristine text '(.*?)' not present/", $line, $matches)) {
+			$pristine = basename($matches[1]);
+			file_put_contents("/tmp/fixsvn_script.sh", "cd " . $userdata['workspace'] . "; sqlite3 .svn/wc.db 'select local_relpath from nodes where checksum=\"\$sha1\$" . $pristine . "\";'");
+			$filepath = trim(run_as($username, "source /tmp/fixsvn_script.sh"));
+			$filename = basename($filepath);
+			
+			file_put_contents("/tmp/fixsvn_script.sh", "cd " . $userdata['workspace'] . "; sqlite3 .svn/wc.db 'update nodes set presence='not-present' where checksum=\"\$sha1\$" . $pristine . "\";'");
+
+			run_as($username, "mv \"$filepath\" \"/tmp/$filename\"");
+			fixsvn("svn cleanup");
+			fixsvn("svn update --force");
+			run_as($username, "mv \"/tmp/$filename\" \"$filepath\"");
 			fixsvn($command);
 			$ok = true;
 			break;
 		}
+		
+		// Something is being fixed, go on
 		else if (strstr($line, "Could not add all targets because some targets are already versioned") ||
 		strstr($line, "Could not add all targets because some targets don't exist")) {
 			$ok = true;
 		}
-		// Something is being fixed, go on
 		else if (strstr($line, "Resolved conflicted state of")) {
 			$ok = true;
 		} 
