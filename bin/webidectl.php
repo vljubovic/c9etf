@@ -522,6 +522,7 @@ switch($action) {
 			$lastfile = $conf_base_path . "/last/$username.last";
 			file_put_contents($lastfile, time());
 			chown($lastfile, $username);
+			chmod($lastfile, 0666);
 		}
 		break;
 
