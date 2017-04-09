@@ -1594,7 +1594,12 @@ function reset_config($username) {
 function kill_idle($minutes, $output, $sleep) {
 	global $users, $conf_base_path, $conf_nodes;
 
-	foreach($conf_nodes as $node) {
+	$keys = array_keys($conf_nodes);
+		shuffle($keys);
+		$conf_nodes2 = array();
+		foreach ($keys as $key)
+			$conf_nodes2[$key] = $conf_nodes[$key];
+	foreach($conf_nodes2 as $node) {
 		if (!in_array("compute", $node['type'])) continue;
 		foreach(ps_ax($node['address']) as $process) {
 			if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
@@ -1613,7 +1618,7 @@ function kill_idle($minutes, $output, $sleep) {
 				if (is_local($server))
 					stop_node($username, false);
 				else
-					run_on($server, "$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username));
+					proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username) . " &\" 2>&1 &", array(), $foo));
 				
 				if ($sleep > 0) {
 					bfl_unlock();
