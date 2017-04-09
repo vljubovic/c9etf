@@ -798,7 +798,7 @@ function activate_user($username, $password) {
 }
 
 function create_user($username, $password) {
-	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users;
+	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users, $conf_home_path;
 	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr;
 	
 	$forbidden_usernames = array('root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 'mail', 'news', 'uucp', 'proxy', 'www-data', 'backup', 'list', 'irc', 'gnats', 'nobody', 'libuuid', 'syslog', 'messagebus', 'landscape', 'sshd', 'c9test', 'c9');
@@ -814,6 +814,8 @@ function create_user($username, $password) {
 
 	// Create user on storage node
 	if ($is_storage_node) {
+		if (!file_exists($conf_home_path . "/" . substr($userdata['efn'],0,1)))
+			exec("mkdir " . $conf_home_path . "/" . substr($userdata['efn'],0,1));
 		exec("useradd -d ". $userdata['home'] . " -g $conf_c9_group -k $conf_defaults_path/home -m " . $userdata['esa']);
 		// For some reason files copied from default home aren't owned by user :(
 		exec("chown -R " . $userdata['esa'] . ":$conf_c9_group ". $userdata['home']);
