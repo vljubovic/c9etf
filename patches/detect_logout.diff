@@ -1,0 +1,23 @@
+diff -Naur c9upstream/plugins/c9.core/http-xhr.js c9fork/plugins/c9.core/http-xhr.js
+--- c9upstream/plugins/c9.core/http-xhr.js	2017-04-09 19:19:24.547925065 +0200
++++ c9fork/plugins/c9.core/http-xhr.js	2017-04-10 11:27:48.429204747 +0200
+@@ -109,6 +109,12 @@
+                     $reqHeaders: headers // TODO remove when bug in readFileWithMetadata is fixed 
+                 };
+                 
++                if (res.body.indexOf("<title>ETF WebIDE</title>") > -1) {
++                    alert("Odjavljeni ste sa sistema. Molimo prijavite se ponovo.\n(Vaši podaci NISU izgubljeni.)");
++                    location.href='/';
++                    return 0;
++                }
++                
+                 var data = xhr.responseText;
+                 var contentType = options.overrideMimeType || res.headers["content-type"] || "";
+                 if (contentType.indexOf("application/json") === 0) {
+@@ -269,4 +275,4 @@
+             http: plugin
+         });
+     }
+-});
+\ No newline at end of file
++});

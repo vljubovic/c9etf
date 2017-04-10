@@ -1,0 +1,37 @@
+diff -Naur c9upstream/plugins/c9.core/settings.js c9fork/plugins/c9.core/settings.js
+--- c9upstream/plugins/c9.core/settings.js	2017-04-09 19:19:24.547925065 +0200
++++ c9fork/plugins/c9.core/settings.js	2017-04-10 11:56:46.445896882 +0200
+@@ -31,7 +31,8 @@
+         // We'll have a lot of listeners, so upping the limit
+         emit.setMaxListeners(10000);
+         
+-        var resetSettings = options.reset || c9.location.match(/reset=([\w\|]*)/) && RegExp.$1;
++        //var resetSettings = options.reset || c9.location.match(/reset=([\w\|]*)/) && RegExp.$1;
++        var resetSettings = false;
+         var develMode = c9.location.indexOf("devel=1") > -1;
+         var debugMode = c9.location.indexOf("debug=2") > -1; 
+         var testing = options.testing;
+@@ -44,9 +45,9 @@
+         var TEMPLATE = options.template || { user: {}, project: {}, state: {}};
+         var INTERVAL = 1000;
+         var PATH = {
+-            "project": c9.toInternalPath(options.projectConfigPath || "/.c9") + "/project.settings",
+-            "user": c9.toInternalPath(options.userConfigPath || "~/.c9") + "/user.settings",
+-            "state": c9.toInternalPath(options.stateConfigFilePath || (options.stateConfigPath || "/.c9") + "/state.settings")
++            "project" : c9.toInternalPath(options.projectConfigPath || "/.c9") + "/project.settings",
++            "user"    : c9.toInternalPath(options.userConfigPath || "/.c9") + "/user.settings",
++            "state"   : c9.toInternalPath(options.stateConfigFilePath || (options.stateConfigPath || "/.c9") + "/state.settings")
+         };
+         var KEYS = Object.keys(PATH);
+         
+@@ -199,9 +200,7 @@
+                             return; // We're done
+                     }
+                     
+-                    var addPid = type !== "user" 
+-                        ? "/" + info.getWorkspace().id 
+-                        : "";
++                    var addPid = "/" + info.getWorkspace().id;
+                     
+                     // Save settings in persistent API
+                     api.settings.put(type + addPid, {

@@ -1,0 +1,19 @@
+diff -Naur c9upstream/plugins/c9.ide.login/login.js c9fork/plugins/c9.ide.login/login.js
+--- c9upstream/plugins/c9.ide.login/login.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.login/login.js	2017-04-10 12:05:25.122109394 +0200
+@@ -146,7 +146,7 @@
+ 
+         function signout() {
+             vfsEndpoint.clearCache();
+-            auth.logout(ideBaseUrl);
++            auth.logout( '/?logout' );
+         }
+ 
+         function onReLogin() {
+@@ -198,4 +198,4 @@
+             login: plugin
+         });
+     }
+-});
+\ No newline at end of file
++});

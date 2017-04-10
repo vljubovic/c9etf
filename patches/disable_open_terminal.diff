@@ -1,0 +1,29 @@
+diff -Naur c9upstream/plugins/c9.ide.terminal/opentermhere.js c9fork/plugins/c9.ide.terminal/opentermhere.js
+--- c9upstream/plugins/c9.ide.terminal/opentermhere.js	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.terminal/opentermhere.js	2017-04-10 12:11:14.598226427 +0200
+@@ -22,6 +22,7 @@
+         function load() {
+             if (loaded) return false;
+             loaded = true;
++            return true;
+             
+             commands.addCommand({
+                 name: "opentermhere",
+@@ -85,4 +86,4 @@
+             opentermhere: plugin
+         });
+     }
+-});
+\ No newline at end of file
++});
+diff -Naur c9upstream/plugins/c9.ide.terminal/terminal.js c9fork/plugins/c9.ide.terminal/terminal.js
+--- c9upstream/plugins/c9.ide.terminal/terminal.js	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.terminal/terminal.js	2017-04-10 12:11:38.910234160 +0200
+@@ -77,6 +77,7 @@
+         ui.insertCss(require("text!./style.css"), options.staticPrefix, handle);
+         
+         handle.on("load", function() {
++            return;
+             commands.addCommand({
+                 name: "openterminal",
+                 group: "Terminal",

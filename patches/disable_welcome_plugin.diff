@@ -1,0 +1,24 @@
+diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
+--- c9upstream/configs/ide/default.js	2017-04-10 10:35:36.988429521 +0200
++++ c9fork/configs/ide/default.js	2017-04-10 10:35:20.952316488 +0200
+@@ -692,13 +692,13 @@
+                 premium: options.project.premium,
+             }
+         },
+-        {
+-            packagePath: "plugins/c9.ide.welcome/welcome",
+-            staticPrefix: staticPrefix + "/plugins/c9.ide.welcome",
+-            intro: "Welcome to Cloud9. Use this welcome screen "
+-              + "to tweak the look &amp; feel of the Cloud9 user interface. ",
+-            checkOS: true
+-        },
++        //{
++        //    packagePath: "plugins/c9.ide.welcome/welcome",
++        //    staticPrefix: staticPrefix + "/plugins/c9.ide.welcome",
++        //    intro: "Welcome to Cloud9. Use this welcome screen "
++        //      + "to tweak the look &amp; feel of the Cloud9 user interface. ",
++        //    checkOS: true
++        //},
+         {
+             packagePath: "plugins/c9.cli.bridge/bridge",
+             startBridge: options.startBridge

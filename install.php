@@ -116,8 +116,65 @@ echo "Downloading Buildservice\n";
 `echo 0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/node_modules/engine.io-client >> /etc/crontab`;
 
 
-// Apply patches
-`cd $conf_base_path/c9fork; patch -p1 ../patches/relative_paths.diff`;
+// APPLY PATCHES
+
+// Use relative paths instead of absolute (so that e.g. http://hostname/user/ redirects to 
+// http://hostname/user/ide.html and not http://hostname/ide.html)
+echo "relative_paths.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/relative_paths.diff`;
+
+// Disable "keys" plugin which is confusing and uses screen real estate
+echo "disable_keys_plugin.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/disable_keys_plugin.diff`;
+
+// Disable "welcome" screen - in future maybe patch welcome screen to our needs?
+echo "disable_welcome_plugin.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/disable_welcome_plugin.diff`;
+
+// Disable "Open terminal here" and similar options
+echo "disable_open_terminal.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/disable_open_terminal.diff`;
+
+// Additional C/C++ snippets by cyclone
+echo "c_cpp_snippets.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/c_cpp_snippets.diff`;
+
+// Display a progress bar that corresponds to actual files being loaded
+echo "progress_bar.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/progress_bar.diff`;
+
+// Retry loading a failed file instead of just die
+echo "retry_failed.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/retry_failed.diff`;
+
+// Fix tmux errors caused by many users/processes sharing the same socket for 
+// their tmux connections at the same time
+echo "tmux_socket_error.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/tmux_socket_error.diff`;
+
+// Detect when user is logged out and redirect to login page, instead of just
+// displaying "Reconnecting" forever (maybe localize?)
+echo "detect_logout.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/detect_logout.diff`;
+
+// Fix bug where user settings were reverted to default after each login
+echo "fix_forget_settings.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/fix_forget_settings.diff`;
+
+// Avoid pointless ENOENT error message for missing watch file
+echo "fix_useless_error.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/fix_useless_error.diff`;
+
+// Use our URL for logout menu action
+echo "logout_url.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/logout_url.diff`;
+
+// Use tmux binary that came with the OS and not the one compiled by Cloud9
+// improves memory sharing
+echo "use_system_tmux.diff\n";
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/use_system_tmux.diff`;
+
+
 
 // Done
 echo "\n\nDone!\nCloud9 instance is prepared for installation. Now you need to:\n";

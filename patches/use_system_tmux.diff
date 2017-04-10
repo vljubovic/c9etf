@@ -1,0 +1,12 @@
+diff -Naur c9upstream/settings/standalone.js c9fork/settings/standalone.js
+--- c9upstream/settings/standalone.js	2017-04-10 10:29:20.770836494 +0200
++++ c9fork/settings/standalone.js	2017-04-10 12:19:41.390395232 +0200
+@@ -55,7 +55,7 @@
+         testing: false,
+         platform: process.platform,
+         arch: process.arch,
+-        tmux: path.join(installPath, "bin/tmux"),
++        tmux: "tmux",
+         nakBin: path.join(__dirname, "../node_modules/nak/bin/nak"),
+         bashBin: "bash",
+         nodeBin: [path.join(installPath, win32 ? "node.exe" : "node/bin/node"), process.execPath],

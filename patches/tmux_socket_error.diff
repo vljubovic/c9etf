@@ -1,0 +1,98 @@
+diff -Naur c9upstream/node_modules/vfs-local/localfs.js c9fork/node_modules/vfs-local/localfs.js
+--- c9upstream/node_modules/vfs-local/localfs.js	2017-04-09 19:19:24.487924972 +0200
++++ c9fork/node_modules/vfs-local/localfs.js	2017-04-10 11:14:31.524959132 +0200
+@@ -1737,7 +1737,7 @@
+         if (options.getStatus) {
+             options = options.getStatus;
+             var sessionId = options.id;
+-            var args = ["-u2", "-L", tmuxName];
++            var args = ["-u2", "-L", tmuxName, "-S", options.socketPath];
+             
+             var paneFormat = {
+                 "#S"                        : "session",
+@@ -1828,7 +1828,7 @@
+             // logToFile("Kill: " + options.session);
+             
+             _execFile(TMUX, 
+-                ["-L", tmuxName, "-C", "kill-session", "-t", options.session], 
++                ["-L", tmuxName, "-S", options.socketPath, "-C", "kill-session", "-t", options.session], 
+                 function(err){
+                     if (!options.command)
+                         return callback(err, {});
+@@ -1842,7 +1842,7 @@
+                 return callback(new Error("Missing session name"));
+             
+             (function findSession(retries){
+-                _execFile(TMUX, ["-u2", "-L", tmuxName, "list-sessions"], function(err, stdout) {
++                _execFile(TMUX, ["-u2", "-L", tmuxName, "-S", options.socketPath, "list-sessions"], function(err, stdout) {
+                     if (err) stdout = ""; // This happens when the tmux server has not been started yet
+                 
+                     var re = new RegExp("^" + escapeRegExp(options.session) + ":", "m");
+@@ -1872,7 +1872,9 @@
+             if (attach) {
+                 // logToFile("Attach: " + options.session);
+                 
+-                args = ["-u2", "-L", tmuxName, "attach", "-t", options.session];
++                args = ["-u2", "-L", tmuxName];
++                if (options.socketPath) args.push("-S", options.socketPath);
++                args.push("attach", "-t", options.session);
+                 if (options.detachOthers) {
+                     // Work around https://github.com/chjj/pty.js/issues/68
+                     if (/v0\.([123456789]\..*|10\.(0|1|2[0-7]))/.test(process.version))
+@@ -1884,7 +1886,9 @@
+             else {
+                 // logToFile("New: " + options.session);
+                 
+-                args = ["-u2", "-L", tmuxName, "new", "-s", options.session];
++                args = ["-u2", "-L", tmuxName];
++                if (options.socketPath) args.push("-S", options.socketPath);
++                args.push("new", "-s", options.session);
+                 
+                 if (options.terminal) {
+                     args.push("export ISOUTPUTPANE=0;"
+@@ -2205,6 +2209,10 @@
+             var session    = sessions[name] || {};
+             sessions[name] = session;
+             if (!session.wait) session.wait = [];
++
++            if (options.socketPath) {
++                args.push("-S", options.socketPath);
++            }
+             
+             if (options.idle) {
+                 options.command = "echo '\033[2J\033[1;1H\033[01;34m[Idle]\033[0m'";
+diff -Naur c9upstream/plugins/c9.ide.terminal/tmux_connection.js c9fork/plugins/c9.ide.terminal/tmux_connection.js
+--- c9upstream/plugins/c9.ide.terminal/tmux_connection.js	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.terminal/tmux_connection.js	2017-04-10 12:13:54.470276526 +0200
+@@ -128,13 +128,15 @@
+         var cwd = session.cwd || "";
+         if (!/^~(\/|$)/.test(cwd))
+             cwd = session.root + cwd;
++        
+         var command = "";
+         var options = {
+             cwd: cwd,
+             cols: session.cols || 80,
+             rows: session.rows || 24,
+             name: "xterm-color",
+-            base: installPath && installPath.replace(/^~/, c9.home || "~")
++            base: installPath && installPath.replace(/^~/, c9.home || "~"),
++            socketPath: session.root + "/.tmux"
+         };
+         
+         // Output Mode
+@@ -310,6 +310,7 @@
+             
+             if (session.id) {
+                 proc.tmux("", {
++                    socketPath: session.root + "/.tmux",
+                     session: session.id,
+                     kill: true
+                 }, function(err) {
+@@ -337,4 +339,4 @@
+     };
+ };
+     
+-});
+\ No newline at end of file
++});
