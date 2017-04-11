@@ -10,10 +10,3 @@ diff -Naur c9upstream/plugins/c9.ide.login/login.js c9fork/plugins/c9.ide.login/
          }
  
          function onReLogin() {
-@@ -198,4 +198,4 @@
-             login: plugin
-         });
-     }
--});
-\ No newline at end of file
-+});

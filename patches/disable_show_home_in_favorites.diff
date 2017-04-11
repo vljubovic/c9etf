@@ -1,0 +1,21 @@
+diff -Naur c9upstream/plugins/c9.ide.tree/favorites.js c9fork/plugins/c9.ide.tree/favorites.js
+--- c9upstream/plugins/c9.ide.tree/favorites.js	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.tree/favorites.js	2017-04-11 09:50:19.885133973 +0200
+@@ -458,7 +458,7 @@
+                         toggleRootFS();
+                     }
+                 }), 250, plugin);
+-                var cbHome = new ui.item({
++                /*var cbHome = new ui.item({
+                     type: "check",
+                     caption: "Show Home in Favorites",
+                     write: true,
+@@ -468,7 +468,7 @@
+                         else
+                             removeFavorite(c9.toInternalPath(home));
+                     }
+-                });
++                });*/
+                 ui.insertByIndex(mnuSettings, cbHome, 260, plugin);
+                 
+                 mnuSettings.on("prop.visible", function(e) {

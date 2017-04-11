@@ -9,13 +9,6 @@ diff -Naur c9upstream/plugins/c9.ide.terminal/opentermhere.js c9fork/plugins/c9.
              
              commands.addCommand({
                  name: "opentermhere",
-@@ -85,4 +86,4 @@
-             opentermhere: plugin
-         });
-     }
--});
-\ No newline at end of file
-+});
 diff -Naur c9upstream/plugins/c9.ide.terminal/terminal.js c9fork/plugins/c9.ide.terminal/terminal.js
 --- c9upstream/plugins/c9.ide.terminal/terminal.js	2017-04-09 19:19:24.607925158 +0200
 +++ c9fork/plugins/c9.ide.terminal/terminal.js	2017-04-10 12:11:38.910234160 +0200
@@ -27,3 +20,14 @@ diff -Naur c9upstream/plugins/c9.ide.terminal/terminal.js c9fork/plugins/c9.ide.
              commands.addCommand({
                  name: "openterminal",
                  group: "Terminal",
+diff -Naur c9upstream/plugins/c9.ide.terminal/menu.xml c9fork/plugins/c9.ide.terminal/menu.xml
+--- c9upstream/plugins/c9.ide.terminal/menu.xml	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.terminal/menu.xml	2017-04-11 09:39:41.477643269 +0200
+@@ -1,7 +1,5 @@
+ <a:application xmlns:a="http://ajax.org/2005/aml">
+     <a:menu id="mnuTerminal">
+-        <a:item command="openterminal">New Terminal Tab</a:item>
+-        <a:divider />
+         <a:item command="copy">Copy</a:item>
+         <a:item command="paste">Paste</a:item>
+         <a:item command="selectall">Select All</a:item>

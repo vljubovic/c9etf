@@ -16,6 +16,7 @@ apache2-utils
 Optional:
 gdb
 gdbserver - without this debugging in C/C++ programs will just give an error
+astyle - formatting C/C++/Java programs
 sqlite3 - for debugging svn problems
 valgrind
 

@@ -42,28 +42,17 @@ diff -Naur c9upstream/plugins/c9.ide.server/views/classic-load-screen.html c9for
          
          <div class="ui-progress-bar ui-container" id="progress_bar">
              <div class="ui-progress" style="width: 7%;">
-@@ -35,4 +36,4 @@
-         
-         clearInterval(window.dotsAnim);
-     };
--</script>
-\ No newline at end of file
-+</script>
 diff -Naur c9upstream/plugins/c9.ide.server/views/flat-load-screen.html c9fork/plugins/c9.ide.server/views/flat-load-screen.html
 --- c9upstream/plugins/c9.ide.server/views/flat-load-screen.html	2017-04-09 19:19:24.607925158 +0200
 +++ c9fork/plugins/c9.ide.server/views/flat-load-screen.html	2017-04-10 10:56:05.228854905 +0200
-@@ -4,6 +4,7 @@
+@@ -4,8 +4,9 @@
          <div id="c9logo"></div>
          <div class="cool-message"></div>
          <div class="status" style="display:none"><div class="spinner"></div></div>
-+        <progress id="etf.progress" value="0" max="0"></progress>
          
          <div id="content" class="loading-progress">
++        <progress id="etf.progress" value="0" max="0"></progress>
          </div>
-@@ -89,4 +90,4 @@
-         
-         document.body.className = document.body.className.replace("loading " + loadingIde.className, "");
-     }
--</script>
-\ No newline at end of file
-+</script>
+         <div class="footer">
+             <a href="https://docs.c9.io">Documentation</a> | 
+

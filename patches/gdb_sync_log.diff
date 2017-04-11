@@ -1,0 +1,18 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:07:57.966967156 +0200
+@@ -99,10 +99,11 @@
+ var log = function() {};
+ 
+ if (DEBUG) {
+-    var log_file = fs.createWriteStream("./.gdb_proxy.log");
+     log = function(str) {
+         var args = Array.prototype.slice.call(arguments);
+-        log_file.write(args.join(" ") + "\n");
++        var log_file = fs.createWriteStream(dirname + "/.gdb_proxy.log", {flags: "a"});
++        log_file.write("" + Date.now() + " " + args.join(" ") + "\n");
++        log_file.end();
+         console.log(str);
+     };
+ }
+

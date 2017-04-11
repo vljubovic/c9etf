@@ -1,0 +1,12 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:24:25.250670769 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:24:15.902671340 +0200
+@@ -543,6 +543,8 @@
+         args = args.replace(/\\n\s*$/, "");
+         args = args.replace(/=(?=["|{|\[])/g, '!:');
+         args = args.replace(/([a-zA-Z0-9-_]*)!:/g, "\"$1\":");
++        /* Octal numbers in strings (e.g. \381) must be double escaped */
++        args = args.replace(/([^\\])\\(\d)/g, "$1\\\\$2");
+ 
+         /* Remove array labels */
+         args = this._removeArrayLabels(args);

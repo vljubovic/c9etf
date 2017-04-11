@@ -1,0 +1,12 @@
+diff -Naur c9upstream/plugins/c9.ide.run/gui.js c9fork/plugins/c9.ide.run/gui.js
+--- c9upstream/plugins/c9.ide.run/gui.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run/gui.js	2017-04-11 09:54:44.500666824 +0200
+@@ -583,7 +583,7 @@
+ 
+             tabs.on("tabDestroy", function(e) {
+                 if (e.last && !defConfig && !tabs.focussedTab) {
+-                    btnRun.disable();
++                    //btnRun.disable();
+                     btnRun.setAttribute("tooltip", "");
+                 }
+             }, plugin);

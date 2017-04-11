@@ -14,10 +14,4 @@ diff -Naur c9upstream/plugins/c9.core/http-xhr.js c9fork/plugins/c9.core/http-xh
                  var data = xhr.responseText;
                  var contentType = options.overrideMimeType || res.headers["content-type"] || "";
                  if (contentType.indexOf("application/json") === 0) {
-@@ -269,4 +275,4 @@
-             http: plugin
-         });
-     }
--});
-\ No newline at end of file
-+});
+

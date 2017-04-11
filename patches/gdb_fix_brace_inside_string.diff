@@ -1,0 +1,52 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:17:27.282722738 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:17:07.158727022 +0200
+@@ -437,7 +437,7 @@
+         }
+ 
+         var msg = [seq, cmd, " ", args, "\n"].join("");
+-        log(msg);
++        log("ISSUE: " + msg);
+         this.proc.stdin.write(msg);
+     };
+ 
+@@ -464,27 +464,34 @@
+ 
+     this._removeArrayLabels = function(args) {
+         /* We now have to handle labels inside arrays */
++        log("Start _removeArrayLabels args "+args+" length "+args.length);
+ 
+         var t_in_array = [];
+         var in_array = 0;
++        var in_string = 0;
+         for (var i = 0; i < args.length; i++) {
+             /* This is a small state handling
+              * in order to see if we are in an array
+              * and therefore if we have to remove labels */
+-            if (args[i] == "[")
++            if (args.charAt(i) == "\"" && (i==0 || args.charAt(i-1) != "\\")) {
++                if (in_string) in_string=0; else in_string=1;
++            }
++
++            if (!in_string && args[i] == "[")
+                 t_in_array.push(1);
+ 
+-            if (args[i] == "{")
++            if (!in_string && args[i] == "{")
+                 t_in_array.push(0);
+ 
+-            if (args[i] == "]" || args[i] == "}")
++            if (!in_string && (args[i] == "]" || args[i] == "}"))
+                 t_in_array.pop();
+ 
+             /* in_array == 1 if we are in an array =) */
+-            in_array = t_in_array[t_in_array.length - 1];
++            if (t_in_array.length > 0) in_array = t_in_array[t_in_array.length - 1];
++            else in_array = 0;
+ 
+             /* If we encounter ',"' inside an array delete until '":' or '"=' */
+-            if (in_array
++            if (!in_string && in_array && i<args.length-1
+                 && (args[i] == "," || args[i] == "[")
+                 && args[i + 1] == "\"") {
+                 var k = i;
