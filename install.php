@@ -6,7 +6,8 @@ require("lib/config.php");
 // CONTINUE STAGE OF INSTALLATION
 
 if ($argc > 2 && $argv[1] == "continue") {
-	echo "Continuing installation of C9@ETF WebIDE...\n";
+	echo `echo "\033[32mContinuing installation of C9@ETF WebIDE...\033[0m"`;
+	echo "\n";
 
 	// PERMISSIONS SETUP
 	
@@ -15,9 +16,28 @@ if ($argc > 2 && $argv[1] == "continue") {
 	foreach($user_readable as $path) {
 		`chmod 644 $conf_base_path/$path`;
 	}
+
+	echo "\n";
+	echo `echo "\033[31mApplying patches\033[0m"`;
+
+	// Use relative paths instead of absolute (so that e.g. http://hostname/user/ redirects to 
+	// http://hostname/user/ide.html and not http://hostname/ide.html)
+	echo "relative_paths.diff\n";
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/relative_paths.diff`;
+
+	// Display a progress bar that corresponds to actual files being loaded
+	echo "progress_bar.diff\n";
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/progress_bar.diff`;
+
+	// Retry loading a failed file instead of just die
+	echo "retry_failed.diff\n";
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/retry_failed.diff`;
 	
 	// Install ETF plugins - we need nginx to route to these
-	echo "Install ETF plugins\n";
+	echo "\n";
+	echo `echo "\033[31mInstall ETF plugins\033[0m"`;
+	echo "\n";
+	
 	echo "etf.annotate\n";
 	`cp -R $conf_base_path/plugins/etf.annotate $conf_base_path/c9fork/plugins`;
 	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_annotate.diff`;
@@ -45,7 +65,8 @@ if ($argc > 2 && $argv[1] == "continue") {
 	exit;
 }
 
-echo "Starting installation of C9@ETF WebIDE...\n\n";
+echo `echo "\033[32mStarting installation of C9@ETF WebIDE...\033[0m"`;
+echo "\n";
 
 // Create c9 user
 `groupadd $conf_c9_group`;
@@ -90,10 +111,11 @@ foreach($web_readable as $path) {
 // INSTALLATION
 
 // Install Cloud9
-echo "Downloading Cloud9 IDE\n";
+echo `echo "\033[31mDownloading Cloud9 IDE\033[0m"`;
 `git clone $cloud9_git_url $conf_base_path/c9fork`;
 
-echo "\nInstalling Cloud9 IDE\n";
+echo "\n";
+echo `echo "\033[31mInstalling Cloud9 IDE\033[0m"`;
 `$conf_base_path/c9fork/scripts/install-sdk.sh`;
 `chmod 755 $conf_base_path/c9fork -R`;
 `cd /home/$conf_c9_user; ln -s $conf_base_path/c9fork fork`;
@@ -108,7 +130,8 @@ echo "\nInstalling Cloud9 IDE\n";
 `ln -s $conf_base_path/c9fork/plugins $conf_base_path/web/static/plugins`;
 
 // Install Buildservice
-echo "\nDownloading Buildservice\n";
+echo "\n";
+echo `echo "\033[31mDownloading Buildservice\033[0m"`;
 `git clone $buildservice_git_url $conf_base_path/web/buildservice`;
 `cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
 `rm -fr $conf_base_path/web/buildservice.c9`;
@@ -141,20 +164,8 @@ echo "\nDownloading Buildservice\n";
 
 // APPLY PATCHES
 
-echo "\nApplying patches:\n";
-
-// Use relative paths instead of absolute (so that e.g. http://hostname/user/ redirects to 
-// http://hostname/user/ide.html and not http://hostname/ide.html)
-echo "relative_paths.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/relative_paths.diff`;
-
-// Display a progress bar that corresponds to actual files being loaded
-echo "progress_bar.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/progress_bar.diff`;
-
-// Retry loading a failed file instead of just die
-echo "retry_failed.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/retry_failed.diff`;
+echo "\n";
+echo `echo "\033[31mApplying patches\033[0m"`;
 
 // Disable "keys" plugin which is confusing and uses screen real estate
 echo "disable_keys_plugin.diff\n";
