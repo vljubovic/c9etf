@@ -95,12 +95,12 @@ script that you have already started Cloud9 installation and now wish to continu
 
 6. Create a local user named 'admin' so you could access the admin web interface:
 
- $ /usr/local/webide/bin/webidectl add-local-user admin PASSWORD
+ $ sudo /usr/local/webide/bin/webidectl add-local-user admin PASSWORD
 
 Instead of PASSWORD insert the password that you wish to use. Create another local 
 user so you can test the webide:
 
- $ /usr/local/webide/bin/webidectl add-local-user test PASSWORD
+ $ sudo /usr/local/webide/bin/webidectl add-local-user test PASSWORD
 
 
 7. Visit webpage

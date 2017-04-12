@@ -5,7 +5,7 @@ require("lib/config.php");
 
 // CONTINUE STAGE OF INSTALLATION
 
-if ($argc > 2 && $argv[1] == "continue") {
+if ($argc > 1 && $argv[1] == "continue") {
 	echo `echo "\033[32mContinuing installation of C9@ETF WebIDE...\033[0m"`;
 	echo "\n";
 
@@ -33,10 +33,10 @@ if ($argc > 2 && $argv[1] == "continue") {
 	echo "retry_failed.diff\n";
 	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/retry_failed.diff`;
 	
+	
 	// Install ETF plugins - we need nginx to route to these
 	echo "\n";
 	echo `echo "\033[31mInstall ETF plugins\033[0m"`;
-	echo "\n";
 	
 	echo "etf.annotate\n";
 	`cp -R $conf_base_path/plugins/etf.annotate $conf_base_path/c9fork/plugins`;
@@ -60,7 +60,8 @@ if ($argc > 2 && $argv[1] == "continue") {
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
 	
-	echo "\n\nInstallation of C9@ETF WebIDE is finished!\n";
+	echo "\n\n";
+	echo `echo "\033[32mInstallation of C9@ETF WebIDE is finished!\033[0m"`;
 	echo "You can now create some users using webidectl\n";
 	exit;
 }
@@ -206,11 +207,6 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/formatter_astyle.diff`;
 // This patch creates a separate tmux socket file for each user
 echo "tmux_socket_error.diff\n";
 echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/tmux_socket_error.diff`;
-
-// Use tmux binary that came with the OS and not the one compiled by Cloud9
-// (improves memory sharing)
-echo "use_system_tmux.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/use_system_tmux.diff`;
 
 // Detect when user is logged out and redirect to login page, instead of just
 // displaying "Reconnecting" forever (maybe localize?)
