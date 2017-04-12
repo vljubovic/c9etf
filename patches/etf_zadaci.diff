@@ -1,0 +1,11 @@
+diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
+--- c9upstream/configs/ide/default.js	2017-04-12 09:31:01.272644515 +0200
++++ c9fork/configs/ide/default.js	2017-04-12 09:31:41.464487837 +0200
+@@ -818,6 +818,7 @@
+         // ETF plugins
+         "plugins/etf.annotate/annotate",
+         "plugins/etf.buildservice/panel",
++        "plugins/etf.zadaci/panel",
+         
+         // git integration
+         "plugins/c9.ide.scm/mergetool"

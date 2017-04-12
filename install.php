@@ -237,11 +237,6 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_warnings_debugging.d
 echo "logout_url.diff\n";
 echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/logout_url.diff`;
 
-// Add "Send Homework" button (etf.zamger plugin) to Toolbar - don't enable 
-// this patch if you disable etf.zamger plugin, otherwise c9 may not run!
-echo "add_send_homework_to_toolbar.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/add_send_homework_to_toolbar.diff`;
-
 // Patches that failed to port:
 // - Remove "Enable Auto-Save" from preferences but leave enabled (was in plugins/c9.ide.save/autosave.js)
 // - parse_program_output.diff is currently considered obsolete, but it's the only way to detect if program run too long
@@ -255,6 +250,26 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/add_send_homework_to_too
 `mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9fork/runners.disabled`;
 `mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
 `mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
+
+
+// Install ETF plugins
+echo "Install ETF plugins\n";
+echo "etf.annotate\n";
+`cp -R $conf_base_path/etf.annotate $conf_base_path/c9fork/plugins`;
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_annotate.diff`;
+
+echo "etf.buildservice\n";
+`cp -R $conf_base_path/etf.buildservice $conf_base_path/c9fork/plugins`;
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_buildservice.diff`;
+
+echo "etf.zadaci\n";
+`cp -R $conf_base_path/etf.zadaci $conf_base_path/c9fork/plugins`;
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zadaci.diff`;
+
+echo "etf.zamger\n";
+`cp -R $conf_base_path/etf.zamger $conf_base_path/c9fork/plugins`;
+echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zamger.diff`;
+
 
 
 // Done
