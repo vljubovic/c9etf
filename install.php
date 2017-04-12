@@ -16,13 +16,36 @@ if ($argc > 2 && $argv[1] == "continue") {
 		`chmod 644 $conf_base_path/$path`;
 	}
 	
+	// Install ETF plugins - we need nginx to route to these
+	echo "Install ETF plugins\n";
+	echo "etf.annotate\n";
+	`cp -R $conf_base_path/plugins/etf.annotate $conf_base_path/c9fork/plugins`;
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_annotate.diff`;
+
+	echo "etf.buildservice\n";
+	`cp -R $conf_base_path/plugins/etf.buildservice $conf_base_path/c9fork/plugins`;
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_buildservice.diff`;
+
+	echo "etf.zadaci\n";
+	`cp -R $conf_base_path/plugins/etf.zadaci $conf_base_path/c9fork/plugins`;
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zadaci.diff`;
+
+	echo "etf.zamger\n";
+	`cp -R $conf_base_path/plugins/etf.zamger $conf_base_path/c9fork/plugins`;
+	echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zamger.diff`;
+	
+	// Disable some runners: all C and C++ runners (we provide our own) and Shell command runners
+	`mkdir $conf_base_path/c9fork/runners.disabled`;
+	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9fork/runners.disabled`;
+	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
+	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
 	
 	echo "\n\nInstallation of C9@ETF WebIDE is finished!\n";
 	echo "You can now create some users using webidectl\n";
 	exit;
 }
 
-echo "Start installation of C9@ETF WebIDE...\n";
+echo "Starting installation of C9@ETF WebIDE...\n\n";
 
 // Create c9 user
 `groupadd $conf_c9_group`;
@@ -69,14 +92,14 @@ foreach($web_readable as $path) {
 // Install Cloud9
 echo "Downloading Cloud9 IDE\n";
 `git clone $cloud9_git_url $conf_base_path/c9fork`;
-echo "Installing Cloud9 IDE\n";
+
+echo "\nInstalling Cloud9 IDE\n";
 `$conf_base_path/c9fork/scripts/install-sdk.sh`;
 `chmod 755 $conf_base_path/c9fork -R`;
 `cd /home/$conf_c9_user; ln -s $conf_base_path/c9fork fork`;
 
 // This enables wizard to complete
 `chmod 777 $conf_base_path/c9fork/build`;
-`chmod 644 $conf_base_path/c9fork/build/standalone/skin/default/*`;
 
 // Populate "static" folder with symlinks
 `ln -s $conf_base_path/c9fork/node_modules/architect-build/build_support/mini_require.js $conf_base_path/web/static/mini_require.js`;
@@ -85,7 +108,7 @@ echo "Installing Cloud9 IDE\n";
 `ln -s $conf_base_path/c9fork/plugins $conf_base_path/web/static/plugins`;
 
 // Install Buildservice
-echo "Downloading Buildservice\n";
+echo "\nDownloading Buildservice\n";
 `git clone $buildservice_git_url $conf_base_path/web/buildservice`;
 `cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
 `rm -fr $conf_base_path/web/buildservice.c9`;
@@ -244,31 +267,6 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/logout_url.diff`;
 // - gdb evaluate C++ vector object on stack
 // - gdb limit number of children fetched to prevent slowness/crashes with oversized response package
 
-
-// Disable some runners: all C and C++ runners (we provide our own) and Shell command runners
-`mkdir $conf_base_path/c9fork/runners.disabled`;
-`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9fork/runners.disabled`;
-`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
-`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
-
-
-// Install ETF plugins
-echo "Install ETF plugins\n";
-echo "etf.annotate\n";
-`cp -R $conf_base_path/etf.annotate $conf_base_path/c9fork/plugins`;
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_annotate.diff`;
-
-echo "etf.buildservice\n";
-`cp -R $conf_base_path/etf.buildservice $conf_base_path/c9fork/plugins`;
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_buildservice.diff`;
-
-echo "etf.zadaci\n";
-`cp -R $conf_base_path/etf.zadaci $conf_base_path/c9fork/plugins`;
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zadaci.diff`;
-
-echo "etf.zamger\n";
-`cp -R $conf_base_path/etf.zamger $conf_base_path/c9fork/plugins`;
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/etf_zamger.diff`;
 
 
 
