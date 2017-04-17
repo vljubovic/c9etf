@@ -1306,6 +1306,12 @@ function verify_user($username) {
 			write_nginx_config();
 			bfl_unlock();
 		}
+		
+		// Update time of last access
+		$lastfile = $conf_base_path . "/last/$username.last";
+		file_put_contents($lastfile, time());
+		chown($lastfile, $username);
+		chmod($lastfile, 0666);
 	}
 	
 	if ($is_svn_node) {
