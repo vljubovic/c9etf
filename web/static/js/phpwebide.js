@@ -257,13 +257,13 @@ function pwi_toolbar_update(rev) {
 // Update homework button
 function pwi_toolbar_homework_button() {
 	// Find parent folder of file
-	pwi_add_task("pwi_homework_button");
 	var x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_homework_data = false;
 		document.getElementById('phpwebide_homework_button').style.display = "none";
 		return;
 	}
+	pwi_add_task("pwi_homework_button");
 	
 	// Find .zadaca file in folder
 	var zadaca_file = pwi_current_path.substr(0,x+1) + ".zadaca";
@@ -288,7 +288,6 @@ function pwi_toolbar_homework_button() {
 // Update test button
 function pwi_toolbar_test_button() {
 	// Find parent folder of file
-	pwi_add_task("pwi_test_button");
 	var x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_tests_total = pwi_tests_passed = false;
@@ -296,6 +295,7 @@ function pwi_toolbar_test_button() {
 		document.getElementById('phpwebide_test_results').style.display = "none";
 		return;
 	}
+	pwi_add_task("pwi_test_button");
 	
 	// Find .autotest file in folder
 	var autotest_file = pwi_current_path.substr(0,x+1) + ".autotest";
