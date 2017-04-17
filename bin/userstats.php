@@ -102,9 +102,13 @@ function write_stats($username) {
 		}
 		
 		ensure_write( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
-		chmod($goto_file, 0644);
+		chown($goto_file, "www-user");
+		chmod($goto_file, 0640);
 	}
-	ensure_write( $conf_stats_path . "/$username_efn.stats", "\$stats = " . var_export($stats, true) . ";" );
+	$stats_file = $conf_stats_path . "/$username_efn.stats";
+	ensure_write( $stats_file, "\$stats = " . var_export($stats, true) . ";" );
+	chown($stats_file, "www-user");
+	chmod($stats_file, 0640);
 }
 
 // Remove unwanted stuff from stats file
