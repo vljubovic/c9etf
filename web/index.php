@@ -51,8 +51,8 @@ if (isset($_POST['login'])) {
 	eval(file_get_contents($users_file));
 	
 	$alreadyloggedin = false;
-	if (array_key_exists($login, $users) && $users[$username]["status"] == "active")
-		$alreadyloggedin = true;
+	//if (array_key_exists($login, $users) && $users[$login]["status"] == "active")
+	//	$alreadyloggedin = true;
 	
 //	$alreadyloggedin = `grep $login_esa $conf_base_path/active_users`;
 
