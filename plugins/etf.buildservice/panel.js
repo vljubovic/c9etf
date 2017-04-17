@@ -470,8 +470,8 @@ define(function(require, exports, module) {
 //			console.log("Uporedjujem '" + item.label + "' sa '"+testname+"'");
 			
 			if (item.label == testname) {
-					var tests = JSON.stringify(testSpecification).replace(/\s+/g, " ");
-					var test_results = JSON.stringify(testAtResult).replace(/\s+/g, " ");
+					var tests = JSON.stringify(testSpecification);
+					var test_results = JSON.stringify(testAtResult);
 					
 					var form = document.createElement("form");
 					form.setAttribute("method", "post");
