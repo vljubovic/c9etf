@@ -79,7 +79,7 @@ while ($line = fgets($file)) {
 	
 	$counter++;
 	
-	print intval($cpuidle)." $block $loadavg $memreal $count_users $processes $free_space $free_inodes\n";
+	print intval($cpuidle)." $block $loadavg $memreal $count_users $processes $free_space $free_inodes ".time()."\n";
 }
 fclose($file);
 

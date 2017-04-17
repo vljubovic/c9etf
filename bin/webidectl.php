@@ -1517,8 +1517,16 @@ function server_stats($server = "local") {
 	// Reorder stats because legacy code expects it like this
 	$cpuidle = array_shift($stats);
 	$blocking = array_shift($stats);
+	if (array_key_exists(6, $stats)) $time = $stats[6]; else $time=time();
 	$stats[6] = $cpuidle;
 	$stats[7] = $blocking;
+	$stats[8] = $time;
+	
+	// If there are no stats for >timeout seconds, node becomes inaccessible
+	if ($stats[8] < time() - $conf_node_timeout) {
+		$stats[0] = $stats[3] = 100;
+		$stats[1] = $stats[2] = 0;
+	}
 	
 	return $stats;
 }

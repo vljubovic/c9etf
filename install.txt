@@ -40,6 +40,9 @@ UMASK		022
 and set it to:
 UMASK		077
 
+We strongly suggest that ntp is installed and configured so that time is accurate,
+or atleast that clocks on all nodes are synchronized
+
 
 C9 INSTALLATION
 
