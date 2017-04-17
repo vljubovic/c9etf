@@ -59,6 +59,17 @@ if ($argc > 1 && $argv[1] == "continue") {
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9fork/runners.disabled`;
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
+
+	
+	// Install new nginx config
+	echo "\n";
+	echo `echo "\033[31mReconfiguring nginx\033[0m"`;
+	`$conf_base_path/bin/webidectl reset-nginx`;
+	
+	// Ensure some c9 services are running
+	echo "\n";
+	echo `echo "\033[31mReconfiguring nginx\033[0m"`;
+	`php $conf_base_path/lib/ensure_running.php`;
 	
 	echo "\n\n";
 	echo `echo "\033[32mInstallation of C9@ETF WebIDE is finished!\033[0m"`;
@@ -157,8 +168,9 @@ echo `echo "\033[31mDownloading Buildservice\033[0m"`;
 `cp $conf_base_path/c9fork/node_modules/engine.io-client/engine.io.js $conf_base_path/c9util`;
 
 // Add cron tasks
-`echo 45 *     * * *   root    /usr/local/webide/bin/webidectl culling >> /etc/crontab`;
-`echo 20 3     * * *   root    /usr/local/webide/lib/nightly_tasks >> /etc/crontab`;
+`echo 45 *     * * *   root    $conf_base_path/bin/webidectl culling >> /etc/crontab`;
+`echo 20 3     * * *   root    $conf_base_path/lib/nightly_tasks >> /etc/crontab`;
+`echo 5 *     * * *   root    php $conf_base_path/lib/ensure_running.php >> /etc/crontab`;
  // This is stupid...
 `echo 0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/node_modules/engine.io-client >> /etc/crontab`;
 

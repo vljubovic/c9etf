@@ -9,7 +9,7 @@ for (( ; ; ))
 do
 	if [ $php_up -eq 0 ]
 	then
-		cpuidle=`cat /usr/local/webide/server_stats.log | cut -d " " -f 1`
+		cpuidle=`tail -1 /usr/local/webide/server_stats.log | cut -d " " -f 1`
 		#echo cpuidle $cpuidle
 		if [ "$cpuidle" -lt "$cpuidle_trigger" ]
 		then
@@ -42,7 +42,7 @@ do
 	if [ $php_up -eq 2 ]
 	then
 		load=`cat /proc/loadavg | cut -d " " -f 1`
-		cpuidle=`cat /usr/local/webide/server_stats.log | cut -d " " -f 1`
+		cpuidle=`tail -1 /usr/local/webide/server_stats.log | cut -d " " -f 1`
 		#echo 2 load $load
 		if [ "$cpuidle" -lt "$cpuidle_trigger" ]
 		then
