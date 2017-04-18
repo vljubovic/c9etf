@@ -10,16 +10,10 @@ diff -Naur c9upstream/plugins/c9.ide.tree/favorites.js c9fork/plugins/c9.ide.tre
                      type: "check",
                      caption: "Show Home in Favorites",
                      write: true,
-@@ -468,13 +468,13 @@
-                         else
-                             removeFavorite(c9.toInternalPath(home));
-                     }
-                 });
-                 ui.insertByIndex(mnuSettings, cbHome, 260, plugin);
-                 
+@@ -474,7 +474,7 @@
                  mnuSettings.on("prop.visible", function(e) {
-                    if (e.value)
-                        cbHome.setAttribute("checked", lut["~"] ? true : false);
+                     if (e.value)
+                         cbHome.setAttribute("checked", lut["~"] ? true : false);
 -                });
 +                });*/
              });
