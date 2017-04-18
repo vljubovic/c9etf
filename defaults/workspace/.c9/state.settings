@@ -50,6 +50,7 @@
     },
     "experiments": {
         "@@enabled": true,
+        "@autosave": true,
         "@git": true,
         "@plugins": true,
         "@sdk": true
