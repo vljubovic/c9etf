@@ -6,12 +6,12 @@ require(dirname(__FILE__) . "/config.php");
 require(dirname(__FILE__) . "/webidelib.php");
 
 // check_php script that stops/starts php
-$check_php=`ps aux | grep check_php | grep -v grep`
+$check_php=`ps aux | grep check_php | grep -v grep`;
 if (!$check_php)
 	proc_close(proc_open("nohup $conf_base_path/lib/check_php &", array(), $foo));
 
 // Generate stats
-$stats_monitor=`ps aux | grep stats_monitor.php | grep -v grep`
+$stats_monitor=`ps aux | grep stats_monitor.php | grep -v grep`;
 if (!$stats_monitor)
 	proc_close(proc_open("nohup php $conf_base_path/lib/stats_monitor.php > $conf_base_path/server_stats.log &", array(), $foo));
 

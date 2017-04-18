@@ -59,6 +59,9 @@ if ($argc > 1 && $argv[1] == "continue") {
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9fork/runners.disabled`;
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/C\+\+* $conf_base_path/c9fork/runners.disabled`;
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
+	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners-docker/C\ *`;
+	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners-docker/C\+\+*`;
+	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell*`;
 
 	
 	// Install new nginx config
@@ -67,8 +70,6 @@ if ($argc > 1 && $argv[1] == "continue") {
 	`$conf_base_path/bin/webidectl reset-nginx`;
 	
 	// Ensure some c9 services are running
-	echo "\n";
-	echo `echo "\033[31mReconfiguring nginx\033[0m"`;
 	`php $conf_base_path/lib/ensure_running.php`;
 	
 	echo "\n\n";
@@ -119,6 +120,8 @@ foreach($web_readable as $path) {
 	`chmod 750 $conf_base_path/$path`;
 }
 
+// Create a pipe file for vmstat
+`mkfifo $conf_base_path/lib/vmstat.pipe`;
 
 // INSTALLATION
 

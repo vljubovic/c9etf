@@ -7,12 +7,12 @@ $min_idle = 20;
 
 $vmstat = `ps aux | grep "vmstat 1" | grep -v grep`;
 if (!$vmstat)
-	proc_close(proc_open("vmstat 1 > vmstat.pipe &", array(), $foo));
+	proc_close(proc_open("vmstat 1 > $conf_base_path/lib/vmstat.pipe &", array(), $foo));
 
 $counter=5;
 $block=0;
 
-$file = fopen("vmstat.pipe", "r");
+$file = fopen("$conf_base_path/lib/vmstat.pipe", "r");
 while ($line = fgets($file)) {
 	$stats = preg_split("/\s+/", trim($line));
 	if (count($stats) < 15) continue;
