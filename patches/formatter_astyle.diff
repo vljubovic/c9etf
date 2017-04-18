@@ -12,7 +12,7 @@ diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
 diff -Naur c9upstream/plugins/c9.ide.format/formatters/astyle.js c9fork/plugins/c9.ide.format/formatters/astyle.js
 --- c9upstream/plugins/c9.ide.format/formatters/astyle.js	1970-01-01 01:00:00.000000000 +0100
 +++ c9fork/plugins/c9.ide.format/formatters/astyle.js	2017-04-11 10:37:02.818337074 +0200
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,204 @@
 +define(function(require, exports, module) {
 +    main.consumes = [
 +        "Plugin", "format", "settings", "preferences", "util", "dialog.error"
@@ -101,6 +101,12 @@ diff -Naur c9upstream/plugins/c9.ide.format/formatters/astyle.js c9fork/plugins/
 +            var sel = ace.selection;
 +            var session = ace.session;
 +            var range = sel.getRange();
++            var keepSelection = false;
++            
++            if (range.isEmpty() || all) {
++                range = new Range(0, 0, session.getLength(), 0);
++                keepSelection = true;
++            }
 +    
 +            // Parameters for astyle
 +            var as_style = settings.get("user/format/astyle/@style");
@@ -159,7 +165,8 @@ diff -Naur c9upstream/plugins/c9.ide.format/formatters/astyle.js c9fork/plugins/
 +                            showError("astyle error");
 +                        } else {
 +                            var end = session.diffAndReplace(range, value);
-+                            sel.setSelectionRange(Range.fromPoints(range.start, end));
++                            if (!keepSelection)
++                                sel.setSelectionRange(Range.fromPoints(range.start, end));
 +                        }
 +                    } 
 +                }
