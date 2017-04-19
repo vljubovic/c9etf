@@ -9,7 +9,7 @@ debug_log("starting");
 
 
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".valgrind.out");
-$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/");
+$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/");
 $vrijeme_kreiranja = 0; // Dodajemo ovoliko sekundi za svaki kreirani fajl. Ovo se dosta poveća...
 $vrijeme_limit = 60; // Pauzu veću od ovoliko sekundi računamo kao ovoliko sekundi
 $file_content_limit = 100000; // Ignorišemo fajlove veće od 100k
