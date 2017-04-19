@@ -102,12 +102,12 @@ function write_stats($username) {
 		}
 		
 		ensure_write( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
-		chown($goto_file, "www-user");
+		chown($goto_file, "www-data");
 		chmod($goto_file, 0640);
 	}
 	$stats_file = $conf_stats_path . "/$username_efn.stats";
 	ensure_write( $stats_file, "\$stats = " . var_export($stats, true) . ";" );
-	chown($stats_file, "www-user");
+	chown($stats_file, "www-data");
 	chmod($stats_file, 0640);
 }
 

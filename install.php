@@ -61,7 +61,7 @@ if ($argc > 1 && $argv[1] == "continue") {
 	`mv $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell* $conf_base_path/c9fork/runners.disabled`;
 	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners-docker/C\ *`;
 	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners-docker/C\+\+*`;
-	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners/Shell*`;
+	`rm $conf_base_path/c9fork/plugins/c9.ide.run/runners-docker/Shell*`;
 
 	
 	// Install new nginx config
