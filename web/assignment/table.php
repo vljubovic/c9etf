@@ -47,74 +47,9 @@ function assignment_table($course, $year, $external) {
 	// Output table
 	
 	if (count($assignments) > 0) {
-		$deploy_url = "assignment/ws.php?action=deploy&$url_part&file=.autotest";
-		$deploy_url = str_replace("&amp;", "&", $deploy_url);
+	
 	?>
-	<script>
-	// Start deploying in background
-	var currentlyDeploying = false;
-	function deployAutotest(asgn_id, task_id, filename) {
-		var url="<?=$deploy_url?>&assignment="+asgn_id+"&task="+task_id;
-		if (currentlyDeploying != false) {
-			console.log("Deployment in progress");
-			return;
-		}
-		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.onreadystatechange = function() {
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				result = JSON.parse(xmlhttp.responseText);
-				if (result.success == "true") {
-					currentlyDeploying = result.data;
-					showProgress("Deploying file "+filename+" to all users");
-					setTimeout(deploymentStatus, 100);
-				} else {
-					console.error("FAIL: " + url + " " + result.code);
-				}
-			}
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
-				console.error("FAIL: " + url + " 500");
-			}
-		}
-		xmlhttp.open("GET", url, true);
-		xmlhttp.send();
-		return false;
-	}
-	function deploymentStatus() {
-		if (currentlyDeploying == false) {
-			return;
-		}
-		var url = "assignment/ws.php?action=deploy_status&id="+currentlyDeploying;
-		var xmlhttp = new XMLHttpRequest();
-		xmlhttp.onreadystatechange = function() {
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				result = JSON.parse(xmlhttp.responseText);
-				if (result.success == "true") {
-					var percent = Math.round((result.data.done / result.data.total) * 100);
-					updateProgress(percent);
-					console.log("updateProgress "+percent);
-					if (percent > 99.9) {
-						currentlyDeploying = false;
-						setTimeout(hideProgress, 1000);
-					} else
-						setTimeout(deploymentStatus, 100);
-				} else {
-					currentlyDeploying = false;
-					setTimeout(hideProgress, 1000);
-					console.error("FAIL: " + url + " " + result.code);
-				}
-			}
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
-				currentlyDeploying = false;
-				setTimeout(hideProgress, 1000);
-				console.error("FAIL: " + url + " 500");
-			}
-		}
-		xmlhttp.open("GET", url, true);
-		xmlhttp.send();
-	}
-	</script>
-	
-	
+	<script src="static/js/assignment.js" type="text/javascript" charset="utf-8"></script>
 	<table cellspacing="0" cellpadding="2" border="0" class="assignment-table">
 	<thead>
 		<tr bgcolor="#dddddd">
@@ -135,6 +70,9 @@ function assignment_table($course, $year, $external) {
 		
 		$edit_link = "assignment/edit.php?action=edit&amp;$url_part&amp;assignment=" . $a['id'];
 		
+		$deploy_js = "return deployAssignmentFile($course, $year, ";
+		if ($external) $deploy_js .= "true, ";
+		
 		?>
 		<tr>
 			<td class="text cell stronger" align="left" bgcolor="<?=$color?>"><?=$a['name']?></td>
@@ -152,13 +90,14 @@ function assignment_table($course, $year, $external) {
 						$count_tests = count($autotest['test_specifications']);
 				}
 			
-				//$link = "autotest/edit.php?mod=0&amp;pid=$pid&amp;predmet=$course&amp;ag=$year&amp;oznakaTut=" . urlencode($a['path']) . "&amp;rednibrtask=$value";
+				
 				$link = "autotest/preview.php?fileData=$at_path";
-				//$deploy_link = "assigment/deploy.php?$url_part&amp;local_file=" . urlencode($a['path'] . "/.autotest");
+				$deploy_js_this = $deploy_js . $a['id'] . ", $i, '$at_name', 'all-users');";
+				
 				?>
 				<td>
 					<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
-					<a href="" onclick="return deployAutotest(<?=$a['id']?>,<?=$i?>,'<?=$at_name?>');"><i class="fa fa-bolt"></i></a>
+					<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
 				</td>
 				<?php
 			} else
