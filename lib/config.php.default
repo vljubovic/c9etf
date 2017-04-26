@@ -73,7 +73,7 @@ $conf_syncsvn_log = $conf_home_path . "/c9/monitor.out"; // This must be in home
 // Timeout after which we assume that node is inaccessible
 $conf_node_timeout = 60;
 
-
+$conf_nginx_user = "www-data";
 $conf_nginx_conf_path = "/etc/nginx/sites-enabled/default";
 
 $conf_nodes = array( 

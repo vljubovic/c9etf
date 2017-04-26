@@ -9,7 +9,7 @@ debug_log("starting");
 
 
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".valgrind.out");
-$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/");
+$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/", "/autotest.txt/");
 $vrijeme_kreiranja = 0; // Dodajemo ovoliko sekundi za svaki kreirani fajl. Ovo se dosta poveća...
 $vrijeme_limit = 60; // Pauzu veću od ovoliko sekundi računamo kao ovoliko sekundi
 $file_content_limit = 100000; // Ignorišemo fajlove veće od 100k
@@ -73,7 +73,7 @@ function read_stats($username) {
 
 // Write stats file
 function write_stats($username) {
-	global $stats, $conf_stats_path, $split_folder;
+	global $stats, $conf_stats_path, $split_folder, $conf_nginx_user;
 	
 	$username_efn = escape_filename($username);
 	
@@ -102,12 +102,12 @@ function write_stats($username) {
 		}
 		
 		ensure_write( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
-		chown($goto_file, "www-user");
+		chown($goto_file, $conf_nginx_user);
 		chmod($goto_file, 0640);
 	}
 	$stats_file = $conf_stats_path . "/$username_efn.stats";
 	ensure_write( $stats_file, "\$stats = " . var_export($stats, true) . ";" );
-	chown($stats_file, "www-user");
+	chown($stats_file, $conf_nginx_user);
 	chmod($stats_file, 0640);
 }
 

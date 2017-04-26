@@ -132,7 +132,7 @@ switch($action) {
 		$htpasswd = $conf_base_path . "/localusers/" . $userdata['efn'];
 
 		exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
-		exec("chown www-data $htpasswd");
+		exec("chown $conf_nginx_user $htpasswd");
 		print "Created local user $username\n";
 		break;
 	
