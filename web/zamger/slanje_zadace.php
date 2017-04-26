@@ -45,7 +45,7 @@ while ($repeat) {
 		die("JSON query dajZadacu failed: unknown reason\n");
 	} 
 	else if ($result["success"] !== "true") {
-		if ($result['code'] !== "ERR001") die("GRESKA: ".$result['message']);
+		if ($result['code'] !== "ERR999") die("GRESKA: ".$result['message']);
 
 		//file_put_contents("/tmp/slanjezadace", "$zadaca $zadatak $student $username: istekla sesija\n", FILE_APPEND);
 		// Ponovni login
