@@ -27,7 +27,7 @@ function admin_svn_log($user, $path) {
 			$the_path = $svnpath['path'];
 			if ($the_path[0] == "/") $the_path = substr($the_path, 1);
 			?>
-			<li><a href="?user=<?=$user?>&amp;path=<?=urlencode($the_path)?>&amp;svn_rev=<?=$entry['rev']?>"><?=$svnpath['path']?></a></li>
+			<li class="svn-log"><a href="#" onclick="return pwi_tabs_svn_click(this.parentNode, '<?=$the_path?>', <?=$entry['rev']?>);"><?=$svnpath['path']?></a></li>
 			<?php
 		}
 		print "</ul></li>\n";
