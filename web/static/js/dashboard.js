@@ -1,6 +1,6 @@
 
 // DASHBOARD.JS - JavaScript functions for the main dashboard screen
-// Version: 2016/10/20 12:45
+// Version: 2017/03/28 15:25
 
 var attempts=0;
 var started=0;
@@ -305,11 +305,16 @@ function loadStats() {
 			
 			var serveri = ajaxstats.responseText.split(/\r\n|\r|\n/);
 			
-			var kod = "";
+			var kod = "", addcss = "";
 			for (var i=0; i<serveri.length; i++) {
 				var podaci = serveri[i].split(/ /);
 				if (podaci.length < 2) continue;
-				kod += '<p class="box_title" style="margin-bottom: 0px; padding-bottom: 0px">' + podaci[0] + '</p>';
+				if (podaci[0][0] == '*') { // user is on this node
+					addcss = "; color:#fbb";
+					podaci[0] = podaci[0].substr(1);
+				} else
+					addcss = "";
+				kod += '<p class="box_title" style="margin-bottom: 0px; padding-bottom: 0px' + addcss + '">' + podaci[0] + '</p>';
 				kod += '<p style="margin-top: 0px; padding-top: 0px">';
 				
 				// Disk usage
