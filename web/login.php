@@ -4,7 +4,7 @@
 function local_login($login, $pass) {
 	global $conf_base_path;
 	
-	if (!file_exists("$conf_base_path/localusers/$login") && $login != "test")
+	if (!file_exists("$conf_base_path/localusers/$login"))
 		return "Nepostojeći korisnik";
 
 	$login_esa = escapeshellarg($login);
@@ -30,7 +30,7 @@ function local_login($login, $pass) {
 		proc_close($process);
 	}*/
 	
-	if (strstr($result, "correct") || ($login == "test" && $pass == "test")) { // FIXME
+	if (strstr($result, "correct")) {
 		$_SESSION['login'] = $login;
 		$_SESSION['server_session'] = "";
 		$_SESSION['userid'] = "";
