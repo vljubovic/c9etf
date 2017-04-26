@@ -15,9 +15,7 @@ function zamger_login($username, $password) {
 	
 	$conf_json_user = $username;
 	$conf_json_pass = $password;
-	if ($username == "test" && $password == "test") { return ""; }
 	$result = json_login();
-//	if ($username == "emujanovic2" && $password == "test") { $result=0; }
 	
 	if ($result == -5) {
 		return "Pogrešni pristupni podaci.";
