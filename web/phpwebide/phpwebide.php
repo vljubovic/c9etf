@@ -17,6 +17,7 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 	<div id="phpwebide_tree"></div>
 	
 	<div id="phpwebide_toolbar">
+		<span id="phpwebide_spinner" style="display: none"><img src="static/images/busy-light-32x29.gif" width="32" height="29" alt="busy"></span>
 		<span id="phpwebide_restore_button" class="tree-button" style="display: none">
 			<a href="#" onclick="pwi_restore_revision(); return false;"><i class="fa fa-eye-slash fa-2x"></i> Restore this revision</a>
 		</span>
@@ -27,10 +28,10 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 			<a href="#" onclick="pwi_test_project(); return false;"><i class="fa fa-check-square-o fa-2x"></i> Test</a>
 		</span>
 		<span id="phpwebide_test_results" class="tree-button" style="display: none">
-			<a href="#" onclick="showhide('phpwebide_test_results_widget'); return false;" id="phpwebide_test_results_data"></a>
+			<a href="#" onclick="showMenu(this, 'phpwebide_test_results_widget'); return false;" id="phpwebide_test_results_data"></a>
 		</span>
 		<span id="phpwebide_deploy_button" class="tree-button" style="display: none">
-			<a href="#" onclick="showhide('phpwebide_deploy_menu'); return false;"><i class="fa fa-bolt fa-2x"></i> Deploy</a>
+			<a href="#" onclick="showMenu(this, 'phpwebide_deploy_menu'); return false;"><i class="fa fa-bolt fa-2x"></i> Deploy</a>
 		</span>
 		<span id="phpwebide_modified_time" style="float:right;"></span>
 	</div>
@@ -38,7 +39,7 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 	<div id="editor"></div>
 	<div id="status"></div>
 	
-	<div id="phpwebide_test_results_widget" class="menu-widget"></div>
+	<div id="phpwebide_test_results_widget" class="menu-widget" style="display:none"></div>
 	<?php
 	
 	if ($tabs) {
