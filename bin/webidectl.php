@@ -570,7 +570,7 @@ switch($action) {
 		}
 		if ($home_usage == -1) $home_usage = $root_usage;
 		$home_usage /= 1024;
-		$tries = 0; $max_tries = 100; $min_backup_for_erase = 50000;
+		$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
 		print "HU $home_usage\n";
 		while ($conf_diskspace_cleanup > 0  && $home_usage < $conf_diskspace_cleanup) {
 			$rand_user = array_rand($users);
@@ -653,7 +653,8 @@ switch($action) {
 
 		// First pass - update stats, reinstall svn if neccessary
 		foreach ($users_shuffled as $username => $options) {
-			if ($username == "vljubovic" || $username == "ezajko" || $username == "") continue;
+			if (file_exists("/tmp/storage_nightly_skip")) break;
+			if ($username == "") continue;
 			
 			// We can safely update stats for logged-in users
 			print "$username ($current/$total) - ".date("d.m.Y H:i:s")."\n";
@@ -1182,7 +1183,7 @@ function deactivate_user($username) {
 
 function remove_user($username) {
 	global $users, $conf_nodes, $conf_base_path, $conf_shared_path;
-	global $is_storage_node, $is_control_node, $is_svn_node;
+	global $is_storage_node, $is_control_node, $is_svn_node, $is_compute_node;
 	
 	$userdata = setup_paths($username);
 	
@@ -1503,7 +1504,7 @@ function migrate_v1_v3($username) {
 
 // Some common resource usage stats
 function server_stats($server = "local") {
-	global $users, $conf_home_path, $conf_base_path, $conf_svn_path;
+	global $users, $conf_home_path, $conf_base_path, $conf_svn_path, $conf_node_timeout;
 
 	$stats = array();
 	if ($server == "local")
