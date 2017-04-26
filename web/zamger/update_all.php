@@ -53,8 +53,8 @@ function zamger_update_all($login) {
 			$gr['id'] = $id;
 			$gr['name'] = $name;
 			$gr['members'] = zamger_group_members($id);
-			$gr['course'] = $course;
-			$gr['year'] = $year;
+			$gr['course'] = $course_id;
+			$gr['year'] = $conf_current_year;
 			$gr['course_type'] = "external";
 			foreach ($gr['members'] as $login => $fullname) {
 				unset($all_students[$login]);
