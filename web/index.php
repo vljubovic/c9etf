@@ -84,7 +84,7 @@ if (isset($_POST['login'])) {
 		$memused = $memused / 1024;
 
 		if ($memused > $conf_limit_memory_web) {
-			print "Dostignut je maksimalan broj korisnika na serveru. Dodjite kasnije. (".number_format($memused,2)." GB)";
+			print "Server je trenutno preopterecen. Dodjite kasnije. (".number_format($memused,2)." GB)";
 			return;
 		}
 		
@@ -102,14 +102,12 @@ if (isset($_POST['login'])) {
 		$greska = "Pristup vašem korisniku je trenutno zabranjen $conf_deny_reason. Kontaktirajte administratora ili dodjite kasnije.";
 	
 
-	// Login kroz lokalnu bazu korisnika
 	if ($greska == "") {
 		$greska = login($login, $pass);
 	}
-	// Login kroz Zamger
 	
 	if ($greska == "") {
-		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $pass_esa &", array(), $foo));
+		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $pass_esa > /dev/null 2>&1 &", array(), $foo));
 		header("Location: status.php");
 		return;
 	}
