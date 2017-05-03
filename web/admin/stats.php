@@ -48,7 +48,7 @@ function admin_stats() {
 				$realno=-1;
 				$parts = explode(" ", trim($logline));
 				$sec = $parts[0];
-				$no = $parts[1];
+				$no = intval($parts[1]);
 				if (count($parts)>2) $realno = $parts[2];
 				if (!isset($realno) || $realno==-1) $realno=$no;
 				if ($sec < $sec_min) continue;
