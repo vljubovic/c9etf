@@ -95,10 +95,10 @@ function fixsvn($command) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
 			unlink("/tmp/$filename");
-			fixsvn("cp \"".$matches[1]."\" \"/tmp/$filename\"");
+			run_as($username, "cp \"".$matches[1]."\" \"/tmp/$filename\"");
 			unlink($matches[1]);
 			fixsvn("svn update --accept mine-full \"$wsname\"");
-			fixsvn("cp \"/tmp/$filename\" \"$wsname\"");
+			run_as($username, "cp \"/tmp/$filename\" \"$wsname\"");
 			unlink("/tmp/$filename");
 			fixsvn("svn ci -m fixsvn \"$wsname\"");
 			fixsvn($command);
