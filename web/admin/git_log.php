@@ -40,7 +40,7 @@ function admin_git_log($user, $path) {
 			$the_path = $path;
 //			if ($the_path[0] == "/") $the_path = substr($the_path, 1);
 			?>
-			<li><a href="?user=<?=$user?>&amp;path=<?=urlencode($the_path)?>&amp;git_rev=<?=$entry['hash']?>"><?=$the_path?></a></li>
+			<li class="svn-log"><a href="#" onclick="return pwi_tabs_git_click(this.parentNode, '<?=$the_path?>', '<?=$entry['hash']?>');"><?=$the_path?></a></li>
 			<?php
 	//	}
 		print "</ul></li>\n";
