@@ -16,10 +16,10 @@ if (isset($_REQUEST['username'])) $username = $_REQUEST['username']; else $usern
 
 // Saznajem ID studenta sa Zamgera
 if ($student==0 || isset($_REQUEST['username'])) {
-	$parameters = array( "login" => $username );
+	$parameters = array( "sta" => "ws/osoba", "login" => $username );
 	if (isset($_SESSION['server_session']) !== "")
 		$parameters[session_name()] = $_SESSION['server_session'];
-	$result = json_request_retry("https://zamger.etf.unsa.ba/ajah/podaciKorisnika.php", $parameters);
+	$result = json_request_retry("https://zamger.etf.unsa.ba/", $parameters);
 	if (!array_key_exists("success", $result)) {
 		die("JSON query podaciKorisnika failed: unknown reason\n");
 	} 
@@ -45,7 +45,7 @@ while ($repeat) {
 		die("JSON query dajZadacu failed: unknown reason\n");
 	} 
 	else if ($result["success"] !== "true") {
-		if ($result['code'] !== "ERR001") die("GRESKA: ".$result['message']);
+		if ($result['code'] !== "ERR999") die("GRESKA: ".$result['message']);
 
 		//file_put_contents("/tmp/slanjezadace", "$zadaca $zadatak $student $username: istekla sesija\n", FILE_APPEND);
 		// Ponovni login

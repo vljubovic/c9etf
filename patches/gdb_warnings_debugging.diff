@@ -1,0 +1,116 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 13:32:34.400760591 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 13:32:17.528687954 +0200
+@@ -548,6 +548,7 @@
+ 
+         /* Remove array labels */
+         args = this._removeArrayLabels(args);
++        log("after _removeArrayLabels args "+args);
+ 
+         /* And wrap in an object */
+         args = "{" + args + "}";
+@@ -555,7 +556,9 @@
+         var ret = {};
+ 
+         try {
++            log("Parsing JSON: "+args);
+             ret = JSON.parse(args);
++            log("Parsed!");
+         }
+         catch (e) {
+             /* We lamentably failed =( */
+@@ -581,6 +584,8 @@
+     };
+ 
+     this._parseState = function(line) {
++        log("start _parseState line "+line);
++
+         line = line.trim();
+ 
+         var gdb_state = {};
+@@ -619,6 +624,7 @@
+ 
+     // Stack State Step 0; initiate request
+     this._updateState = function(signal, thread) {
++        log("updateState");
+         // don't send state updates on reconnect, wait for plugin to request
+         if (this.clientReconnect) return;
+ 
+@@ -637,6 +643,7 @@
+ 
+     // Stack State Step 0a; flush var objects in event of a segfault
+     this._flushVarCache = function() {
++        log("flushVarCache");
+         // determine all the varobj names by pulling keys from the cache
+         var keys = [];
+         for (var key in this.varcache) {
+@@ -661,6 +668,7 @@
+ 
+     // Stack State Step 1; find the thread ID
+     this._updateThreadId = function() {
++        log("updateThreadId");
+         if (this.state.thread !== null)
+             return this._updateStack();
+ 
+@@ -672,6 +680,7 @@
+ 
+     // Stack State Step 2; process stack frames and request arguments
+     this._updateStack = function() {
++        log("updateStack");
+         this.issue("-stack-list-frames", STACK_RANGE, function(state) {
+             this.state.frames = state.status.stack;
+ 
+@@ -714,6 +723,7 @@
+ 
+     // Stack State Step 3; append stack args to frames; request top frame locals
+     this._updateStackArgs = function() {
++        log("updateStackArgs");
+         this.issue("-stack-list-arguments", "--simple-values " + STACK_RANGE,
+         function(state) {
+             var args = state.status['stack-args'];
+@@ -727,6 +737,7 @@
+ 
+     // Stack State Step 4: fetch each frame's locals & send all to proxy
+     this._updateLocals = function() {
++        log("updateLocals");
+         function requestLocals(frame) {
+             // skip this frame if we have its variables cached
+             if (this._cachedFrame(this.state.frames[frame], frame))
+@@ -760,6 +771,7 @@
+ 
+     // Stack State Step 5: update cached vars
+     this._updateCachedVars = function() {
++        log("updateCachedVars");
+         this.issue("-var-update", "--all-values *", function(reply) {
+             //update cache
+             for (var i = 0; i < reply.status.changelist.length; i++) {
+@@ -777,10 +789,10 @@
+                     process.exit(1);
+                 }
+ 
+-                this.varcache[obj.name].value = obj.value;
++                if (this.varcache.hasOwnProperty(obj.name)) this.varcache[obj.name].value = obj.value;
+ 
+                 if (obj.type_changed == "true")
+-                    this.varcache[obj.name].type = obj.new_type;
++                    if (this.varcache.hasOwnProperty(obj.name)) this.varcache[obj.name].type = obj.new_type;
+             }
+ 
+             // stitch cache together in state
+@@ -921,6 +933,8 @@
+ 
+     // handle a line of stdout from gdb
+     this._handleLine = function(line) {
++        log("start _handleLine line "+line);
++
+         if (line.trim() === "(gdb)")
+             return;
+ 
+@@ -944,6 +958,7 @@
+         }
+ 
+         log("GDB: " + line);
++        if (Object.keys(state).length === 0 && state.constructor === Object) token='';
+ 
+         // first character of output determines line meaning
+         switch (token) {

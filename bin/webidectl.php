@@ -26,13 +26,15 @@ exec("echo $mypid > $watchfile");
 
 // Following webidectl commands are not locked with bfl
 $skip_bfl = array(
-	// Readonly commands
-	"list-active", "last", "server-stats", "is-node-up", "help",
+	// Readonly commands (for webide files)
+	"list-active", "last", "server-stats", "is-node-up", "help", "reset-nginx", "svnrestore",
 	// Commands that happen very often and don't really need to be locked
 	"last-update", "broadcast",
 	// Commands that take a long time and are executed on a regular basis
 	// but users complain if they can't login during that time
-	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup"
+	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup", "clean-inodes", "storage-nightly",
+	// Implement locking manually (for performance reasons)
+	"verify-user"
 );
 
 
@@ -72,16 +74,14 @@ switch($action) {
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {
-				debug_log ("already logged in $username");
+				debug_log ("already logged in $username (".$users[$username]["server"]." ".$users[$username]["port"].")");
 				print $users[$username]["port"]; // Already logged in, print port
 			} else if ($users[$username]["status"] == "inactive") {
 				activate_user($username, $password);
 			}
 		}
 		else {
-			// If old workspace exists, we will migrate
-			if (!file_exists($conf_home_path . "/c9/workspace/" . $userdata['efn']))
-				create_user($username, $password);
+			create_user($username, $password);
 			activate_user($username, $password);
 		}
 		break;
@@ -103,7 +103,12 @@ switch($action) {
 
 	// Just stop node
 	case "stop-node":
-		stop_node($username, false); // Force all logout operations, even if we list user as not logged in
+		stop_node($username, false);
+		break;
+
+	// Move user to another server
+	case "kick-user":
+		kick_user($username);
 		break;
 
 	// Remove user from system
@@ -127,14 +132,18 @@ switch($action) {
 		$htpasswd = $conf_base_path . "/localusers/" . $userdata['efn'];
 
 		exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
-		exec("chown www-data $htpasswd");
+		exec("chown $conf_nginx_user $htpasswd");
 		print "Created local user $username\n";
 		break;
 	
 	// Regular cleanup operation every hour
 	case "culling":
 		// FIXME This is done only on control server
-		// If memory is high on control it's high on all others... hopefully
+		// If memory is high on control it's probably high on all others, due to load balancing
+		$active_users = 0;
+		foreach($users as $user) if ($user['status'] == "active") $active_users++;
+		if ($active_users > 170) break; // It just manufactures more load... :( FIXME
+		
 		$stats = server_stats();
 		$memlimit = $conf_memory_emergency * 1024 * 1024;
 		if ($stats[1] > $memlimit) {
@@ -187,6 +196,7 @@ switch($action) {
 			}
 			
 			if (!in_array("compute", $node['type'])) continue;
+			
 			foreach(ps_ax($node['address']) as $process) {
 				if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
 					continue;
@@ -440,6 +450,7 @@ switch($action) {
 			if ($do_reinstall) {
 				print " - resetting svn\n";
 				print "Update stats\n";
+				bfl_lock();
 				exec("$conf_base_path/bin/userstats " . escapeshellarg($username));
 				print "Reinstall svn\n";
 				user_reinstall_svn($username);
@@ -451,6 +462,7 @@ switch($action) {
 				sleep(5);
 				bfl_lock();
 				read_files();
+				bfl_unlock();
 			}
 		}
 		break;
@@ -484,7 +496,7 @@ switch($action) {
 		$found_node = false;
 		foreach ($conf_nodes as $node) {
 			if ($argc > 2 && $argv[2] == $node['name']) {
-				print run_on($node['address'], "$conf_base_path/bin/webidectl server-stats");
+				print join(" ", server_stats($node['name']));
 				$found_node = true;
 				break;
 			}
@@ -510,6 +522,7 @@ switch($action) {
 			$lastfile = $conf_base_path . "/last/$username.last";
 			file_put_contents($lastfile, time());
 			chown($lastfile, $username);
+			chmod($lastfile, 0666);
 		}
 		break;
 
@@ -538,6 +551,7 @@ switch($action) {
 				} else {
 					$head=exec("svn info \"$path\" | grep \"Revision\" | cut -d \" \" -f 2");
 					run_as($username, "svn merge -r$head:$revision \"$path\"");
+					run_as($username, "svn ci -m svnrestore \"$path\"");
 				}
 			}
 		}
@@ -556,7 +570,7 @@ switch($action) {
 		}
 		if ($home_usage == -1) $home_usage = $root_usage;
 		$home_usage /= 1024;
-		$tries = 0; $max_tries = 100; $min_backup_for_erase = 50000;
+		$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
 		print "HU $home_usage\n";
 		while ($conf_diskspace_cleanup > 0  && $home_usage < $conf_diskspace_cleanup) {
 			$rand_user = array_rand($users);
@@ -624,6 +638,208 @@ switch($action) {
 		
 		break;
 		
+	// Nightly tasks for storage node
+	case "storage-nightly":
+		$total = count($users);
+		$current=1;
+		$total_usage_stats = array();
+		
+		// shuffle_assoc
+		$keys = array_keys($users);
+		shuffle($keys);
+		$users_shuffled = array();
+		foreach ($keys as $key)
+			$users_shuffled[$key] = $users[$key];
+
+		// First pass - update stats, reinstall svn if neccessary
+		foreach ($users_shuffled as $username => $options) {
+			if (file_exists("/tmp/storage_nightly_skip")) break;
+			if ($username == "") continue;
+			
+			// We can safely update stats for logged-in users
+			print "$username ($current/$total) - ".date("d.m.Y H:i:s")."\n";
+			$current++;
+			$userdata = setup_paths($username);
+			$username_esa = $userdata['esa'];
+			$workspace = $userdata['workspace'];
+			
+			// Clean core files
+			print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
+			print run_as($username, "cd $workspace; find . -name \"*core*\" -delete");
+
+			print shell_exec("$conf_base_path/bin/userstats $username_esa");
+			
+			// Git commit
+			$msg = date("d.m.Y", time() - 60*60*24);
+			if (!file_exists($workspace)) {
+				print "Workspace not found for $username...\n";
+				continue;
+			}
+			if (!file_exists($workspace . "/.git")) {
+				print "Creating git for user $username...\n";
+				git_init($username);
+			}
+			print run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
+			
+			// Clean inodes
+			bfl_lock();
+			read_files();
+			bfl_unlock();
+			
+			$total_usage_stats[$username]['svn'] = false;
+			$total_usage_stats[$username]['inodes'] = false;
+			$total_usage_stats[$username]['ws.old'] = false;
+			$total_usage_stats[$username]['svn.old'] = false;
+			$total_usage_stats[$username]['old.inodes'] = false;
+			
+			if ($users[$username]["status"] == "active") {
+				print "User $username is online! Not cleaning inodes\n";
+				continue;
+			}
+			
+			$usersvn = setup_paths($username)['svn'];
+			$lastver = `svnversion $workspace`;
+			$nochange = false;
+			if ($lastver === "1" || $lastver === "1\n") {
+				$nochange = true;
+			}
+			
+			$do_reinstall = false;
+			if (!$nochange && $users[$username]["status"] != "active" && $conf_max_user_inodes > 0) {
+				$total_usage_stats[$username]['inodes'] = intval(shell_exec("find $usersvn | wc -l"));
+				if ($total_usage_stats[$username]['inodes'] > $conf_max_user_inodes) {
+					print "$username - inodes ".$total_usage_stats[$username]['inodes']." > $conf_max_user_inodes";
+					$do_reinstall = true;
+				}
+			}
+			if (!$do_reinstall && !$nochange && $users[$username]["status"] != "active" && $conf_max_user_svn_disk_usage > 0) {
+				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
+				if ($total_usage_stats[$username]['svn'] > $conf_max_user_svn_disk_usage) {
+					print "$username - svn disk usage ".$total_usage_stats[$username]['svn']." kB > $conf_max_user_svn_disk_usage kB";
+					$do_reinstall = true;
+				}
+			}
+			
+			if ($do_reinstall) {
+				$total_usage_stats[$username]['old.inodes'] = $total_usage_stats[$username]['inodes'];
+				if ($total_usage_stats[$username]['svn'])
+					$total_usage_stats[$username]['svn.old'] = $total_usage_stats[$username]['svn'];
+				print " - resetting svn\n";
+				print "Update stats\n";
+				bfl_lock();
+				print exec("$conf_base_path/bin/userstats " . escapeshellarg($username));
+				print "\nReinstall svn\n";
+				user_reinstall_svn($username);
+				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
+			
+				// Inode statistics update (TODO)
+				
+				// Release lock for 5 seconds so users can do stuff
+				bfl_unlock();
+			}
+			
+			$user_ws_backup = setup_paths($username)['workspace'] . ".old";
+			if (file_exists($user_ws_backup))
+				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+			$user_svn_backup = setup_paths($username)['svn'] . ".old";
+			if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
+				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+		}
+		
+		// Do we need cleanup?
+		print "\n\nCLEANUP USERS\n=============\n\n";
+		$home_usage = -1; $root_usage = -1;
+		foreach(explode("\n", shell_exec("df")) as $line) {
+			$parts = preg_split("/\s+/", $line);
+			if (count($parts) < 6) continue;
+			if ($parts[5] == "/")
+				$root_usage = $parts[3];
+			if (starts_with($parts[5], $conf_home_path))
+				$home_usage = $parts[3];
+		}
+		if ($home_usage == -1) $home_usage = $root_usage;
+		$home_usage /= 1024;
+		
+		// Second pass - delete backup workspace or svn if neccessary
+		$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
+		print "HU $home_usage\n";
+		$current = 1;
+
+		foreach ($users_shuffled as $rand_user => $options) {
+			if ($rand_user == "vljubovic" || $rand_user == "ezajko" || $rand_user == "") continue;
+			if ($conf_diskspace_cleanup <= 0 || $home_usage > $conf_diskspace_cleanup) break;
+
+			print "Cleanup: $rand_user ($current/$total) - ".date("d.m.Y h:i:s")."\n";
+			$current++;
+			$user_ws_backup = setup_paths($rand_user)['workspace'] . ".old";
+			print "UWB $user_ws_backup\n";
+			if (file_exists($user_ws_backup)) {
+				$backup_size = $total_usage_stats[$rand_user]['ws.old'];
+				print "Size $backup_size\n";
+				if ($backup_size > $min_backup_for_erase) {
+					`rm -fr $user_ws_backup`;
+					$stats = server_stats();
+					$total_usage_stats[$rand_user]['ws.old'] = 0;
+				}
+			} else
+				print "Not exists\n";
+				
+			$user_svn_backup = setup_paths($rand_user)['svn'] . ".old";
+			print "USB $user_svn_backup\n";
+			if (file_exists($user_svn_backup)) {
+				$backup_size = $total_usage_stats[$rand_user]['svn.old'];
+				print "Size $backup_size\n";
+				if ($backup_size > $min_backup_for_erase) {
+					`rm -fr $user_svn_backup`;
+					$stats = server_stats();
+					$total_usage_stats[$rand_user]['svn.old'] = 0;
+				}
+			} else
+				print "Not exists\n";
+			
+			$home_usage = -1; $root_usage = -1;
+			foreach(explode("\n", shell_exec("df")) as $line) {
+				$parts = preg_split("/\s+/", $line);
+				if (count($parts) < 6) continue;
+				if ($parts[5] == "/")
+					$root_usage = $parts[3];
+				if (starts_with($parts[5], $conf_home_path))
+					$home_usage = $parts[3];
+			}
+			if ($home_usage == -1) $home_usage = $root_usage;
+			$home_usage /= 1024;
+		}
+		
+		// Output usage stats to a file
+		print "\n\nUSAGE STATS\n===========\n\n";
+		$fp = fopen('/usr/local/webide/log/usage_stats.txt', 'w');
+		fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\nUSER\t\tWS\tWS.OLD\tSVN\tSVN.OLD\tSVN.INODES\n");
+		$users_sorted = $users;
+		ksort($users_sorted);
+		foreach ($users_sorted as $username => $options) {
+			if ($username == "vljubovic" || $username == "ezajko" || $username == "") continue;
+			print "Usage stats: $username - ".date("d.m.Y h:i:s")."\n";
+			$user_ws = setup_paths($username)['workspace'];
+			$total_usage_stats[$username]['ws'] = intval(shell_exec("du -s $user_ws"));
+
+			$user_ws_backup = $user_ws . ".old";
+			if (!file_exists($user_ws_backup)) $total_usage_stats[$username]['ws.old'] = 0;
+			else if ($total_usage_stats[$username]['ws.old'] === false) $total_usage_stats[$username]['ws.old'] = "?";
+
+			$user_svn = setup_paths($username)['svn'];
+			if ($total_usage_stats[$username]['svn'] === false) $total_usage_stats[$username]['svn'] = "?";
+			if ($total_usage_stats[$username]['inodes'] === false) $total_usage_stats[$username]['inodes'] = "?";
+
+			$user_svn_backup = $user_svn . ".old";
+			if (!file_exists($user_svn_backup)) $total_usage_stats[$username]['svn.old'] = 0;
+			else if ($total_usage_stats[$username]['svn.old'] === false) $total_usage_stats[$username]['svn.old'] = "?";
+			
+			fwrite($fp, "$username\t".$total_usage_stats[$username]['ws']."\t".$total_usage_stats[$username]['ws.old']."\t");
+			fwrite($fp, $total_usage_stats[$username]['svn']."\t".$total_usage_stats[$username]['svn.old']."\t".$total_usage_stats[$username]['inodes']."\n");
+		}
+		fclose($fp);
+		break;
+	
 	case "help":
 		print "webidectl.php\n\nUsage:\n";
 		print "\tlogin username password \t- doesn't check password!\n";
@@ -710,7 +926,7 @@ function activate_user($username, $password) {
 		if ($is_svn_node)
 			syncsvn($username);
 		else
-			run_on($svn_node_addr, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
+			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl login " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 		
 		// Find the compute node to run this on
 		$best_node = ""; $best_value = 0;
@@ -720,7 +936,7 @@ function activate_user($username, $password) {
 			if (is_local($node['address']))
 				$stats = server_stats();
 			else
-				$stats = explode(" ", run_on($node['address'], "$conf_base_path/bin/webidectl server-stats"));
+				$stats = server_stats($node['name']);
 			if (is_local($node['address'])) $stats[1] += 1000000;
 			
 			// Skip nodes without minimum level of resources
@@ -738,6 +954,12 @@ function activate_user($username, $password) {
 			}
 		}
 		
+		if ($best_node == "") {
+			print "ERROR: No viable node found.\n";
+			debug_log ("no viable node for $username");
+			return;
+		}
+		
 		print "Best node $best_node value $best_value\n";
 		file_put_contents("$conf_base_path/log/" . $userdata['efn'], "\n\n=====================\nStarting webide at: ".date("d.m.Y H:i:s")."\n\n", FILE_APPEND);
 		$users[$username]['server'] = $best_node;
@@ -751,7 +973,15 @@ function activate_user($username, $password) {
 			$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
 			
 			// We can't allow nginx configuration to be invalid, ever
-			if (intval($port) == 0) $port = 1; else $port = intval($port);
+			$port = intval($port);
+			while (intval($port) == 0) {
+				run_on($best_node, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
+				bfl_unlock();
+				sleep(5);
+				bfl_lock();
+				read_files();
+				$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
+			}
 			print "Port at $best_node is $port\n";
 			$users[$username]['port'] = $port;
 			if ($conf_ssh_tunneling) {
@@ -788,6 +1018,7 @@ function activate_user($username, $password) {
 			$users[$username]['port'] = $port;
 			start_node($username);
 		}
+		debug_log ("activate_user $username $port");
 		write_files();
 	}
 	
@@ -796,7 +1027,7 @@ function activate_user($username, $password) {
 }
 
 function create_user($username, $password) {
-	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users;
+	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users, $conf_home_path;
 	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr;
 	
 	$forbidden_usernames = array('root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 'mail', 'news', 'uucp', 'proxy', 'www-data', 'backup', 'list', 'irc', 'gnats', 'nobody', 'libuuid', 'syslog', 'messagebus', 'landscape', 'sshd', 'c9test', 'c9');
@@ -812,6 +1043,8 @@ function create_user($username, $password) {
 
 	// Create user on storage node
 	if ($is_storage_node) {
+		if (!file_exists($conf_home_path . "/" . substr($userdata['efn'],0,1)))
+			exec("mkdir " . $conf_home_path . "/" . substr($userdata['efn'],0,1));
 		exec("useradd -d ". $userdata['home'] . " -g $conf_c9_group -k $conf_defaults_path/home -m " . $userdata['esa']);
 		// For some reason files copied from default home aren't owned by user :(
 		exec("chown -R " . $userdata['esa'] . ":$conf_c9_group ". $userdata['home']);
@@ -863,10 +1096,17 @@ function create_user($username, $password) {
 	write_files();
 }
 
+// The philosophy is that deactivate can be called on user who is marked inactive, 
+// to stop whatever running services etc. for this user, except on svn node
 function deactivate_user($username) {
 	global $users, $is_control_node, $is_compute_node, $conf_base_path, $is_svn_node, $svn_node_addr, $conf_svn_problems_log, $conf_ssh_tunneling;
 	
+	// Prevent overloading svn server during clear_server
+	if (!$is_control_node && $is_svn_node)
+		if ($users[$username]['status'] == "inactive") return;
+	
 	$userdata = setup_paths($username);
+	debug_log ("deactivate_user $username");
 	
 	// If this is a simple compute node, just kill nodejs
 	if ($is_compute_node && !$is_control_node) {
@@ -879,7 +1119,6 @@ function deactivate_user($username) {
 	}
 		
 	else if ($is_control_node) {
-		debug_log ("deactivate_user $username");
 		
 		// Update logout file
 		$script = "date > " . $userdata['workspace'] . "/.logout";
@@ -898,7 +1137,7 @@ function deactivate_user($username) {
 		if (is_local($server) || empty($server))
 			stop_node($username, false);
 		else {
-			run_on($server, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
+			proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 			if ($conf_ssh_tunneling) {
 				foreach (ps_ax("localhost") as $process) {
 					if (strstr($process['cmd'], "ssh -N -L $port"))
@@ -907,7 +1146,7 @@ function deactivate_user($username) {
 			}
 		}
 		if (!$is_svn_node)
-			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . "\" 2>&1 &", array(), $foo));
+			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 	}
 	
 	if ($is_svn_node) {
@@ -944,24 +1183,38 @@ function deactivate_user($username) {
 
 function remove_user($username) {
 	global $users, $conf_nodes, $conf_base_path, $conf_shared_path;
-	global $is_storage_node, $is_control_node, $is_svn_node;
+	global $is_storage_node, $is_control_node, $is_svn_node, $is_compute_node;
 	
 	$userdata = setup_paths($username);
 	
-	if ($is_svn_node)
+	if ($is_svn_node) {
 		exec("rm -fr " . $userdata['svn']);
+		$svn_backup = $userdata['svn'] . ".old";
+		if (file_exists($svn_backup))
+			exec("rm -fr $svn_backup");
+	}
 	
 	if ($is_storage_node) {
 		$archive_path = $conf_shared_path . "/archive";
 		if (!file_exists($archive_path)) mkdir($archive_path);
 		$archive_file = $archive_path . "/" . $userdata['efn'] . ".tar.gz";
 		$user_ws = $userdata['workspace'];
+		if (!file_exists($user_ws)) 
+			// Legacy v1 workspace
+			$user_ws = "/home/c9/workspace/" . $userdata['efn'];
 		
 		// Remove svn and git repos from workspace
 		exec("rm -fr $user_ws/.svn; rm -fr $user_ws/.git");
 		exec("tar czvf $archive_file $user_ws");
 		exec("rm -fr $user_ws");
 		exec("userdel -r " . $userdata['esa']);
+		
+		// Archive & remove stats
+		$stats_paths = "/home/c9/stats/" . $userdata['efn'] . ".stats";
+		$stats_paths .= " /home/c9/stats/*/" . $userdata['efn'] . ".stats";
+		$archive_file = $archive_path . "/" . $userdata['efn'] . ".stats.tar.gz";
+		exec("tar czvf $archive_file $stats_paths");
+		exec("rm $stats_paths");
 	}
 	else 
 		exec("userdel " . $userdata['esa']);
@@ -971,6 +1224,13 @@ function remove_user($username) {
 	
 	if ($is_control_node) {
 		unlink($userdata['htpasswd']);
+
+		$localuser_file = $conf_base_path . "/localusers/" . $userdata['efn'];
+		if (file_exists($localuser_file)) unlink($localuser_file);
+		
+		$lastfile = $conf_base_path . "/last/$username.last";
+		if (file_exists($lastfile)) unlink($lastfile);
+		
 		foreach($conf_nodes as $node)
 			run_on($node['address'], "$conf_base_path/bin/webidectl remove " . $userdata['esa']);
 	}
@@ -982,6 +1242,7 @@ function verify_user($username) {
 	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users;
 	
 	$userdata = setup_paths($username);
+	if (!array_key_exists('server', $users[$username])) return;
 	$server = $users[$username]['server'];
 	
 	if (is_local($server) && $is_compute_node) {
@@ -991,6 +1252,16 @@ function verify_user($username) {
 			$pid = trim(file_get_contents($userdata['node_watch']));
 			if (file_exists("/proc/$pid"))
 				$nodeup = true;
+		}
+		debug_log ("verify_user $username nodeup $nodeup");
+		
+		// If it is, return port
+		$port = intval($users[$username]['port']);
+		if ($nodeup) {
+			if ($port > 2)
+				print "Node running - Found port: $port\n";
+			else
+				$nodeup = false; // Invalid port, restart
 		}
 		
 		// It isn't, restart
@@ -1004,31 +1275,44 @@ function verify_user($username) {
 			// Kill related processes
 			stop_node($username, false);
 			
-			// Check to see if port is in use
+			// Check to see if port is in use - sometimes race condition causes this situation
 			$log_path = "$conf_base_path/log/" . $userdata['efn'];
 			$inuse = `tail -20 $log_path | grep EADDRINUSE`;
-			if (!empty(trim($inuse))) {
+			if (!empty(trim($inuse)) || $port <= 2) {
 				$port = find_free_port(); 
-				print "Found port: $port\n";
+				print "Starting node - Found port: $port\n";
 				$users[$username]['port'] = $port;
+				bfl_lock();
 				write_files();
 				if ($is_control_node) write_nginx_config();
-			}
+				bfl_unlock();
+			} else
+				print "Restarting existing node ($port)\n";
 			
 			// Restart node
-			print "Starting node for $username...\n";
 			start_node($username);
+			debug_log ("restart node user $username port $port");
 		}
 	}
 	else if ($is_control_node) {
 		$output = run_on($server, "$conf_base_path/bin/webidectl verify-user " . $userdata['esa']);
-		if (strstr($output, "Found port:")) {
-			$port = intval(substr($output, 11));
+		debug_log ("verify_user $username server $server output " .str_replace("\n", "", $output));
+		if ($substr = strstr($output, "Found port:")) {
+			$port = intval(substr($substr, 11));
 			if (intval($port) == 0) $port = 1;
 			$users[$username]['port'] = $port;
+			debug_log ("resetting port to $port");
+			bfl_lock();
 			write_files();
 			write_nginx_config();
+			bfl_unlock();
 		}
+		
+		// Update time of last access
+		$lastfile = $conf_base_path . "/last/$username.last";
+		file_put_contents($lastfile, time());
+		chown($lastfile, $username);
+		chmod($lastfile, 0666);
 	}
 	
 	if ($is_svn_node) {
@@ -1050,11 +1334,49 @@ function verify_user($username) {
 		}
 	}
 	else if ($is_control_node) {
-		run_on($svn_node_addr, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
 		run_on($svn_node_addr, "$conf_base_path/bin/webidectl verify-user " . $userdata['esa']);
 	}
 }
 
+
+function kick_user($username) {
+	global $conf_nodes, $users, $conf_base_path;
+
+	$best_node = ""; $best_value = 0;
+	foreach($conf_nodes as $node) {
+		if (!in_array("compute", $node['type'])) continue;
+		if ($node['address'] == $users[$username]['server']) continue;
+		
+		if (is_local($node['address']))
+			$stats = server_stats();
+		else
+			$stats = server_stats($node['name']);
+		if (is_local($node['address'])) $stats[1] += 2000000;
+		//if ($node['name'] == "c9prim") $stats[1] += 5000000;
+		//if ($node['name'] == "c9sec") $stats[1] += 2000000;
+		
+		// Skip nodes without minimum level of resources
+		if (!check_limits($stats, false)) {
+			print "Node ".$node['address']." fails limits\n";
+			continue;
+		}
+
+		$value = $stats[1]; // memory
+		print "Node ".$node['address']." value $value\n";
+		
+		if ($best_node == "" || $best_value > $value) {
+			$best_node = $node['address'];
+			$best_value = $value;
+		}
+	}
+	
+	print "Best node is $best_node - go there!\n";
+	
+	$users[$username]['server'] = $best_node;
+	
+	write_files();
+	write_nginx_config();
+}
 
 
 
@@ -1087,7 +1409,7 @@ function start_node($username) {
 	chmod($log_path, 0644);
 	touch($lastfile);
 	chown($lastfile, $username);
-	chmod($lastfile, 0644);
+	chmod($lastfile, 0666);
 	run_as($username, "$nodecmd $c9_path $port $listen_addr $workspace $log_path $watch_path");
 }
 
@@ -1181,56 +1503,31 @@ function migrate_v1_v3($username) {
 }
 
 // Some common resource usage stats
-function server_stats() {
-	global $users, $conf_home_path, $conf_base_path, $conf_svn_path;
+function server_stats($server = "local") {
+	global $users, $conf_home_path, $conf_base_path, $conf_svn_path, $conf_node_timeout;
 
 	$stats = array();
+	if ($server == "local")
+		$filename = "server_stats.log";
+	else
+		$filename = $server."_stats.log";
+	$filename = $conf_base_path . "/$filename";
 	
-	// stats[0] : CPU load average
-	$stats[0] = exec("cat /proc/loadavg | cut -d \" \" -f 2");
+	$stats = explode(" ", trim(`tail -1 $filename`));
 	
-	// stats[1] : actually used memory
-	$memtotal = `cat /proc/meminfo | grep MemTotal | cut -c 17-25`;
-	$memfree  = `cat /proc/meminfo | grep MemFree | cut -c 17-25`;
-	$membuf   = `cat /proc/meminfo | grep Buffers | cut -c 17-25`;
-	$memcach  = `cat /proc/meminfo | grep ^Cached | cut -c 17-25`;
-	$memswaptotal = `cat /proc/meminfo | grep SwapTotal | cut -c 17-25`;
-	$memswapfree = `cat /proc/meminfo | grep SwapFree | cut -c 17-25`;
-
-	$stats[1] = $memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
+	// Reorder stats because legacy code expects it like this
+	$cpuidle = array_shift($stats);
+	$blocking = array_shift($stats);
+	if (array_key_exists(6, $stats)) $time = $stats[6]; else $time=time();
+	$stats[6] = $cpuidle;
+	$stats[7] = $blocking;
+	$stats[8] = $time;
 	
-	// stats[2] : number of logged in users
-	$stats[2] = 0;
-	foreach($users as $user) 
-		if ($user["status"] == "active") $stats[2]++;
-	
-	// stats[3] : number of really active users
-	
-	$stats[3] = 0;
-	foreach (ps_ax("localhost") as $process) {
-		if (strstr($process['cmd'], "node server") || strstr($process['cmd'], "nodejs server"))
-			$stats[3]++;
+	// If there are no stats for >timeout seconds, node becomes inaccessible
+	if ($stats[8] < time() - $conf_node_timeout) {
+		$stats[0] = $stats[3] = 100;
+		$stats[1] = $stats[2] = 0;
 	}
-	
-	$min_space = 0;
-	foreach(explode("\n", shell_exec("df")) as $line) {
-		$parts = preg_split("/\s+/", $line);
-		if (count($parts) < 6) continue;
-		if ($parts[5] == "/" || starts_with($parts[5], $conf_home_path) || starts_with($parts[5], $conf_base_path) || starts_with($parts[5], $conf_svn_path))
-			if ($min_space == 0 || $parts[3] < $min_space)
-				$min_space = $parts[3];
-	}
-	$stats[4] = $min_space / 1024;
-	
-	$min_space = 0;
-	foreach(explode("\n", shell_exec("df -i")) as $line) {
-		$parts = preg_split("/\s+/", $line);
-		if (count($parts) < 6) continue;
-		if ($parts[5] == "/" || starts_with($parts[5], $conf_home_path) || starts_with($parts[5], $conf_base_path) || starts_with($parts[5], $conf_svn_path))
-			if ($min_space == 0 || $parts[3] < $min_space)
-				$min_space = $parts[3];
-	}
-	$stats[5] = $min_space;
 	
 	return $stats;
 }
@@ -1239,6 +1536,10 @@ function server_stats() {
 function check_limits($stats, $output) {
 	global $conf_limit_memory, $conf_limit_loadavg, $conf_limit_users, $conf_limit_active_users, $conf_limit_diskspace, $conf_limit_inodes;
 	
+	if ($stats[7] > 3) {
+		if ($output) print "ERROR: too many blocking\n";
+		return false;
+	}
 	if ($conf_limit_loadavg > 0 && $stats[0] > $conf_limit_loadavg) {
 		if ($output) print "ERROR: Load average $stats[0] > $conf_limit_loadavg\n";
 		return false;
@@ -1308,7 +1609,12 @@ function reset_config($username) {
 function kill_idle($minutes, $output, $sleep) {
 	global $users, $conf_base_path, $conf_nodes;
 
-	foreach($conf_nodes as $node) {
+	$keys = array_keys($conf_nodes);
+		shuffle($keys);
+		$conf_nodes2 = array();
+		foreach ($keys as $key)
+			$conf_nodes2[$key] = $conf_nodes[$key];
+	foreach($conf_nodes2 as $node) {
 		if (!in_array("compute", $node['type'])) continue;
 		foreach(ps_ax($node['address']) as $process) {
 			if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
@@ -1327,7 +1633,7 @@ function kill_idle($minutes, $output, $sleep) {
 				if (is_local($server))
 					stop_node($username, false);
 				else
-					run_on($server, "$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username));
+					proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username) . " &\" 2>&1 &", array(), $foo));
 				
 				if ($sleep > 0) {
 					bfl_unlock();
@@ -1367,12 +1673,16 @@ function kill_idle_logout($minutes, $output, $sleep) {
 
 // Logout all users and kill/restart all processes related to webide
 function clear_server() {
-	global $conf_base_path, $users, $is_compute_node, $is_control_node;
+	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr;
 	
-	if (!$is_control_node && !$is_compute_node) return;
+	debug_log("clear server");
 	
-	//print "Čekam 1s...\n";
-	sleep(1);
+	// SVN server must be cleared before others, to avoid generating large load (due to cleanup operations)
+	if ($is_control_node && !$is_svn_node)
+		proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl clear-server & \" 2>&1 >/dev/null &", array(), $foo));
+	
+	//print "Čekam 5s...\n";
+	sleep(5);
 	
 	// Just a compute node
 	if (!$is_control_node && $is_compute_node) {
@@ -1389,18 +1699,48 @@ function clear_server() {
 		exec("killall gdb");
 		return;
 	}
+	
+	// Special procedure for svn node, prevents excessive load
 	if (!$is_control_node && $is_svn_node) {
-		foreach ($users as $username => $options) {
-			if ($options['status'] == "active")
-				deactivate_user($username);
+		$were_active = array();
+		
+		// Just mark users as inactive and write files
+		foreach ($users as $username => &$options) {
+			if ($options['status'] == "active") {
+				$options['status'] = "inactive";
+				$were_active[] = $username;
+			}
 		}
 		write_files();
-		exec("killall php");
-		exec("killall inotifywait");
-		exec("killall gdb");
+		bfl_unlock();
+		
+		// Now we actually log them out, slowly
+		foreach($were_active as $username) {
+			sleep(1);
+			$userdata = setup_paths($username);
+			if (file_exists($userdata['svn_watch'])) {
+				$pid = trim(file_get_contents($userdata['svn_watch']));
+				if (file_exists("/proc/$pid"))
+					exec("kill $pid");
+				unlink($userdata['svn_watch']);
+			}
+			stop_inotify($username);
+			
+			// Commit remaining stuff to svn
+			$script  = "cd " . $userdata['workspace'] . "; ";
+			$script .= "echo USER: $username >> $conf_svn_problems_log; ";
+			$script .= "svn ci -m deactivate_user . 2>&1 >> $conf_svn_problems_log";
+			run_as($username, $script);
+			
+			// During the next 1200s = 20 minutes, run fixsvn operations
+			$time = 60 + rand(0, 1200);
+			proc_close(proc_open("php $conf_base_path/bin/fixsvn.php " . $userdata['esa'] . " $time  2>&1 >/dev/null &", array(), $foo));
+		}
 		return;
 	}
 
+	// Continue with control node actions
+	
 	// Kill webidectl processes waiting to login
 	$mypid = getmypid();
 	foreach (ps_ax("127.0.0.1") as $process) {
@@ -1423,6 +1763,14 @@ function clear_server() {
 			exec("kill ".$process['pid']);
 		if (strstr($process['cmd'], "syncsvn.php"))
 			exec("kill ".$process['pid']);
+	}
+	
+	// Clear other servers
+	foreach($conf_nodes as $node) {
+		if (is_local($node['address'])) continue;
+		if ($node['address'] == $svn_node_addr) continue; // Already done
+		$addr = $node['address'];
+		proc_close(proc_open("ssh $addr \"$conf_base_path/bin/webidectl clear-server & \" 2>&1 >/dev/null &", array(), $foo));
 	}
 	
 	exec("killall node");
@@ -1586,7 +1934,10 @@ function personalize($username, $infile, $outfile) {
 	
 	$port = $users[$username]['port'];
 	$debug_port = ( $port - $conf_port_lower ) * 2 + $conf_port_upper;
-	$realname = $users[$username]['realname'];
+	if (array_key_exists('realname', $users[$username])) 
+		$realname = $users[$username]['realname'];
+	else
+		$realname = $username;
 
 	$content = file_get_contents($infile);
 	$content = str_replace("USERNAME", $username, $content);
@@ -1603,42 +1954,6 @@ function read_files() {
 	
 	$users_file = $conf_base_path . "/users";
 	eval(file_get_contents($users_file));
-	
-	/*
-	require("$conf_base_path/web/admin/imena_korisnika.php");
-	
-	foreach ( file( $conf_base_path . "/active_users" ) as $act ) {
-		$aact = explode("\t", trim($act));
-		$username = $aact[0];
-		$realname = "";
-		if (array_key_exists($username, $imena_korisnika)) $realname = $imena_korisnika[$username];
-		$users[$username] = array(
-			"realname" => $realname,
-			"status" => "active",
-			"server" => "127.0.0.1",
-			"port" => $aact[1]
-		);
-	}
-
-	foreach ( file( $conf_base_path . "/inactive_users" ) as $act ) {
-		$aact = explode("\t", trim($act));
-		$username = $aact[0];
-		$realname = "";
-		if (array_key_exists($username, $imena_korisnika)) $realname = $imena_korisnika[$username];
-		$users[$username] = array(
-			"realname" => $realname,
-			"status" => "inactive",
-		);
-	}
-
-	$collaborators = array();
-	foreach ( file( $conf_base_path . "/collaborators" ) as $col ) {
-		$ccol = explode("\t", trim($col));
-		if (!array_key_exists("collaborate", $users[$ccol[0]]))
-			$users[$ccol[0]]["collaborate"] = array();
-		$users[$ccol[0]]["collaborate"][] = $ccol[1];
-	}
-	*/
 }
 
 // Write users file
@@ -1682,7 +1997,7 @@ function write_nginx_config() {
 		
 		$config .= $user_conf . "\n";
 		
-		if (array_key_exists("collaborate", $options))
+		if (array_key_exists("collaborate", $options) && $options['status'] === "active")
 		foreach ($options['collaborate'] as $partner) {
 			$partner_port = 0;
 			foreach($users as $maybe_partner => $partner_options) {

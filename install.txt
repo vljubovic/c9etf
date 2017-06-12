@@ -1,30 +1,33 @@
 INSTALL INSTRUCTIONS
 
-Install the following packages on Ubuntu 14.04 LTS:
+Install the following packages on Ubuntu 16.04 LTS:
 build-essential
-gdb
 nodejs
 nginx
-php5-fpm 
-php5-cli
+php-fpm 
+php-cli
 inotify-tools
 subversion
-php5-svn
-php5-ldap
+php-svn
+php-ldap
 git
 apache2-utils
 
 Optional:
-sqlite3 - for debugging svn
+gdb
+gdbserver - without this debugging in C/C++ programs will just give an error
+astyle - formatting C/C++/Java programs
+sqlite3 - for debugging svn problems
 valgrind
-gdbserver
+
+Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
 
 OPERATING SYSTEM CONFIGURATION
 
 To disable apport and enable core dump detection do the following:
 
-1. Edit /etc/default/apport modify it so that it reads
+1. Edit /etc/default/apport so that it reads
 enabled=0
 2. In /etc/sysctl.d create a new file named 60-core-pattern.conf with contents:
 kernel.core_pattern = core
@@ -37,15 +40,16 @@ UMASK		022
 and set it to:
 UMASK		077
 
+We strongly suggest that ntp is installed and configured so that time is accurate,
+or atleast that clocks on all nodes are synchronized
+
 
 C9 INSTALLATION
 
-1. Clone c9etf repository in a folder, e.g. /usr/local/webide. Note that if you just 
-changed the umask, you will have to do something like 
+1. Clone c9etf repository in a folder, e.g. /usr/local/webide. 
 
-chmod 755 * -R
-
-so that files would be accessible to other users.
+ $ cd /usr/local
+ $ sudo git clone https://github.com/vljubovic/c9etf webide
 
 
 2. Copy file lib/config.php.default to lib/config.php and edit it to your needs.
@@ -54,27 +58,58 @@ Defaults are just fine for test install.
 
 3. Run install.php. This script will make various changes to your system:
 
-php install.php
+ $ cd /usr/local/webide
+ $ sudo php install.php
 
 
 4. A user is created on your system named "c9" (or something else that you set in
 config.php as $conf_c9_user). Now you need to run Cloud9 as this user and visit 
 the web directly so that you could finish the install procedure.
- # su c9
+ $ sudo su c9
  $ cd /home/c9/fork
  $ nodejs server.js -p 10000 -a : -l YOURIP -w /home/c9/workspace
+
 Instead of YOURIP specify the IP address that you use to reach your server. If 
 server started correctly, you can now open
+
  http://YOURIP:10000/
 
+You will see a wizard for "Quickly setup Cloud9 on your workspace". This wizard 
+can not be automated, you need to go through it manually. It configures a 
+default workspace that will be copied to all the other users. Just click Next until
+you see a window that informs you that Cloud9 is successfully installed and click
+the button named Finish.
 
-5. Create a local user named 'admin' so you could access the admin web interface:
+Now you can safely close the browser window, then interrupt nodejs process in console 
+(just press Ctrl+C) and exit c9 user:
 
-/usr/local/webide/bin/webidectl add-local-user admin PASSWORD
+ ^C
+ c9@server:~fork$ exit
 
-Instead of PASSWORD insert the password that you wish to use.
+ 
+5. After wizard is finished, there are still some configuration steps that need to
+be done so that Cloud9 WebIDE would be accessible to users without issues. You need
+to again run install.php with "continue" parameter that instructs the installation
+script that you have already started Cloud9 installation and now wish to continue.
+
+ $ cd /usr/local/webide
+ $ sudo php install.php continue
 
 
-6. Visit webpage
-http://yourhost/
-http://yourhost/admin.php
+6. Create a local user named 'admin' so you could access the admin web interface:
+
+ $ sudo /usr/local/webide/bin/webidectl add-local-user admin PASSWORD
+
+Instead of PASSWORD insert the password that you wish to use. Create another local 
+user so you can test the webide:
+
+ $ sudo /usr/local/webide/bin/webidectl add-local-user test PASSWORD
+
+
+7. Visit webpage
+
+http://yourhost/ (login as user "test").
+
+http://yourhost/admin.php (login as user "admin")
+
+

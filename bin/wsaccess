@@ -43,13 +43,23 @@ case $cmd in
 			echo ERROR: File doesn\'t exist
 			exit 2
 		fi
+		if [ -d "$path" ]
+		then
+			echo ERROR: This is a directory, not a file
+			exit 3
+		fi
 		cat "$path"
 		;;
 	write)
+		if [ -e "$path" ]
+		then
+			rm "$path"
+		fi
 		while read x
 		do
-			echo $x >> "$relpath"
+			echo $x >> "$path"
 		done
+		chown $user:c9 "$path"
 		;;
 	zip)
 		zipfile="$4"
@@ -58,6 +68,11 @@ case $cmd in
 			echo ERROR: Not a directory or path doesn\'t exist
 			exit 3
 		fi
+		
+		for i in "$path/core*"; do
+			rm -f "$i"
+		done
+		
 		rm -f "$zipfile"
 		cd "$path"
 		zip -r "$zipfile" *
@@ -70,7 +85,7 @@ case $cmd in
 			echo ERROR: Not a directory or path doesn\'t exist
 			exit 3
 		fi
-		ls -a "$path"
+		ls -Fa --group-directories-first "$path"
 		;;
 	isdir)
 		if [ -d "$path" ]
@@ -111,8 +126,7 @@ case $cmd in
 			exit 4
 		fi
 		cp "$srcfile" "$dest"
-		chown $user "$dest"
-		chmod 644 "$dest"
+		chown $user "$path" -R
 		;;
 	svnrestore)
 		revision="$4"

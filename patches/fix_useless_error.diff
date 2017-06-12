@@ -1,0 +1,12 @@
+diff -Naur c9upstream/plugins/c9.fs/fs.js c9fork/plugins/c9.fs/fs.js
+--- c9upstream/plugins/c9.fs/fs.js	2017-04-09 19:19:24.547925065 +0200
++++ c9fork/plugins/c9.fs/fs.js	2017-04-10 12:00:07.565987451 +0200
+@@ -144,7 +144,7 @@
+                     if (progress)
+                         progress(null, null, true);
+                     
+-                    if (hasError && result === 0)
++                    if (hasError && result === 0 && !(err.code == "ENOENT" && err.message.substring(err.message.length-6) == "watch'"))
+                         emit("userError", errorEvent);
+                 }
+                 

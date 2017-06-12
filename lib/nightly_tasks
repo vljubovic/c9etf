@@ -25,28 +25,24 @@ chmod 644 $bcfile
 sleep 15
 rm $bcfile
 
-# Zadaci za koje svi moraju biti logoutovani
+# Tasks for which all users must be logouted
 echo kada se zavrsi redovno dnevno odrzavanje \(minut-dva\) > /usr/local/webide/razlog_nerada.txt
 echo Clear server
 echo Clear server >> /usr/local/webide/log/webidectl.log
 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
-echo 21 clear
-echo 21 clear >> /usr/local/webide/log/webidectl.log
-ssh 172.16.20.21 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
-echo 22 clear
-echo 22 clear >> /usr/local/webide/log/webidectl.log
-ssh 172.16.20.22 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
-echo 91 clear
-echo 91 clear >> /usr/local/webide/log/webidectl.log
-ssh 172.16.20.91 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
 echo 91 restart
 echo 91 restart >> /usr/local/webide/log/webidectl.log
 ssh 172.16.20.91 /etc/init.d/nfs-kernel-server restart &>> /usr/local/webide/log/webidectl.log
 echo rm fr
+echo rm fr >> /usr/local/webide/log/webidectl.log
 rm -fr /tmp/buildservice
 rm -fr /tmp/submit*
 rm -fr /usr/local/webide/watch/*
 rm -fr /tmp/web-background/*
+rm -fr /tmp/hw*
+rm -fr /tmp/vgdb-pipe*
+rm -fr /tmp/tmux-*
+rm -fr /tmp/bs_download*
 echo > /usr/local/webide/razlog_nerada.txt
 
 #echo 91 nightly
@@ -67,3 +63,8 @@ echo kill-inactive >> /usr/local/webide/log/webidectl.log
 #/usr/local/webide/bin/webidectl clean-inodes
 #cd /usr/local/webide/web/buildservice
 #php pull.php wait 5 >/usr/local/webide/log/pull_php.log &
+
+sleep 900
+echo Storage nightly
+echo Storage nightly >> /usr/local/webide/log/webidectl.log
+ssh 172.16.20.91 "/usr/local/webide/bin/webidectl storage-nightly > /usr/local/webide/log/nightly-log.txt"

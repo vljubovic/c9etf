@@ -1,0 +1,208 @@
+/* 
+ * PHPWEBIDE.CSS - style for web ide
+ */
+
+
+/* Tree icons */
+
+.filelist {
+    margin: 0;
+    padding: 0;
+    font-weight: normal;
+    padding-left: 20px;
+    color: #595959;
+    font-size: 1em;
+    cursor: pointer;
+}
+.filelist-file:before {
+    content: '\f016';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #595959;
+}
+h2.filelist:hover {
+    background-color: #ddd;
+}
+.filelist-folder:before {
+    content: '\f07b';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #595959;
+}
+.filelist-deleted:before {
+    content: '\f016';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #999999;
+}
+.filelist-deleted a {
+    color: #999;
+    text-decoration: none
+}
+div.filelist-folder-content {
+    display: block;
+    margin-left: 20px;
+}
+
+.filelist-selected a {
+    color: #fff;
+}
+h2.filelist-selected {
+    background-color: #aaa;
+}
+
+
+/* We'll use the same crap for test results */
+
+.testresult_success:before {
+    content: '\f00c';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #77aa77;
+}
+.testresult_fail:before {
+    content: '\f00d';
+    font-family: FontAwesome;
+    display: inline-block;
+    width: 1.2em;
+    color: #aa7777;
+}
+h2.filelist-file:hover {
+    background-color: #ddd;
+}
+h2.filelist-folder:hover {
+    background-color: #ddd;
+}
+
+
+
+/* Buttons */
+
+span.tree-button {
+    height: 32px;
+}
+.tree-button:hover {
+    background-color: #ccc;
+}
+
+.tree-button a {
+    color: #595959;
+    text-decoration: none;
+    font-size: 0.9em;    
+}
+
+
+/* Fixed properties of some widgets */
+
+#phpwebide_tree {
+    width: 200px;
+    min-height: 400px;
+}
+
+#phpwebide_toolbar {
+	position: absolute;
+	top: 180px;
+	right: 50px;
+	left: 200px;
+}
+
+#editor {
+	position: absolute;
+	top: 210px;
+	right: 50px;
+	left: 200px;
+}
+
+div.menu-widget {
+	position: absolute; 
+	display: none; 
+	border: 1px solid black; 
+	top: 0px; 
+	background: white; 
+	z-index: 65535
+}
+
+
+/* Admin tabs */
+
+.tabs-container {
+	clear: both;
+}
+
+.tabs-menu {
+    height: 30px;
+    float: left;
+    clear: both;
+}
+
+ul.tabs-menu {
+    list-style-type: none;
+}
+
+.tabs-menu li {
+    height: 30px;
+    line-height: 30px;
+    float: left;
+    margin-right: 10px;
+    background-color: #ccc;
+    border-top: 1px solid #d4d4d1;
+    border-right: 1px solid #d4d4d1;
+    border-left: 1px solid #d4d4d1;
+}
+
+.tabs-menu li.current {
+    position: relative;
+    background-color: #fff;
+    border-bottom: 1px solid #fff;
+    z-index: 5;
+}
+
+.tabs-menu li a {
+    padding: 10px;
+    text-transform: uppercase;
+    color: #fff;
+    text-decoration: none; 
+}
+
+.tabs-menu .current a {
+    color: #2e7da3;
+}
+
+.tab {
+    margin-right: 10px;
+    margin-top: 0px;
+    border: 1px solid #d4d4d1;
+    background-color: #fff;
+    margin-bottom: 20px;
+    width: 100%;
+    height: 0px;
+    overflow-y: scroll;
+}
+
+.tab-content {
+    width: 100%;
+    padding: 20px;
+    display: none;
+}
+
+#tab-1 {
+ display: block;   
+}
+
+.svn-log a {
+    color: #00f;
+    text-decoration: underline;
+}
+
+.svn-log-clicked {
+    background-color: #ccc;
+}
+
+.svn-log-clicked a {
+    color: #00f;
+    text-decoration: underline;
+}

@@ -1,0 +1,11 @@
+diff -Naur c9upstream/plugins/c9.ide.run/output.js c9fork/plugins/c9.ide.run/output.js
+--- c9upstream/plugins/c9.ide.run/output.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run/output.js	2017-04-11 10:04:52.923856468 +0200
+@@ -678,6 +678,7 @@
+                 transformButton(session);
+ 
+                 var cfg = session.config;
++                if (typeof cfg.debug === "undefined") cfg.debug=false;
+                 btnDebug.setAttribute("visible",
+                     !session.runner || session.runner.debugger ? true : false);
+                 if (cfg.debug != null)

@@ -1,0 +1,33 @@
+diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
+--- c9upstream/configs/ide/default.js	2017-04-10 10:36:27.139986556 +0200
++++ c9fork/configs/ide/default.js	2017-04-11 09:19:50.765438708 +0200
+@@ -600,7 +600,7 @@
+         },
+         "plugins/c9.ide.panels/panel",
+         "plugins/c9.ide.panels/area",
+-        "plugins/c9.ide.processlist/processlist",
++        //"plugins/c9.ide.processlist/processlist",
+         
+         // Installer
+         {
+diff -Naur c9upstream/plugins/c9.ide.processlist/processlist.js c9fork/plugins/c9.ide.processlist/processlist.js
+--- c9upstream/plugins/c9.ide.processlist/processlist.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.processlist/processlist.js	2017-04-11 09:19:47.445433201 +0200
+@@ -55,7 +55,7 @@
+             if (loaded) return false;
+             loaded = true;
+             
+-            commands.addCommand({
++            /*commands.addCommand({
+                 name: "showprocesslist",
+                 bindKey: { mac: "Command-Option-P", win: "Ctrl-Alt-P" },
+                 exec: function(editor, args) {
+@@ -65,7 +65,7 @@
+             
+             menus.addItemByPath("Tools/Process List", new ui.item({
+                 command: "showprocesslist"
+-            }), 1100, plugin);
++            }), 1100, plugin);*/
+         }
+         
+         var drawn = false;

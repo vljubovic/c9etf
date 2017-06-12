@@ -1,0 +1,308 @@
+diff -Naur c9upstream/configs/cli.js c9fork/configs/cli.js
+--- c9upstream/configs/cli.js	2017-04-09 19:19:24.367924786 +0200
++++ c9fork/configs/cli.js	2017-04-09 19:23:23.724258532 +0200
+@@ -21,30 +21,30 @@
+     : "https://" + APIHOST.replace(/api\./, "");
+ 
+ return [
+-    "./c9.core/ext",
++    "plugins/c9.core/ext",
+     {
+-        packagePath: "./c9.fs/fs",
++        packagePath: "plugins/c9.fs/fs",
+         baseProc: process.cwd(),
+         cli: true
+     },
+     {
+-        packagePath: "./c9.fs/net"
++        packagePath: "plugins/c9.fs/net"
+     },
+     {
+-        packagePath: "./c9.fs/proc",
++        packagePath: "plugins/c9.fs/proc",
+         baseProc: process.cwd()
+     },
+-    "./c9.vfs.client/vfs.cli",
+-    "./c9.cli/cli",
++    "plugins/c9.vfs.client/vfs.cli",
++    "plugins/c9.cli/cli",
+     {
+-        packagePath: "./c9.cli/auth.bootstrap",
++        packagePath: "plugins/c9.cli/auth.bootstrap",
+         authUrl: AUTHURL
+     },
+     {
+-        packagePath: "./c9.cli.publish/publish",
++        packagePath: "plugins/c9.cli.publish/publish",
+     },
+     {
+-        packagePath: "./c9.ide.auth/auth",
++        packagePath: "plugins/c9.ide.auth/auth",
+         accessToken: "token",
+         ideBaseUrl: "",
+         apiUrl: APIURL,
+@@ -52,27 +52,27 @@
+         // userId: process.env.C9_USER
+     },
+     {
+-        packagePath: "./c9.core/api",
++        packagePath: "plugins/c9.core/api",
+         apiUrl: APIURL,
+         projectId: PID
+     },
+     {
+-        packagePath: "./c9.core/http-node"
++        packagePath: "plugins/c9.core/http-node"
+     },
+     {
+-        packagePath: "./c9.cli.bridge/bridge-client",
++        packagePath: "plugins/c9.cli.bridge/bridge-client",
+         port: 17123
+     },
+     {
+-        packagePath: "./c9.cli.open/open",
++        packagePath: "plugins/c9.cli.open/open",
+         platform: process.platform
+     },
+     {
+-        packagePath: "./c9.cli.exec/exec",
++        packagePath: "plugins/c9.cli.exec/exec",
+         platform: process.platform
+     },
+     {
+-        packagePath: "./c9.cli.open/restart",
++        packagePath: "plugins/c9.cli.open/restart",
+         platform: process.platform
+     },
+     {
+diff -Naur c9upstream/configs/standalone.js c9fork/configs/standalone.js
+--- c9upstream/configs/standalone.js	2017-04-09 19:19:24.367924786 +0200
++++ c9fork/configs/standalone.js	2017-04-09 19:25:29.424409719 +0200
+@@ -83,6 +83,7 @@
+     config.projectName = path.basename(baseProc);
+     config.testing = testing;
+     config.debug = debug;
++    config.baseUrl = "static/";
+     
+     if (!config.startBridge)
+         config.startBridge = startBridge;
+diff -Naur c9upstream/local/server.js c9fork/local/server.js
+--- c9upstream/local/server.js	2017-04-09 19:19:24.367924786 +0200
++++ c9fork/local/server.js	2017-04-09 19:26:35.760484501 +0200
+@@ -327,7 +327,7 @@
+                     if (options.packed || isRemote)
+                         p.loadTheme = loadTheme;
+                     else
+-                        p.themePrefix = "/static/standalone/skin/default-local";
++                        p.themePrefix = "static/standalone/skin/default-local";
+                 }
+                 else if (p.packagePath === "plugins/c9.vfs.client/endpoint") {
+                     p.getServers = options.getServers;
+diff -Naur c9upstream/node_modules/connect-architect/connect.static/static-plugin.js c9fork/node_modules/connect-architect/connect.static/static-plugin.js
+--- c9upstream/node_modules/connect-architect/connect.static/static-plugin.js	2017-04-09 19:19:24.487924972 +0200
++++ c9fork/node_modules/connect-architect/connect.static/static-plugin.js	2017-04-09 19:29:38.300676240 +0200
+@@ -1,13 +1,13 @@
+ module.exports = function startup(options, imports, register) {
+ 
+-    var prefix = options.prefix || "/static";
++    var prefix = options.prefix || "static";
+     var rjs = {
+         "paths": {},
+         "packages": [],
+         "baseUrl": prefix
+     };
+     
+-    var workerPrefix = options.workerPrefix || "/static";
++    var workerPrefix = options.workerPrefix || "static";
+ 
+     var connect = imports.connect.getModule();
+     var staticServer = connect.createServer();
+diff -Naur c9upstream/plugins/c9.ide.editors/metadata.js c9fork/plugins/c9.ide.editors/metadata.js
+--- c9upstream/plugins/c9.ide.editors/metadata.js	2017-04-09 19:19:24.567925096 +0200
++++ c9fork/plugins/c9.ide.editors/metadata.js	2017-04-09 19:31:46.704506078 +0200
+@@ -523,7 +523,7 @@
+         hash.counter = 0;
+         function hash(data, callback) {
+             if (!worker) {
+-                worker = createWorker((options.staticPrefix || "/static") + "/lib/rusha/rusha.min.js");
++                worker = createWorker((options.staticPrefix || "static") + "/lib/rusha/rusha.min.js");
+                 worker.addEventListener("message", function(e) {
+                     // @todo security?
+                     
+diff -Naur c9upstream/plugins/c9.vfs.client/endpoint.js c9fork/plugins/c9.vfs.client/endpoint.js
+--- c9upstream/plugins/c9.vfs.client/endpoint.js	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.vfs.client/endpoint.js	2017-04-09 19:32:23.680392998 +0200
+@@ -64,8 +64,10 @@
+             function init() {
+                 options.getServers = undefined;
+                 var loc = require("url").parse(baseURI || document.baseURI || window.location.href);
++                var basePath = loc.path;
++                basePath = basePath.substring(0, basePath.lastIndexOf('/'));
+                 var defaultServers = [{
+-                    url: loc.protocol + "//" + loc.hostname + (loc.port ? ":" + loc.port : "") + "/vfs",
++                    url: loc.protocol + "//" + loc.hostname + (loc.port ? ":" + loc.port : "") + basePath + "/vfs",
+                     region: "default"
+                 }];
+                 servers = (urlServers || options.servers || defaultServers).map(function(server) {
+@@ -126,7 +128,7 @@
+         }
+ 
+         function isOnline(callback) {
+-            http.request("/_ping", {
++            http.request("_ping", {
+                 timeout: 3000,
+                 headers: {
+                     Accept: "application/json"
+diff -Naur c9upstream/plugins/c9.vfs.standalone/standalone.js c9fork/plugins/c9.vfs.standalone/standalone.js
+--- c9upstream/plugins/c9.vfs.standalone/standalone.js	2017-04-09 19:19:24.619925176 +0200
++++ c9fork/plugins/c9.vfs.standalone/standalone.js	2017-04-09 19:51:56.039091634 +0200
+@@ -48,7 +48,7 @@
+     imports.connect.use(api);
+     
+     api.get("/", function(req, res, next) {
+-        res.writeHead(302, { "Location": options.sdk ? "/ide.html" : "/static/places.html" });
++        res.writeHead(302, { "Location": options.sdk ? "ide.html" : "static/places.html" });
+         res.end();
+     });
+     
+@@ -106,9 +106,9 @@
+             opts.packed = opts.options.packed = true;
+         
+         var cdn = options.options.cdn;
+-        options.options.themePrefix = "/static/" + cdn.version + "/skin/" + configName;
+-        options.options.workerPrefix = "/static/" + cdn.version + "/worker";
+-        options.options.CORSWorkerPrefix = opts.packed ? "/static/" + cdn.version + "/worker" : "";
++        options.options.themePrefix = cdn.version + "/skin/" + configName;
++        options.options.workerPrefix = "static/" + cdn.version + "/worker";
++        options.options.CORSWorkerPrefix = opts.packed ? "static/" + cdn.version + "/worker" : "";
+         
+         api.updatConfig(opts.options, {
+             w: req.params.w,
+@@ -204,8 +204,11 @@
+     api.get("/configs/require_config.js", function(req, res, next) {
+         var config = res.getOptions().requirejsConfig || {};
+         
++        var str = JSON.stringify(config);
++        str = str.replace(/\/static/g, "static");
++        
+         res.writeHead(200, { "Content-Type": "application/javascript" });
+-        res.end("requirejs.config(" + JSON.stringify(config) + ");");
++        res.end("requirejs.config(" + str + ");");
+     });
+     
+     api.get("/test/all.json", function(req, res, next) {
+diff -Naur c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs
+--- c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:19:24.619925176 +0200
++++ c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:34:58.608000754 +0200
+@@ -23,17 +23,17 @@
+     <% include ../../c9.ide.server/views/load-screen.ejs %>
+ 
+     <% if (packed) { %>
+-        <script src="/static/<%=version%>/config/<%=configName%>.js"></script>
++        <script src="static/<%=version%>/config/<%=configName%>.js"></script>
+     <% } else { %>
+-        <script src="/static/mini_require.js"></script>
+-        <script src="/configs/require_config.js"></script>
++        <script src="static/mini_require.js"></script>
++        <script src="configs/require_config.js"></script>
+     <% } %>
+     <script>
+         var plugins = <%-: architectConfig | JSONToJS %>;
+         var start = Date.now();
+         
+         <% if (packed) { %>
+-            require.MODULE_LOAD_URL = "/static/standalone/modules"
++            require.MODULE_LOAD_URL = "static/standalone/modules"
+         <% } %>
+         
+         if (isLocalVersion)
+diff -Naur c9upstream/plugins/c9.vfs.standalone/www/places.html c9fork/plugins/c9.vfs.standalone/www/places.html
+--- c9upstream/plugins/c9.vfs.standalone/www/places.html	2017-04-09 19:19:24.619925176 +0200
++++ c9fork/plugins/c9.vfs.standalone/www/places.html	2017-04-09 19:36:05.359866087 +0200
+@@ -9,30 +9,30 @@
+ <script>
+ var places = {
+     Cloud9: {
+-        IDE: ["/ide.html", "?devel=1", "?reset=state", "?reset=settings", "?reset=1", "?noworker=1", "?packed=1", "?collab=0"],
+-        VFS: "/vfs",
+-        Preview: "/preview",
+-        StaticIde: ["/static/ide.html", "/static/ide.offline.html"],
+-        Test: "/static/test.html",
+-        List_of_tests: "/static/test.html?",
++        IDE: ["ide.html", "?devel=1", "?reset=state", "?reset=settings", "?reset=1", "?noworker=1", "?packed=1", "?collab=0"],
++        VFS: "vfs",
++        Preview: "preview",
++        StaticIde: ["static/ide.html", "static/ide.offline.html"],
++        Test: "static/test.html",
++        List_of_tests: "static/test.html?",
+     },
+     Collab: {
+-        main: "/static/plugins/c9.ide.collab/collab_test.html",
++        main: "static/plugins/c9.ide.collab/collab_test.html",
+     },
+     Ace: {
+-        kitchen_sink: ["/static/lib/ace/kitchen-sink.html", "/../lib/ace/test/tests.html"],
+-        tree: "/static/lib/ace_tree/demo.html",
+-        list: "/static/lib/ace_tree/list_demo.html",
+-        diff: "/static/plugins/c9.ide.scm/diff/index.html"
++        kitchen_sink: ["static/lib/ace/kitchen-sink.html", "../lib/ace/test/tests.html"],
++        tree: "static/lib/ace_tree/demo.html",
++        list: "static/lib/ace_tree/list_demo.html",
++        diff: "static/plugins/c9.ide.scm/diff/index.html"
+     },
+     Treehugger: {
+-        test: "/static/lib/treehugger/test.html"
++        test: "static/lib/treehugger/test.html"
+     },
+     Pivot: {
+-        demo6: "/static/lib/pivottable/experiments/demo6.html"
++        demo6: "static/lib/pivottable/experiments/demo6.html"
+     },
+     uiLib: {
+-        demo: "/static/plugins/c9.ide.ui/lib/test.html"
++        demo: "static/plugins/c9.ide.ui/lib/test.html"
+     },
+ };
+ 
+diff -Naur c9upstream/settings/standalone.js c9fork/settings/standalone.js
+--- c9upstream/settings/standalone.js	2017-04-09 19:19:24.619925176 +0200
++++ c9fork/settings/standalone.js	2017-04-09 19:51:49.855093057 +0200
+@@ -61,14 +61,14 @@
+         nodeBin: [path.join(installPath, win32 ? "node.exe" : "node/bin/node"), process.execPath],
+         installPath: installPath,
+         correctedInstallPath: correctedInstallPath,
+-        staticPrefix: "/static",
+-        projectUrl: "/workspace",
++        staticPrefix: "static",
++        projectUrl: "workspace",
+         ideBaseUrl: "http://c9.io",
+-        previewUrl: "/preview",
++        previewUrl: "preview",
+         dashboardUrl: "https://c9.io/dashboard.html",
+         accountUrl: "https://c9.io/account",
+-        apiUrl: "/api",
+-        homeUrl: "/home",
++        apiUrl: "api",
++        homeUrl: "home",
+         collab: false,
+         installed: true,
+         packed: false,
+@@ -78,7 +78,7 @@
+         isAdmin: true,
+         runners: runners,
+         builders: builders,
+-        themePrefix: "/static/standalone/skin",
++        themePrefix: "static/standalone/skin",
+         cdn: {
+             version: "standalone",
+             cacheDir: __dirname + "/../build",
+@@ -133,7 +133,8 @@
+         },
+         pricing: { containers: [] },
+         localExtend: true,
+-        extendDirectory: __dirname + "/../plugins"
++        extendDirectory: __dirname + "/../plugins",
++        baseUrl: "static"
+     };
+ 
+     config.extendOptions = {

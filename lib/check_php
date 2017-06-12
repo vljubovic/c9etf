@@ -1,0 +1,63 @@
+#!/bin/bash
+trigger_stop=13.00
+trigger_start=9.00
+cpuidle_trigger=30
+php_up=1
+COUNTER=0
+
+for (( ; ; ))
+do
+	if [ $php_up -eq 0 ]
+	then
+		cpuidle=`tail -1 /usr/local/webide/server_stats.log | cut -d " " -f 1`
+		#echo cpuidle $cpuidle
+		if [ "$cpuidle" -lt "$cpuidle_trigger" ]
+		then
+			COUNTER=0
+		else
+			let COUNTER=COUNTER+1
+		fi
+		
+		if [ "$COUNTER" -gt 3 ]
+		then
+			echo Starting php
+			/usr/local/webide/lib/start_php
+			php_up=2
+			COUNTER=0
+		fi
+	fi
+    
+	if [ $php_up -eq 1 ]
+	then
+		load=`cat /proc/loadavg | cut -d " " -f 1`
+		#echo load $load
+		if (( $(echo "$load > $trigger_stop" |bc -l) ))
+		then
+			echo Stopping php
+			/usr/local/webide/lib/stop_php
+			php_up=0
+		fi
+	fi
+    
+	if [ $php_up -eq 2 ]
+	then
+		load=`cat /proc/loadavg | cut -d " " -f 1`
+		cpuidle=`tail -1 /usr/local/webide/server_stats.log | cut -d " " -f 1`
+		#echo 2 load $load
+		if [ "$cpuidle" -lt "$cpuidle_trigger" ]
+		then
+			echo Stopping php
+			/usr/local/webide/lib/stop_php
+			php_up=0
+		else
+			if (( $(echo "$load < $trigger_start" |bc -l) ))
+			then
+				php_up=1
+			fi 
+		fi
+		
+	fi
+		
+	echo -n .
+	sleep 1
+done

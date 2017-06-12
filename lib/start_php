@@ -1,0 +1,3 @@
+#!/bin/bash
+sed -i 's/127.0.0.1:8999/127.0.0.1:9000/' /usr/local/webide/nginx.skeleton.conf
+/usr/local/webide/bin/webidectl reset-nginx

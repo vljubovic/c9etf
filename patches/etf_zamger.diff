@@ -1,0 +1,23 @@
+diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
+--- c9upstream/configs/ide/default.js	2017-04-12 09:31:56.792434259 +0200
++++ c9fork/configs/ide/default.js	2017-04-12 09:32:04.040409942 +0200
+@@ -819,6 +819,7 @@
+         "plugins/etf.annotate/annotate",
+         "plugins/etf.buildservice/panel",
+         "plugins/etf.zadaci/panel",
++        "plugins/etf.zamger/gui",
+         
+         // git integration
+         "plugins/c9.ide.scm/mergetool"
+diff -Naur c9upstream/plugins/c9.ide.layout.classic/layout.js c9fork/plugins/c9.ide.layout.classic/layout.js
+--- c9upstream/plugins/c9.ide.layout.classic/layout.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.layout.classic/layout.js	2017-04-11 10:44:25.359064655 +0200
+@@ -269,6 +269,8 @@
+             }
+             if (obj.name == "save") 
+                 return plugin.getElement("barTools");
++            if (obj.name == "zamger.gui") 
++                return plugin.getElement("barTools");
+             if (obj.name == "run.gui") 
+                 return plugin.getElement("barTools");
+             else if (obj.name == "console") {

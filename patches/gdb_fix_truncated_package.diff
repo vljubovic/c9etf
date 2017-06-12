@@ -1,0 +1,57 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:21:59.530682246 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/shim.js	2017-04-11 11:21:46.470683576 +0200
+@@ -469,6 +469,7 @@
+         var t_in_array = [];
+         var in_array = 0;
+         var in_string = 0;
++        var last_closed_brace_pos = -1;
+         for (var i = 0; i < args.length; i++) {
+             /* This is a small state handling
+              * in order to see if we are in an array
+@@ -483,8 +484,10 @@
+             if (!in_string && args[i] == "{")
+                 t_in_array.push(0);
+ 
+-            if (!in_string && (args[i] == "]" || args[i] == "}"))
++            if (!in_string && (args[i] == "]" || args[i] == "}")) {
+                 t_in_array.pop();
++                last_closed_brace_pos = i;
++            }
+ 
+             /* in_array == 1 if we are in an array =) */
+             if (t_in_array.length > 0) in_array = t_in_array[t_in_array.length - 1];
+@@ -494,6 +497,7 @@
+             if (!in_string && in_array && i<args.length-1
+                 && (args[i] == "," || args[i] == "[")
+                 && args[i + 1] == "\"") {
++                log("Removing array label at index "+i);
+                 var k = i;
+ 
+                 /* Walk the label */
+@@ -512,6 +516,25 @@
+                 }
+             }
+         }
++        
++        /* Fixing partial messages sometimes returned by gdb */
++        /* We will truncate to last closed brace and close remaining unclosed */
++        if (t_in_array.length > 0) {
++            if (last_closed_brace_pos > 0) {
++                for (var i = last_closed_brace_pos; i < args.length; i++) {
++                    if (args.charAt(i) == "[" || args.charAt(i) == "{")
++                        t_in_array.pop();
++                }
++                args = args.substring(0, last_closed_brace_pos+1);
++            }
++            while (t_in_array.length > 0) {
++                if (t_in_array.pop() == 1)
++                    args += "]";
++                else
++                    args += "}";
++            }
++            log("after fixing: "+args);
++        }
+         return args;
+     };
+ 

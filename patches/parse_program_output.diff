@@ -1,0 +1,61 @@
+diff -Naur c9upstream/plugins/c9.ide.run/output.js c9fork/plugins/c9.ide.run/output.js
+--- c9upstream/plugins/c9.ide.run/output.js	2017-04-11 10:07:23.791684502 +0200
++++ c9fork/plugins/c9.ide.run/output.js	2017-04-11 10:09:54.451518846 +0200
+@@ -385,6 +385,57 @@
+                     session.updateTitle();
+                 }, plugin);
+                 session.process.on("stopped", function() {
++			var id = "output";			
++			
++			function parseOutput(tablist, session, firstTime) {
++				text="";
++				for (var i = 0; i < tablist.length; i++) {
++					if (tablist[i].editorType == "output"
++					&& (session = tablist[i].document.getSession())
++					&& tablist[i].active
++					) {
++					//window.console.log(session);
++					//session.resize(true);
++					//session.terminal.refreshView(0,100);
++					//session.pty.resize(50,50);
++					
++					// This forces the output tab to refresh because connection to server will be reopened
++					// It's the best fix to the "dissapearing output" bug
++					//if (prviPut)
++					//	session.pty.write(0);
++					
++					// Get contents of output tab
++					var doc = tablist[i].editor.container.childNodes[0];
++					for (var j = 0; j<doc.childNodes.length; j++) {
++						if (doc.childNodes[j].className == "ace_scroller") {
++							//window.console.log(doc.childNodes[i].textContent);
++							text = doc.childNodes[j].textContent;
++							break;
++						}
++					}
++					//window.console.log(tablist[i].editor.getState());
++					}
++				}
++				
++				// Retry after 1 second
++				if (!text.match(/\w/)) {
++					setTimeout(parseOutput, 1000, tablist, session, false);
++				}
++				
++				// Test for time exceeded
++				var timeout_regex = /CPU.time.limit.exceeded/;
++				var totxt = text.match(timeout_regex);
++				if (totxt) {
++					showAlert(
++					"Beskonačna petlja",
++					"Vaš program je radio duže od 10 sekundi",
++					"Uzrok je najvjerovatnije beskonačna petlja"
++					);
++				}
++			}
++			
++			parseOutput(tabs.getTabs(), session, true);
++			
+                     if (session == currentSession) {
+                         btnRun.enable();
+                         btnRestart.enable();

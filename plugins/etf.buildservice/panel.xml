@@ -1,0 +1,9 @@
+<a:application xmlns:a="http://ajax.org/2005/aml">
+    <a:hbox class="imgtoolbar fakehbox aligncenter padding3" id="barTools" height="30" align="center">
+    </a:hbox>
+    
+    <a:vbox padding="10" edge="15 20 25 20">
+        <a:label id="labelRight">Rezultati testiranja:</a:label>
+        <a:bar id="buildserviceList" style="position:absolute;top:70px;right:10px;left:10px;bottom:0" class="searchresults"/>
+    </a:vbox>
+</a:application>

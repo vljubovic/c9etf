@@ -1,0 +1,16 @@
+diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
+--- c9upstream/configs/ide/default.js	2017-04-09 19:19:24.367924786 +0200
++++ c9fork/configs/ide/default.js	2017-04-10 10:27:16.262875118 +0200
+@@ -586,9 +586,9 @@
+             packagePath: "plugins/c9.ide.navigate/navigate",
+             loadListAtInit: false
+         },
+-        {
+-            packagePath: "plugins/c9.ide.keys/panel"
+-        },
++        //{
++        //    packagePath: "plugins/c9.ide.keys/panel"
++        //},
+         {
+             packagePath: "plugins/c9.ide.language.core/outline",
+             staticPrefix: staticPrefix + "/plugins/c9.ide.language"

@@ -70,7 +70,10 @@ $conf_max_user_svn_disk_usage = 50000; // in kB
 $conf_svn_problems_log = $conf_base_path . "/log/svn_problems.log";
 $conf_syncsvn_log = $conf_home_path . "/c9/monitor.out"; // This must be in home path so it would be visible from control server
 
+// Timeout after which we assume that node is inaccessible
+$conf_node_timeout = 60;
 
+$conf_nginx_user = "www-data";
 $conf_nginx_conf_path = "/etc/nginx/sites-enabled/default";
 
 $conf_nodes = array( 
@@ -122,7 +125,7 @@ $conf_zamger = false;
 // Install.php configuration
 // =========================================
 
-$cloud9_git_url = "https://github.com/vljubovic/core";
+$cloud9_git_url = "https://github.com/c9/core";
 $buildservice_git_url = "https://github.com/etf-sarajevo/buildservice";
 
 

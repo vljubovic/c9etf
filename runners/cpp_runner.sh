@@ -9,9 +9,10 @@ gccout="$1/.gcc.out"
 valgrindout="$1/.valgrind.out"
 gdbout="$1/.gdb.out"
 corefile="$valgrindout.core."
+output="$1/.output"
 
 timesrc=$(stat -c %Y "$srcfile")
-timebin=0
+timebin="0"
 if [ -e "$exefile" ]
 then
 	timebin=$(stat -c %Y "$exefile")
@@ -41,13 +42,14 @@ then
 	nice -n 10 /usr/local/bin/gdbserver --once :$debugport "$exefile"
 else
 	ulimit -c unlimited
-	nice -n 10 valgrind --leak-check=full --log-file="$valgrindout" "$exefile"
+	nice -n 10 valgrind --leak-check=full --log-file="$valgrindout" "$exefile" | tee "$output"
 	#nice -n 10 $exefile
 	#corefile="core"
-	for file in `ls "$corefile"* 2>/dev/null`
+	shopt -s nullglob
+	for file in "$corefile"*
 	do
 		#echo Debugging $file
-		gdb --batch -ex "bt 100" --core=$file "$exefile" 2>&1 >"$gdbout"
+		gdb --batch -ex "bt 100" --core="$file" "$exefile" 2>&1 >"$gdbout"
 		rm "$file"
 	done
 fi

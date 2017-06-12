@@ -9,7 +9,7 @@ debug_log("starting");
 
 
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".valgrind.out");
-$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/");
+$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/", "/autotest.txt/");
 $vrijeme_kreiranja = 0; // Dodajemo ovoliko sekundi za svaki kreirani fajl. Ovo se dosta poveća...
 $vrijeme_limit = 60; // Pauzu veću od ovoliko sekundi računamo kao ovoliko sekundi
 $file_content_limit = 100000; // Ignorišemo fajlove veće od 100k
@@ -30,7 +30,7 @@ $username = $argv[1];
 	debug_log("read stats");
 read_stats($username);
 clean_stats();
-	debug_log("azuriraj_statistiku");
+	debug_log("update_stats");
 update_stats($username);
 	debug_log("ksort");
 ksort($stats);
@@ -73,7 +73,7 @@ function read_stats($username) {
 
 // Write stats file
 function write_stats($username) {
-	global $stats, $conf_stats_path, $split_folder;
+	global $stats, $conf_stats_path, $split_folder, $conf_nginx_user;
 	
 	$username_efn = escape_filename($username);
 	
@@ -100,10 +100,15 @@ function write_stats($username) {
 				unset($stats_goto[$key]);
 			}
 		}
-		file_put_contents( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
-		chmod($goto_file, 0644);
+		
+		ensure_write( $goto_file, "\$stats_goto = ". var_export($stats_goto, true) . ";" );
+		chown($goto_file, $conf_nginx_user);
+		chmod($goto_file, 0640);
 	}
-	file_put_contents( $conf_stats_path . "/$username_efn.stats", "\$stats = " . var_export($stats, true) . ";" );
+	$stats_file = $conf_stats_path . "/$username_efn.stats";
+	ensure_write( $stats_file, "\$stats = " . var_export($stats, true) . ";" );
+	chown($stats_file, $conf_nginx_user);
+	chmod($stats_file, 0640);
 }
 
 // Remove unwanted stuff from stats file
@@ -131,7 +136,7 @@ function clean_stats() {
 					unset($lastpos['del']);
 				}
 				
-				if (array_key_exists('diff', $value['events'][$i])) {
+				if (array_key_exists($i, $value['events']) && array_key_exists('diff', $value['events'][$i])) {
 					$txt = "";
 					if (array_key_exists('add_lines', $value['events'][$i]['diff']))
 						foreach ($value['events'][$i]['diff']['add_lines'] as $line)
@@ -205,10 +210,22 @@ function svnsort($a, $b) {
 
 function update_stats($username) {
 	global $username, $conf_svn_path, $stats, $prefix, $vrijeme_kreiranja, $svn_ignore, $vrijeme_limit, $skip_diff, $file_content_limit;
-	//print "AŽURIRAMO...\n";
+	
+	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
+	
+	// Provjeravamo da li je Last_update_rev bitno veći od trenutne revizije
+	$tmp_log = svn_log($svn_path, SVN_REVISION_HEAD, SVN_REVISION_HEAD);
+	if (empty($tmp_log)) {
+		print "SVN repozitorij za $username je prazan!\n";
+		exit(1);
+	}
+	$svn_last_rev = $tmp_log[0]['rev'];
+	if ($svn_last_rev < $stats['last_update_rev']-1) {
+		print "Repozitorij se resetovao u međuvremenu :(\n";
+		$stats['last_update_rev'] = SVN_REVISION_INITIAL;
+	}
 
 	// Uzimamo log sa SVNa
-	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
 	$svn_log = svn_log($svn_path, SVN_REVISION_HEAD, $stats['last_update_rev']);
 	if (!$svn_log || empty($svn_log)) return;
 	foreach($svn_log as &$entry)
@@ -572,8 +589,10 @@ function update_stats($username) {
 
 				$ukupno_testova = count($testovi['test_specifications']);
 				$uspjesnih_testova = 0;
-				foreach ($rezultati_testova['test_results'] as $test) {
-					if ($test['status'] == 1) $uspjesnih_testova++;
+				if (is_array($rezultati_testova) && array_key_exists("test_results", $rezultati_testova) && is_array($rezultati_testova['test_results'])) {
+					foreach ($rezultati_testova['test_results'] as $test) {
+						if ($test['status'] == 1) $uspjesnih_testova++;
+					}
 				}
 				$stats[$filepath]['last_test_results'] = "$uspjesnih_testova/$ukupno_testova";
 				
@@ -648,6 +667,16 @@ function compressed_diff($diff_text) {
 	if (count($result['add_lines']) == 0) unset($result['add_lines']);
 	
 	return $result;
+}
+
+
+function ensure_write($filename, $content) {
+	$retry = 1;
+	while(true) {
+		if (file_put_contents($filename, $content)) return;
+		print "Error writing $filename... retry in $retry seconds\n";
+		sleep($retry);
+	}
 }
 
 

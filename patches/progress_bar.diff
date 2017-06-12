@@ -1,0 +1,58 @@
+diff -Naur c9upstream/node_modules/architect-build/build_support/mini_require.js c9fork/node_modules/architect-build/build_support/mini_require.js
+--- c9upstream/node_modules/architect-build/build_support/mini_require.js	2017-04-09 19:19:24.479924959 +0200
++++ c9fork/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:55:24.648870829 +0200
+@@ -394,6 +394,10 @@
+ }
+ 
+ var loadScriptWithTag = function(path, id, callback) {
++    console.log("Loading: "+path);
++    var progress = document.getElementById('etf.progress');
++    if (progress) progress.max = progress.max + 1;
++
+     // TODO use importScripts for webworkers
+     var head = document.head || document.documentElement;
+     var s = document.createElement("script");
+@@ -405,13 +409,17 @@
+         s.crossOrigin = true;
+     
+     s.onload = s.onreadystatechange = function(_, isAbort) {
+-        if (isAbort || !s.readyState || s.readyState == "loaded" || s.readyState == "complete") {
++       console.log("Success: "+path);
++       if (progress) progress.value = progress.value + 1;
++       if (isAbort || !s.readyState || s.readyState == "loaded" || s.readyState == "complete") {
+             s = s.onload = s.onreadystatechange = null;
+             if (!isAbort)
+                 callback(null, id);
+         }
+     };
+     s.onerror = function(e) {
++        console.log("Error: "+path);
++        if (progress) progress.max = progress.max - 1;
+         processLoadQueue({
+             message: "Error loading script " + id  + ":" + path,
+             id: id,
+diff -Naur c9upstream/plugins/c9.ide.server/views/classic-load-screen.html c9fork/plugins/c9.ide.server/views/classic-load-screen.html
+--- c9upstream/plugins/c9.ide.server/views/classic-load-screen.html	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.server/views/classic-load-screen.html	2017-04-10 10:56:06.016854624 +0200
+@@ -7,6 +7,7 @@
+         </div>
+         <div class="loading-seperator" id="loading-seperator"></div>
+         <div class="loading-msg" id="loading-msg">Everything as you left it</div>
++        <progress id="etf.progress" value="0" max="0"></progress>
+         
+         <div class="ui-progress-bar ui-container" id="progress_bar">
+             <div class="ui-progress" style="width: 7%;">
+diff -Naur c9upstream/plugins/c9.ide.server/views/flat-load-screen.html c9fork/plugins/c9.ide.server/views/flat-load-screen.html
+--- c9upstream/plugins/c9.ide.server/views/flat-load-screen.html	2017-04-09 19:19:24.607925158 +0200
++++ c9fork/plugins/c9.ide.server/views/flat-load-screen.html	2017-04-10 10:56:05.228854905 +0200
+@@ -4,8 +4,9 @@
+         <div id="c9logo"></div>
+         <div class="cool-message"></div>
+         <div class="status" style="display:none"><div class="spinner"></div></div>
+         
+         <div id="content" class="loading-progress">
++        <progress id="etf.progress" value="0" max="0"></progress>
+         </div>
+         <div class="footer">
+             <a href="https://docs.c9.io">Documentation</a> | 
+

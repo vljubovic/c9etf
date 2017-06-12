@@ -1,0 +1,20 @@
+
+.zadtree-naslov {
+	background: transparent !important;
+	margin: 10px 10px 10px 10px;
+	color: MYCOLOR !important;
+}
+
+.zadtree {
+	background: transparent !important;
+	color: MYCOLOR !important;
+	margin-top: 20px;
+	margin-left: 20px;
+}
+
+.zadtree .toggler {
+	color: MYCOLOR;
+	margin-right: 10px;
+	background-image: url(TOGGLERIMG);
+	background-repeat: no-repeat;
+}

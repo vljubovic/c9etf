@@ -1,0 +1,48 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/gdbdebugger.js c9fork/plugins/c9.ide.run.debug/debuggers/gdb/gdbdebugger.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/gdb/gdbdebugger.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/gdb/gdbdebugger.js	2017-04-11 11:03:46.871214037 +0200
+@@ -437,9 +437,43 @@
+             });
+         }
+ 
++        /*
++         * Several fixes for evaluating expressions and frame variables
++         */
++        function fixExpression(expression, frame) {
++            if (!frame) return expression; // No frame, program probably not running
++                
++            // Test if expression is a vector or vector element
++            var is_vector=false, is_vector_element=false, vector_name=false, vector_index=false;
++            if (match = expression.match(/^([\w_]+)\[(.+)\]$/)) {
++                is_vector_element=true;
++                vector_name=match[1];
++                vector_index=match[2];
++            } else if (match = expression.match(/^([\w_]+)$/)) {
++                vector_name=match[1];
++            }
++        
++            for(var v in frame.variables) {
++                if ("name" in frame.variables[v]) console.log("trying "+frame.variables[v].name);
++                if ("type" in frame.variables[v]) console.log("type "+frame.variables[v].type);
++                if ("name" in frame.variables[v] && "type" in frame.variables[v] && frame.variables[v].name == vector_name && frame.variables[v].type.indexOf("std::vector<") >= 0) {
++                    is_vector=true;
++                    break;
++                }
++            }        
++
++            // Replace expression with format that works in gdb
++            if (is_vector && is_vector_element)
++                expression = "*(" + vector_name + "._M_impl._M_start+" + vector_index + ")";
++            else if (is_vector)
++                expression = "*(" + vector_name + "._M_impl._M_start)@(" + vector_name + "._M_impl._M_finish-" + vector_name + "._M_impl._M_start)";
++            return expression;
++        }
++
+         function evaluate(expression, frame, global, disableBreak, callback) {
++            var actualExpression = fixExpression(expression, frame);
+             var args = {
+-                "exp": expression,
++                "exp": actualExpression,
+                 "f": (!frame || frame.index == null) ? 0 : frame.index,
+                 "t": (!frame || frame.thread == null) ? 1 : frame.thread,
+             };

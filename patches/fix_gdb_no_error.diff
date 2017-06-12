@@ -1,0 +1,12 @@
+diff -Naur c9upstream/plugins/c9.ide.run.debug/debuggers/debugger.js c9fork/plugins/c9.ide.run.debug/debuggers/debugger.js
+--- c9upstream/plugins/c9.ide.run.debug/debuggers/debugger.js	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run.debug/debuggers/debugger.js	2017-04-11 09:36:45.541728336 +0200
+@@ -306,7 +306,7 @@
+                         if (process.running >= process.STARTING)
+                             showError("Could not connect debugger to the debugger proxy");
+                     }
+-                    else if (err.code) {
++                    else if (err.code != 1 && err.code != 0 && err.code !== null) {
+                         showError(err.message || "Debugger connection error " + err.code);
+                     }
+                     if (process.running >= process.STARTING)

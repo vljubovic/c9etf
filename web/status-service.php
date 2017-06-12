@@ -15,7 +15,19 @@ if (!isset($_SESSION['login'])) {
 $login = $_SESSION['login'];
 
 if (isset($_REQUEST['users'])) {
-	print `sudo $conf_base_path/bin/webidectl list-active | sort`;
+	$users_file = $conf_base_path . "/users";
+	eval(file_get_contents($users_file));
+	ksort($users);
+	foreach($users as $username => $user) {
+		$lastfile = $conf_base_path . "/last/$username.last";
+		if ($user["status"] === "active") {
+			print "$username\t";
+			$time = intval(file_get_contents($lastfile));
+			print round( (time() - $time ) / 60 , 2 );
+			print "\n";
+		}
+	}
+
 	return 0;
 }
 
@@ -88,6 +100,8 @@ if (isset($_REQUEST['serverStatus'])) {
 
 if (isset($_REQUEST['stats'])) {
 	foreach($conf_nodes as $node) {
+		if ($users[$login]['server'] == $node['address'])
+			print "*";
 		print $node['name']." ";
 		if (is_local($node['address']))
 			print background("server-stats", "server-stats");

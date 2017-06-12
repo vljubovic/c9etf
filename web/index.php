@@ -51,21 +51,24 @@ if (isset($_POST['login'])) {
 	eval(file_get_contents($users_file));
 	
 	$alreadyloggedin = false;
-	if (array_key_exists($login, $users) && $users[$username]["status"] == "active")
-		$alreadyloggedin = true;
+	//if (array_key_exists($login, $users) && $users[$login]["status"] == "active")
+	//	$alreadyloggedin = true;
 	
 //	$alreadyloggedin = `grep $login_esa $conf_base_path/active_users`;
 
 	// Da li je prekoračen kapacitet servera?
 	if (!$alreadyloggedin) {
-		$broj = `wc -l $conf_base_path/active_users | cut -d " " -f 1`;
+		$broj = `sudo $conf_base_path/bin/webidectl list-active | wc -l`;
 		if ($broj > $conf_limit_users_web && $login != $admin_login) {
 			print "Dostignut je maksimalan broj korisnika na serveru. Dodjite kasnije.";
 			return;
 		}
+		
+		$primload = `tail -1 /usr/local/webide/c9prim_stats.log | cut -d " " -f 3`;
+		$secload = `tail -1 /usr/local/webide/c9sec_stats.log | cut -d " " -f 3`;
 		$loadavg = `cat /proc/loadavg | cut -d " " -f 1`;
 		if ($conf_limit_loadavg_web > 0 && $loadavg > $conf_limit_loadavg_web && $login != $admin_login) {
-			print "Dostignut je maksimalan broj korisnika na serveru. Dodjite kasnije. ($loadavg)";
+			print "Server je trenutno preopterecen. Dodjite kasnije. ($loadavg)";
 			return;
 		}
 		
@@ -81,7 +84,12 @@ if (isset($_POST['login'])) {
 		$memused = $memused / 1024;
 
 		if ($memused > $conf_limit_memory_web) {
-			print "Dostignut je maksimalan broj korisnika na serveru. Dodjite kasnije. (".number_format($memused,2)." GB)";
+			print "Server je trenutno preopterecen. Dodjite kasnije. (".number_format($memused,2)." GB)";
+			return;
+		}
+		
+		if ($primload > $conf_limit_loadavg && $secload > $conf_limit_loadavg) {
+			print "Server je trenutno preopterecen. Dodjite kasnije. ($primload , $secload)";
 			return;
 		}
 
@@ -94,14 +102,12 @@ if (isset($_POST['login'])) {
 		$greska = "Pristup vašem korisniku je trenutno zabranjen $conf_deny_reason. Kontaktirajte administratora ili dodjite kasnije.";
 	
 
-	// Login kroz lokalnu bazu korisnika
 	if ($greska == "") {
 		$greska = login($login, $pass);
 	}
-	// Login kroz Zamger
 	
 	if ($greska == "") {
-		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $pass_esa &", array(), $foo));
+		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $pass_esa > /dev/null 2>&1 &", array(), $foo));
 		header("Location: status.php");
 		return;
 	}

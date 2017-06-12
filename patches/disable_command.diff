@@ -1,0 +1,16 @@
+diff -Naur c9upstream/plugins/c9.ide.run/output.xml c9fork/plugins/c9.ide.run/output.xml
+--- c9upstream/plugins/c9.ide.run/output.xml	2017-04-09 19:19:24.599925145 +0200
++++ c9fork/plugins/c9.ide.run/output.xml	2017-04-11 09:29:45.245833157 +0200
+@@ -20,9 +20,9 @@
+         <!--<a:button skin="c9-toolbarbutton-glossy" id="btnConsoleClear" class="clear" icon="console_clear.png" />-->
+         <a:textbox skin="tbsimple" id="tbName" initial-message="Run Config Name" style="min-width:40px"/>
+         <a:divider skin="c9-divider" />
+-        <a:label style="min-width:64px">Command:</a:label>
++        <a:label style="min-width:64px; visibility: hidden">Command:</a:label>
+         <a:textbox skin="tbsimple" id="tbCommand" minwidth="150" initial-message="Example: ./server.js --help" 
+-            style="flex:2;margin-right:20px !important;" />
++            style="flex:2;margin-right:20px !important; visibility: hidden" />
+         <a:button
+             id       = "btnDebug"
+             skin     = "c9-toolbarbutton-glossy"
+
