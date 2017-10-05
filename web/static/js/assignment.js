@@ -1,6 +1,6 @@
 
 // ASSIGNMENT.JS - Functions for deploying assignment files to users
-// Version: 2017/03/22 12:12
+// Version: 2017/07/02 06:20
 
 var currentlyDeploying = false;
 
@@ -36,6 +36,7 @@ function deployAssignmentFile(course, year, external, asgn_id, task_id, filename
 					showProgress("Deploying file "+filename+" to all users");
 					setTimeout( function() { deploymentStatus(user); }, 100 );
 				} else {
+					currentlyDeploying = false;
 					showMsg("File successfully deployed");
 				}
 			} else {
