@@ -30,7 +30,7 @@ function local_login($login, $pass) {
 		proc_close($process);
 	}*/
 	
-	if (strstr($result, "correct")) {
+	if (strstr($result, "correct")) { // FIXME
 		$_SESSION['login'] = $login;
 		$_SESSION['server_session'] = "";
 		$_SESSION['userid'] = "";
