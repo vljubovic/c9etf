@@ -2,7 +2,6 @@
 
 $rustart = getrusage();
 
-header('Content-Encoding: none;');
 session_start();
 
 ?>

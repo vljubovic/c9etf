@@ -62,7 +62,6 @@ function assignment_files_change() {
 
 	global $conf_admin_users, $conf_data_path;
 	
-	header('Content-Encoding: none;');
 	session_start();
 	require_once("../../lib/config.php");
 	require_once("../../lib/webidelib.php");

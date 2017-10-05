@@ -365,7 +365,6 @@ function json($data) {
 
 // Since this service is allowed to all users, we will accept any valid session
 
-header('Content-Encoding: none;');
 session_start();
 require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");

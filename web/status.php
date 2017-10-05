@@ -1,6 +1,5 @@
 <?php
 
-header('Content-Encoding: none;');
 session_start();
 
 if (isset($_SESSION['login'])) {

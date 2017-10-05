@@ -3,7 +3,6 @@
 
 // Parse stats web-service is allowed only to admin
 
-header('Content-Encoding: none;');
 session_start();
 require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
