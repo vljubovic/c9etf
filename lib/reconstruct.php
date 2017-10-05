@@ -23,10 +23,10 @@ $username = $argv[1];
 $filename = $argv[2];
 $timestamp = $argv[3];
 
-if (intval($timestamp) < 100) $timestamp = strtotime($timestamp);
+if ($timestamp[0] != "+" && intval($timestamp) < 100) $timestamp = strtotime($timestamp);
 
 read_stats($username);
-reconstruct_file($username, $filename, $timestamp);
+reconstruct_file_forward($username, $filename, $timestamp);
 
 exit(0);
 
@@ -81,8 +81,11 @@ function reconstruct_file($username, $filename, $timestamp) {
 	$file_log = $stats[$filename]['events'];
 	$evtcount = count($file_log);
 	
+	$end = 0;
+	if ($timestamp[0] == "+") $end = $evtcount-intval($timestamp);
+	
 	// We reconstruct the file backwards from its current state
-	for ($i=$evtcount-1; $i>=0; $i--) {
+	for ($i=$evtcount-1; $i>=$end; $i--) {
 		//print "$i,";
 		if ($file_log[$i]['time'] < $timestamp) break;
 		if ($i < -$timestamp) break;
@@ -131,6 +134,85 @@ function reconstruct_file($username, $filename, $timestamp) {
 	
 	file_put_contents($output_path, join("", $work_file));
 	print "Written file $output_path, merged " . ($evtcount-$i) . " changes.\n";
+}
+
+
+
+
+function reconstruct_file_forward($username, $filename, $timestamp) {
+	global $stats, $base_path;
+	
+	$userdata = setup_paths($username);
+	
+	if (!array_key_exists($filename, $stats))
+		die("ERROR: File doesn't exist in stats log");
+		
+	$file_workspace_path = $userdata['workspace'] . "/$filename";
+	$work_file = array();
+	
+	$file_log = $stats[$filename]['events'];
+	$evtcount = count($file_log);
+	$offset = 0;
+	
+	$end = $evtcount;
+	if ($timestamp[0] == "+") $end = intval($timestamp);
+	
+	// We reconstruct the file backwards from its current state
+	for ($i=0; $i<$end; $i++) {
+		//print "$i,";
+		if ($timestamp[0] != "+" && $file_log[$i]['time'] > $timestamp) break;
+		if ($i < -$timestamp) break;
+		
+		if ($file_log[$i]['text'] == "created") {
+			$work_file = explode("\n", $file_log[$i]['content']);
+			foreach($work_file as &$line) $line .= "\n";
+		}
+		
+		if ($file_log[$i]['text'] != "modified") continue;
+		
+		if (array_key_exists("change", $file_log[$i]['diff']))
+			foreach($file_log[$i]['diff']['change'] as $lineno => $text) {
+				// Editing last line - special case!
+				if ($lineno-1 == count($work_file)) $lineno--;
+				// Since php arrays are associative, we must initialize missing members in correct order
+				if ($lineno-1 > count($work_file)) {
+					if ($lineno == 2) $lineno=1;
+					else {
+						for ($j=count($work_file); $j<$lineno; $j++)
+							$work_file[$j] = "\n";
+					}
+				}
+				$work_file[$lineno-1] = $text . "\n";
+			}
+		if (array_key_exists("remove_lines", $file_log[$i]['diff'])) {
+			$offset=1;
+			foreach($file_log[$i]['diff']['remove_lines'] as $lineno => $text) {
+			//	if ($offset == 0 && $lineno == 0) $offset=1;
+			//	if ($lineno-$offset > count($work_file))
+			//		for ($j=count($work_file); $j<$lineno-$offset+1; $j++)
+			//			$work_file[$j] = "\n";
+				array_splice($work_file, $lineno-$offset, 1);
+			//	$offset++;
+			}
+		}
+		if (array_key_exists("add_lines", $file_log[$i]['diff'])) {
+			$offset=-1;
+			foreach($file_log[$i]['diff']['add_lines'] as $lineno => $text) {
+			//	if ($lineno+$offset > count($work_file))
+			//		for ($j=count($work_file); $j<$lineno+$offset+1; $j++)
+			//			$work_file[$j] = "\n";
+				if ($text == "false" || $text === false) $text = "";
+				array_splice($work_file, $lineno+$offset, 0, $text . "\n");
+			}
+		}
+	}
+	
+	$output_path = "/tmp/reconstruct";
+	if (!file_exists($output_path)) mkdir($output_path);
+	$output_path .= "/" . basename($filename);
+	
+	file_put_contents($output_path, join("", $work_file));
+	print "Written file $output_path, merged " . ($i) . " changes.\n";
 }
 
 
