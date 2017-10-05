@@ -99,6 +99,13 @@ function ws_courses() {
 			"abbrev" => "OR"
 		);
 		$result['data'][] = array(
+			"id" => 2,
+			"year" => 12,
+			"type" => "external",
+			"name" => "Tehnike programiranja",
+			"abbrev" => "TP"
+		);
+		$result['data'][] = array(
 			"id" => 42,
 			"year" => 12,
 			"type" => "external",
@@ -174,6 +181,9 @@ function ws_assignments() {
 		if ($b['type'] == "homework") return 1;
 		// Other types are considered equal
 		return strnatcmp($a['name'], $b['name']); 
+	}
+	foreach($assignments as $key => $value) {
+		if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
 	}
 	usort($assignments, "cmp");
 		
@@ -253,7 +263,6 @@ function ws_getfile() {
 	// Validate input variables
 	$course = intval($_REQUEST['course']);
 	$year = intval($_REQUEST['year']);
-	$external = $_REQUEST['external'];
 	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
 	if (isset($_REQUEST['X'])) $external=1;
 	$asgn_id = intval($_REQUEST['assignment']);
