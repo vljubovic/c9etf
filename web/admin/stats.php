@@ -175,4 +175,55 @@ function admin_bsstats() {
 	<?php
 }
 
+
+
+function admin_exam_stats() {
+	global $conf_base_path;
+	
+	$current_exam = "OR/Ispit13";
+	$exam_students = array(
+	"hahmatovic1", "salic3", "aavdic6", "abeslagic1", "nbisevac1", "ebosnjakov1", "abuljina1", "dcikic1", "acoko2", "lcoloman1", "edeljo1", "iduracak1", "nduvnjak1", "adelmo2", "afajic1", "mfisic1", "agobeljic1", "bhadzic2", "nhanic2", "aharbas1", "eherenda1", "ridrizovic1", "eimamovic2", "lkafedzic1", "skehic1", "aklepic1", "dlukovic1", "emehic3", "amehmedovi1", "fmesic1", "hmezit1", "amilisic2", "mmujezinov1", "amusic5", "mmusinovic2", "anedzibovi1", "anocajevic1", "jpetrovic1", "mplakalovi1", "apuljiz1", "arizvo2", "ksarajlic1", "msirco1", "islagalo1", "asuljagic1", "ksuljic1", "ssabic2", "nsahovic1", "asikalo2", "nsljivo1", "msosic1", "ltalic1", "statar1", "augljesa2", "avujcic1", "nvelic3", "izdralovic1"
+	);
+
+	// Hardcoded 4 assignments
+	?>
+	<p id="p-return"><a href="admin.php">Return to courses list</a></p>
+	<h1>Exam stats</h1>
+	<table><tr><th>Username:</th><th>Z1:</th><th>Z2:</th><th>Z3:</th><th>Z4:</th><th>Score</th></tr>
+	<?php
+	$tasks = array();
+	
+	foreach ($exam_students as $username) {
+		print "<tr><td>$username</td>";
+		$score = 0;
+		for ($i=1; $i<=4; $i++) {
+			$path = $current_exam . "/Z$i/.at_result";
+			$exists = exec("sudo $conf_base_path/bin/wsaccess $username exists \"$path\"");
+			if ($exists == 1) {
+				$at_result = json_decode(shell_exec("sudo $conf_base_path/bin/wsaccess $username read \"$path\""), true);
+				//print_r($at_result);
+				//return;
+				$tests = count($at_result["test_results"]);
+				$passed = 0;
+				foreach ($at_result["test_results"] as $test) {
+					if ($test['status'] == 1) $passed++;
+				}
+				print "<td id=\"$username-Z$i\" style=\"width: 50px\">$passed/$tests</td>\n";
+				$score += ($passed/$tests) * 10;
+			} else 
+				print "<td id=\"$username-Z$i\" style=\"width: 50px\">/</td>\n";
+			$tasks[$username."-Z$i"] = $path;
+		}
+		$score = round($score, 2);
+		print "<td style=\"width: 50px\">$score</td></tr>\n";
+	}
+	?>
+	</table>
+	
+	<SCRIPT language="JavaScript">
+	
+	</SCRIPT>
+	<?php
+}
+
 ?>

@@ -226,6 +226,11 @@ if ($logged_in) {
 		admin_bsstats();
 	}
 	
+	else if (isset($_REQUEST['exam_stats'])) {
+		admin_log("exam stats");
+		admin_exam_stats();
+	}
+	
 	
 	// Show data for single user
 	else if (isset($_REQUEST['user'])) {
