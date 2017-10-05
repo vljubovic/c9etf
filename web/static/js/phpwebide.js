@@ -275,8 +275,13 @@ function pwi_toolbar_homework_button() {
 				pwi_homework_data = false;
 				document.getElementById('phpwebide_homework_button').style.display = "none";
 			} else {
-				pwi_homework_data = JSON.parse(xmlhttp.responseText);
-				document.getElementById('phpwebide_homework_button').style.display = "inline";
+				try {
+					pwi_homework_data = JSON.parse(xmlhttp.responseText);
+					document.getElementById('phpwebide_homework_button').style.display = "inline";
+				} catch(e) {
+					document.getElementById('phpwebide_homework_button').style.display = "none";
+					pwi_homework_data = false;
+				}
 			}
 			pwi_clear_task("pwi_homework_button");
 		}
@@ -308,14 +313,20 @@ function pwi_toolbar_test_button() {
 				document.getElementById('phpwebide_test_button').style.display = "none";
 				document.getElementById('phpwebide_test_results').style.display = "none";
 			} else {
-				var tests = JSON.parse(xmlhttp.responseText);
-				pwi_tests_total = tests.test_specifications.length;
-				pwi_tests_passed = 0;
-				document.getElementById('phpwebide_test_button').style.display = "inline";
-				document.getElementById('phpwebide_test_results').style.display = "none";
+				var tests;
+				try {
+					tests = JSON.parse(xmlhttp.responseText);
+					pwi_tests_total = tests.test_specifications.length;
+					pwi_tests_passed = 0;
+					document.getElementById('phpwebide_test_button').style.display = "inline";
+					document.getElementById('phpwebide_test_results').style.display = "none";
 				
-				pwi_toolbar_is_tested(tests);
-				
+					pwi_toolbar_is_tested(tests);
+				} catch(e) {
+					pwi_tests_total = pwi_tests_passed = false;
+					document.getElementById('phpwebide_test_button').style.display = "none";
+					document.getElementById('phpwebide_test_results').style.display = "none";
+				}
 			}
 			pwi_clear_task("pwi_test_button");
 		}
