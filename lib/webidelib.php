@@ -57,6 +57,7 @@ function run_as($username, $cmd) {
 function run_on($server, $cmd) {
 	if (is_local($server))
 		return exec($cmd);
+	$cmd = str_replace("\"", "\\\"", $cmd);
 	return exec("ssh $server \"$cmd\" 2>&1");
 }
 
