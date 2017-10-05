@@ -1,0 +1,70 @@
+INSTALLING A C9ETF CLUSTER
+
+Each node in a c9etf cluster can have one or more of the following roles:
+
+* CONTROL NODE - public-facing webpage and controller
+* STORAGE NODE - storage for user files, also runs background tasks for svn
+autocommit and stats generation
+* COMPUTE NODE - runs actual c9 servers
+
+In current version of C9ETF there can be exactly one control node and one storage
+node, along with multiple compute nodes.
+
+To avoid possible synchronization issues, we recommend that all nodes are as 
+similar as possible. They should ideally be cloned from the same image and have
+as few of the non-neccessary packages installed as possible. Also, we strongly 
+suggest that ntp is installed and configured so that time is accurate, or atleast 
+that clocks on all nodes are synchronized
+
+
+CONFIG.PHP
+
+To setup a cluster you need to edit config.php, specifically the $conf_nodes array
+should contain a list of nodes along with their roles. An example of $conf_nodes
+is given below:
+
+$conf_nodes = array( 
+	array("name" => "c9", "address" => "192.168.1.1", "type" => array( "control", "compute" ) ),
+	array("name" => "c9prim", "address" => "192.168.1.2", "type" => array( "compute" ) ),
+	array("name" => "c9sec", "address" => "192.168.1.3", "type" => array( "compute" ) ),
+	array("name" => "c9nfs", "address" => "192.168.1.4", "type" => array( "storage", "svn" ) ),
+);
+
+This declaration is best to be copy-pasted to all nodes in cluster.
+
+In addition, a property named $conf_my_address should be added with IP address of
+current node which ofcourse is different for each node. Example of $conf_my_address:
+
+$conf_my_address = "192.168.1.1";
+
+
+NFS CONFIGURATION
+
+Storage node exports user files to all other nodes using NFS. To achieve optimum
+performance we suggest the following /etc/exports given above IP address plan:
+
+/home   192.168.1.1/24(rw,async,nohide,no_root_squash)
+
+This shared NFS folder should be added to /etc/fstab on all other nodes. We suggest
+the following line in /etc/fstab:
+
+192.168.1.4:/home      /rhome  nfs     hard    0 0
+
+Note that $conf_home value in config.php should be edited to reflect the location
+where NFS path is mounted. On storage node $conf_home should be:
+
+$conf_home = "/home";
+
+But on other nodes you should use e.g.:
+
+$conf_home = "/rhome";
+
+
+INSTALLATION
+
+After config.php is edited as described, you can follow other steps described in
+install.txt. On nodes other then control node you don't need to have nginx and you
+don't need to perform steps 4-7, however *don't* do step 7 (logging into web 
+interface) until all nodes are installed and configured.
+
+
