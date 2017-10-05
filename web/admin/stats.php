@@ -48,7 +48,7 @@ function admin_stats() {
 				$realno=-1;
 				$parts = explode(" ", trim($logline));
 				$sec = $parts[0];
-				$no = $parts[1];
+				$no = intval($parts[1]);
 				if (count($parts)>2) $realno = $parts[2];
 				if (!isset($realno) || $realno==-1) $realno=$no;
 				if ($sec < $sec_min) continue;
@@ -156,7 +156,7 @@ function admin_stats() {
 function admin_bsstats() {
 	global $conf_base_path;
 	$bs_path = "/tmp/buildservice";
-	$queue = `cat /tmp/buildservice/queuefile | wc -l`;
+	$queue = count(file("/tmp/buildservice/queuefile"));
 	$stats = json_decode(file_get_contents("/tmp/buildservice/stats"), true);
 	
 	// Show statistics

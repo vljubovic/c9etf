@@ -2,6 +2,89 @@
 
 // WEBSERVICE for c9 module etf.zadaci
 
+
+// Helper function that determines all parameters from path
+function from_path($path, &$course_id, &$year_id, &$external, &$asgn_id, &$task_id) {
+	global $conf_data_path, $conf_current_year, $conf_zamger;
+	
+	// Split path
+	$startpos = strpos($path, "/");
+	if ($startpos) {
+		$course_name = substr($path, 0, $startpos);
+		$path = substr($path, $startpos+1);
+		$startpos = strpos($path, "/");
+		if ($startpos) {
+			$asgn_name = substr($path, 0, $startpos);
+			$path = substr($path, $startpos+1);
+			$startpos = strpos($path, "/");
+			if ($startpos) {
+				$task_name = substr($path, 0, $startpos);
+			} else {
+				$task_name = $path;
+			}
+		} else json(error("ERR002", "Unknown course"));
+	} else json(error("ERR002", "Unknown course"));
+	
+	// Find course
+	$courses_path = $conf_data_path . "/courses.json";
+	$courses = array();
+	if (file_exists($courses_path))
+		$courses = json_decode(file_get_contents($courses_path), true);
+	
+	$course_id = 0;
+	foreach($courses as $course) {
+		if ($course['abbrev'] == $course_name) {
+			$course_id = $course['id'];
+			$year_id = $conf_current_year;
+			if ($course['type'] == "external") $external=1; else $external=0;
+			break;
+		}
+	}
+	if ($course_id == 0) json(error("ERR002", "Unknown course"));
+	
+	// Find assignment
+	if ($external) {
+		$course_path = $conf_data_path . "/X" .$course_id . "_" . $year_id;
+	} else {
+		$course_path = $conf_data_path . "/" . $course_id . "_" . $year_id;
+	}
+	
+	$asgn_file_path = $course_path . "/assignments";
+	$assignments = array();
+	if (file_exists($asgn_file_path))
+		$assignments = json_decode(file_get_contents($asgn_file_path), true);
+
+	if (empty($assignments))
+		json(error("ERR003", "No assignments for this course"));
+
+	$asgn = false;
+	foreach ($assignments as $a)
+		if ($a['path'] == $asgn_name) $asgn = $a;
+	if ($asgn == false) json(error("ERR004", "Unknown assignment"));
+	$asgn_id = $asgn['id'];
+	
+	// Find task
+	if (!preg_match("/^Z(\d)$/", $task_name, $matches))
+		json(error("ERR005", "Unknown task"));
+	$task_id = $matches[1];
+	if ($task_id < 1 || $task_id > $asgn['tasks'])
+		json(error("ERR005", "Unknown task"));
+}
+
+
+// Web service
+function ws_from_path() {
+	$path = $_REQUEST['task_path'];
+	$result = ok("");
+	$a = array();
+	from_path($path, $a['course'], $a['year'], $a['external'], $a['assignment'], $a['task']);
+	$result['data'] = $a;
+	json($result);
+}
+
+
+
+// List of courses
 function ws_courses() {
 	global $conf_data_path, $conf_current_year, $conf_zamger;
 
@@ -33,6 +116,7 @@ function ws_courses() {
 	
 	$result = ok("");
 	if ($conf_zamger) {
+		// Check zamger to see which courses is student enrolled in (FIXME)
 		require_once("../zamger/courses.php");
 		$zamger_courses = student_courses($conf_current_year);
 		for ($i=0; $i<count($courses); $i++) {
@@ -58,11 +142,11 @@ function ws_courses() {
 
 
 function ws_assignments() {
-	global $conf_data_path;
+	global $conf_data_path, $login;
 
 	$course = intval($_REQUEST['course']);
 	$year = intval($_REQUEST['year']);
-	$external = $_REQUEST['external'];
+	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
 	if (isset($_REQUEST['X'])) $external=1;
 	
 	if ($external) {
@@ -104,12 +188,13 @@ function ws_files() {
 	global $conf_data_path;
 
 	// Validate input variables
-	$course = intval($_REQUEST['course']);
-	$year = intval($_REQUEST['year']);
-	$external = $_REQUEST['external'];
+	if (isset($_REQUEST['course'])) $course = intval($_REQUEST['course']);
+	if (isset($_REQUEST['year'])) $year = intval($_REQUEST['year']);
+	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
 	if (isset($_REQUEST['X'])) $external=1;
-	$asgn_id = intval($_REQUEST['assignment']);
-	$task = intval($_REQUEST['task']);
+	if (isset($_REQUEST['assignment'])) $asgn_id = intval($_REQUEST['assignment']);
+	if (isset($_REQUEST['task'])) $task = intval($_REQUEST['task']);
+	if (isset($_REQUEST['task_path'])) from_path($_REQUEST['task_path'], $course, $year, $external, $asgn_id, $task);
 	
 	if ($external) {
 		$course_path = $conf_data_path . "/X$course" . "_$year";
@@ -169,6 +254,7 @@ function ws_getfile() {
 	$course = intval($_REQUEST['course']);
 	$year = intval($_REQUEST['year']);
 	$external = $_REQUEST['external'];
+	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
 	if (isset($_REQUEST['X'])) $external=1;
 	$asgn_id = intval($_REQUEST['assignment']);
 	$task = intval($_REQUEST['task']);
@@ -223,6 +309,8 @@ function ws_getfile() {
 // Function to deploy file to all users (admin only)
 function ws_deploy() {
 	global $login, $conf_admin_users, $conf_base_path, $conf_web_background, $conf_data_path;
+
+	if (isset($_REQUEST['user'])) $user = escapeshellarg($_REQUEST['user']); else $user = "all-users";
 
 	// Check if user is admin
 	if (!in_array($login, $conf_admin_users))
@@ -292,9 +380,9 @@ function ws_deploy() {
 		$log_file = $conf_web_background . "/" . $log_filename;
 	} while(file_exists($log_file));
 	
-	proc_close(proc_open("sudo $conf_base_path/bin/wsaccess all-users deploy \"$destination_path\" \"$found_file_path\" >$log_file &", array(), $foo));
+	proc_close(proc_open("sudo $conf_base_path/bin/wsaccess $user deploy \"$destination_path\" \"$found_file_path\" >$log_file &", array(), $foo));
 	
-	$msg = date("Y-m-d H:i:s") . " - $login - deploy all-users $destination_path\n";
+	$msg = date("Y-m-d H:i:s") . " - $login - deploy $user $destination_path\n";
 	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
 	
 	$result = ok("");
@@ -401,6 +489,8 @@ else if ($_REQUEST['action'] == "deploy")
 	ws_deploy();
 else if ($_REQUEST['action'] == "deploy_status")
 	ws_deploy_status();
+else if ($_REQUEST['action'] == "from_path")
+	ws_from_path();
 
 else
 	json(error("ERR999", "Unknown action"));

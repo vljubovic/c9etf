@@ -108,7 +108,7 @@ foreach($user_writable as $path) {
 $web_writable = array("register", "log/admin.php.log", "log/autotest.log");
 foreach($web_writable as $path) {
 	if (!file_exists("$conf_base_path/$path")) `touch $conf_base_path/$path`;
-	`chown www-data $conf_base_path/$path`;
+	`chown $conf_nginx_user $conf_base_path/$path`;
 	`chmod 755 $conf_base_path/$path`;
 }
 
@@ -116,7 +116,7 @@ foreach($web_writable as $path) {
 $web_readable = array("users");
 foreach($web_readable as $path) {
 	if (!file_exists("$conf_base_path/$path")) `touch $conf_base_path/$path`;
-	`chgrp www-data $conf_base_path/$path`;
+	`chgrp $conf_nginx_user $conf_base_path/$path`;
 	`chmod 750 $conf_base_path/$path`;
 }
 
@@ -162,9 +162,9 @@ echo `echo "\033[31mDownloading Buildservice\033[0m"`;
 `echo Cmnd_Alias USERSTATS=$conf_base_path/bin/userstats >> /etc/sudoers`;
 `echo Cmnd_Alias WSACCESS=$conf_base_path/bin/wsaccess >> /etc/sudoers`;
 `echo >> /etc/sudoers`;
-`echo www-data ALL=NOPASSWD: WEBIDECTL >> /etc/sudoers`;
-`echo www-data ALL=NOPASSWD: USERSTATS >> /etc/sudoers`;
-`echo www-data ALL=NOPASSWD: WSACCESS >> /etc/sudoers`;
+`echo $conf_nginx_user ALL=NOPASSWD: WEBIDECTL >> /etc/sudoers`;
+`echo $conf_nginx_user ALL=NOPASSWD: USERSTATS >> /etc/sudoers`;
+`echo $conf_nginx_user ALL=NOPASSWD: WSACCESS >> /etc/sudoers`;
 
 // Make a backup of some file that randomly gets deleted (!?)
 `mkdir $conf_base_path/c9util`;

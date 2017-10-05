@@ -17,8 +17,7 @@ $sleep = 60;
 if ($argc > 2) $sleep = $argv[2];
 
 
-//$banned_users = array("egradanin1", "bdzanko1", "test");
-$banned_users = array("test");
+$banned_users = array();
 if (in_array($username, $banned_users)) 
 	die("ERROR: username banned\n");
 
@@ -96,10 +95,10 @@ function fixsvn($command) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
 			unlink("/tmp/$filename");
-			fixsvn("cp \"".$matches[1]."\" \"/tmp/$filename\"");
+			run_as($username, "cp \"".$matches[1]."\" \"/tmp/$filename\"");
 			unlink($matches[1]);
 			fixsvn("svn update --accept mine-full \"$wsname\"");
-			fixsvn("cp \"/tmp/$filename\" \"$wsname\"");
+			run_as($username, "cp \"/tmp/$filename\" \"$wsname\"");
 			unlink("/tmp/$filename");
 			fixsvn("svn ci -m fixsvn \"$wsname\"");
 			fixsvn($command);
@@ -120,6 +119,21 @@ function fixsvn($command) {
 			$filename = basename($matches[1]);
 			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
 			fixsvn("svn resolve --accept working \"$wsname\"");
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		else if (preg_match("/Checksum mismatch for text base of '(.*?)'/", $line, $matches)) {
+			$filename = basename($matches[1]);
+			$wsname = substr($matches[1], strlen($userdata['workspace'])+1);
+			unlink("/tmp/$filename");
+			fixsvn("cp \"".$matches[1]."\" \"/tmp/$filename\"");
+			unlink($matches[1]);
+			fixsvn("svn rm --force \"$wsname\"");
+			fixsvn("cp \"/tmp/$filename\" \"$wsname\"");
+			unlink("/tmp/$filename");
+			fixsvn("svn add \"$wsname\"");
+			fixsvn("svn ci -m fixsvn \"$wsname\"");
 			fixsvn($command);
 			$ok = true;
 			break;

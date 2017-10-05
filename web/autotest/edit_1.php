@@ -1,32 +1,33 @@
 ﻿<?php
-	// 4 parametra:
-	// 'mod' -> (opcionalno) ako se proslijedi mod=4, prvo se doda novi AT
-    // 'id' -> id autotesta koji se edituje; ako je mod=4 NE treba se proslijediti jer se id uzima iz novogenerisanog autotesta
-	// 'fileData' -> putanja do fajla;
-	// 'adv' -> (opcionalno, 1 ili 0) show advanced options	
+	// 4 parameters:
+	// 'mod' -> (optional) if mod=4, first of all a new AT is added
+    // 'id' -> id of the autotest we want to edit; if mod=4 this parameter won't be passed because id is generated automatically
+	// 'fileData' -> path to the file;
+	// 'adv' -> (optional, 1 or 0) show advanced options	
 	require 'functions.php';
 	$mod=getIntVar("mod"); 
-	// mod=4 za dodavanje novog autotesta
-	if ($mod==4) { // Dodavanje jednog autotesta
-		$newATjson=json_decode(getDefAT(),true);
+	// mod=4 to add a new autotest
+	if ($mod==4) { // Adding 1 autotest
 		$json=json_decode(file_get_contents($fileData),true);
-		$brATova=count($json["test_specifications"]);
-		$json["test_specifications"][$brATova]=$newATjson;
+		$numATs=count($json["test_specifications"]);
+		$lastId=$json["test_specifications"][$numATs-1]['id'];
+		$newATjson=json_decode(getDefAT($lastId+1),true);
+		$json["test_specifications"][$numATs]=$newATjson;
 		saveJson($fileData, $json);	
 		$id=$newATjson["id"];
 	} else {
 		$json=json_decode(file_get_contents($fileData), true);
 		$id=getIntVar("id");
 	}
-	$brATova=count($json["test_specifications"]);
-	$advanced=getIntVar("adv"); // Da li ce prikazivati advanced options u formama, ili ne
+	$numATs=count($json["test_specifications"]);
+	$advanced=getIntVar("adv"); // Show additional options in forms, or not
 	if ($advanced===NULL) $advanced=0;
 	if ($advanced!=0) $advanced=1;
 	
-	// Potrebno saznati redni broj autotesta sa datim id-em
+	// Get ordinal of the autotest with the given id
 	$i=0;
 	$k=1;
-	while ($k<=$brATova) {
+	while ($k<=$numATs) {
 		if ($json["test_specifications"][$k-1]["id"]==$id) {	
 			$i=$k;
 			break;
@@ -34,19 +35,19 @@
 		$k++;
 	}
 	if ($i==0) {
-		ispisGreske("Nije pronađen autotest sa id-em: $id.");
-		zavrsi();
+		printError("There is no autotest with the given id: $id.");
+		finishAll();
 	}
-	$ovajAT=$json["test_specifications"][$i-1];	
+	$thisAT=$json["test_specifications"][$i-1];	
 ?>
 
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Autotest generator</title>
+	<title>Autotest editor</title>
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
-	<meta name="description" content="ATgenerator">
+	<meta name="description" content="ATeditor">
 	<link rel="stylesheet" type="text/css" href="style.css">
 	<script src="jquery-1.11.3.js"></script>
 	<script type="text/javascript">
@@ -54,107 +55,107 @@
 	</script>
 	<script src="functions.js" type="text/javascript"></script>
 </head>
-<body style="margin: 5px; padding: 10px;" onload="historija();">
-<font class="tekst">
-Naziv: <font color="red"><?php print $json["name"]; ?></font>
+<body style="margin: 5px; padding: 10px;" onload="otherHistory();">
+<font class="simpleText">
+Name of the task: <font color="red"><?php print $json["name"]; ?></font>
 </font>
-<input type="hidden" id="historija" value="0">
+<input type="hidden" id="history" value="0">
 	<span id="variant_template" style="display: none;">
 		<span id="variant_NUMI_NUMJ">
 			<div style="height:1px; visibility:hidden; margin:0;"></div>
-			<font class="plava">Varijanta <span id="br_NUMI_NUMJ">NUMJ</span></font>
-			<input type="button" value="Obriši" id="bris_NUMI_NUMJ" onclick="brisanjeVarijante(this.id);">
+			<font class="darkBlueColor">Variant <span id="num_NUMI_NUMJ">NUMJ</span></font>
+			<input type="button" value="Delete" id="erase_NUMI_NUMJ" onclick="eraseVariant(this.id);">
 			<br>
 			<textarea rows="3" cols="80" name="expected_NUMI_NUMJ"></textarea>
 			<div style="height:1px; visibility:hidden; margin:0;"></div>
 		</span>
 	</span>
 		
-	<form action="api.php" method="post" id="brisanjeAutotesta">
+	<form action="api.php" method="post" id="eraseAutotest">
 		<input type="hidden" name="mod" value="3">
 		<input type="hidden" name="adv" value="<?php print $advanced; ?>" >
 		<input type="hidden" value="<?php print $fileData; ?>" name="fileData" id="fileData">
 		<input type="hidden" value="<?php print $id; ?>" name="id" id="id">
 	</form>
 	
-	<form action="api.php" method="post" id="editovanjeAutotesta">
+	<form action="api.php" method="post" id="editAutotest">
 	<input type="hidden" value="2" name="mod" id="mod">
 	<input type="hidden" name="adv" value="<?php print $advanced; ?>" >
 	<input type="hidden" value="<?php print $fileData; ?>" name="fileData" id="fileData">
 	<input type="hidden" value="<?php print $id; ?>" name="id" id="id">	
-	<span id="sviATovi">
-		<span id="attabela_<?php print $i; ?>">
-		<table cellspacing="0" cellpadding="0" border="1" bgcolor="#ffffff">
-		<tr bgcolor="#ffbdbd" style="border: 2px solid gray;">
-			<td class="tekst celija smaller stronger plava">ID <font color="red"><?php print $id; ?></font> | Autotest <font color="red" id="atbr_<?php print $i; ?>"><?php print $i; ?></font></td>
-			<td align="left" class="tekst celija">
-			<input type="button" value="Obriši" onclick="document.getElementById('mod').value='3';document.getElementById('editovanjeAutotesta').submit();">
-			<input type='button' onclick='safeLinkBackForw(-1);' value='Nazad'>	
-			<input name="adv_button" onclick="showAdvanced();" type="button" value="<?php if ($advanced) print "Sakrij dodatne opcije"; else print "Prikaži dodatne opcije"; ?>">			
+	<span id="allATs">
+		<span id="atTable_<?php print $i; ?>">
+		<table cellspacing="0" cellpadding="0" class="niceTable" style="background-color: #DDEEFF;">
+		<tr bgcolor="#ffbdbd">
+			<td class="simpleText tableCell smaller stronger darkBlueColor" style="border-right: none;">ID <font color="red"><?php print $id; ?></font> | Autotest <font color="red" id="atNum_<?php print $i; ?>"><?php print $i; ?></font></td>
+			<td align="left" class="simpleText tableCell">
+			<input type="button" value="Delete" onclick="document.getElementById('mod').value='3';document.getElementById('editAutotest').submit();">
+			<input type='button' onclick='safeLinkBackForw(-1);' value='Back'>	
+			<input name="adv_button" onclick="showAdvanced();" type="button" value="<?php if ($advanced) print "Hide additional options"; else print "Show additional options"; ?>">			
 			</td>
 		</tr>
 		<tr name="adv_display" style="<?php if (!$advanced) print "display: none;"; ?>">
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Zahtijevaj simbole<br>(niz stringova kao: "1", "2")</td>	
-			<td class="tekst celija smaller stronger" align="left">
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Require symbols<br>(array of strings like: "1", "2")</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
 			<input type="text" value='<?php 
-				$require_symbols=$ovajAT["require_symbols"];
+				$require_symbols=$thisAT["require_symbols"];
 				for ($j=0; $j<count($require_symbols); $j++) {
 					print "\"".$require_symbols[$j]."\"";
 					if ($j<count($require_symbols)-1) print ", ";
 				}
-			?>' name="require_symbols_<?php print $i; ?>" style="width: 700px;">
+			?>' name="require_symbols_<?php print $i; ?>" style="width: 650px;">
 			</td>		
 		</tr>
 		<tr name="adv_display" style="<?php if (!$advanced) print "display: none;"; ?>">
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Zamijeni simbole<br>(niz stringova kao: "1", "2")</td>	
-			<td class="tekst celija smaller stronger" align="left">
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Replace symbols<br>(array of strings like: "1", "2")</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
 			<input type="text" value='<?php 
-				$replace_symbols=$ovajAT["replace_symbols"];
+				$replace_symbols=$thisAT["replace_symbols"];
 				for ($j=0; $j<count($replace_symbols); $j++) {
 					print "\"".$replace_symbols[$j]."\"";
 					if ($j<count($replace_symbols)-1) print ", ";
 				}
-			?>' name="replace_symbols_<?php print $i; ?>" style="width: 700px;">
+			?>' name="replace_symbols_<?php print $i; ?>" style="width: 650px;">
 			</td>		
 		</tr>
 		<tr name="adv_display" style="<?php if (!$advanced) print "display: none;"; ?>">
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Globalno zaglavlje</td>	
-			<td class="tekst celija smaller stronger" align="left">
-				<textarea rows="2" cols="80" name="global_top_<?php print $i; ?>"><?php print $ovajAT["global_top"] ?></textarea>
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Global top</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
+				<textarea rows="2" cols="80" name="global_top_<?php print $i; ?>"><?php print $thisAT["global_top"] ?></textarea>
 			</td>		
 		</tr>
 		<tr>
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Globalni opseg iznad maina</td>	
-			<td class="tekst celija smaller stronger" align="left">
-				<textarea rows="2" cols="80" name="global_above_main_<?php print $i; ?>"><?php print $ovajAT["global_above_main"] ?></textarea>
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Global above main</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
+				<textarea rows="2" cols="80" name="global_above_main_<?php print $i; ?>"><?php print $thisAT["global_above_main"] ?></textarea>
 			</td>		
 		</tr>
 		<tr>
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Kod</td>	
-			<td class="tekst celija smaller stronger" align="left">
-				<textarea rows="6" cols="80" name="code_<?php print $i; ?>"><?php print $ovajAT["code"] ?></textarea>
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Code</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
+				<textarea rows="6" cols="80" name="code_<?php print $i; ?>"><?php print $thisAT["code"] ?></textarea>
 			</td>		
 		</tr>
 		<tr>
-			<td class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">Ulaz</td>	
-			<td class="tekst celija smaller stronger" align="left">
-				<textarea rows="2" cols="80" name="stdin_<?php print $i; ?>"><?php print $ovajAT["running_params"]["stdin"]; ?></textarea>
+			<td class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none; border-right: none;">Input</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
+				<textarea rows="2" cols="80" name="stdin_<?php print $i; ?>"><?php print $thisAT["running_params"]["stdin"]; ?></textarea>
 			</td>		
 		</tr>
 		<tr>
-			<td class="tekst celija smaller stronger" align="left" style="border-top: none; border-bottom: none;" bgcolor="#fafdbb">Očekivani izlaz</td>
-			<td class="tekst celija smaller stronger" align="left" style="border-top: none; border-bottom: none;" id="cell_<?php print $i; ?>">
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none; border-bottom: none; border-right: none;" bgcolor="#fafdbb">Expected output</td>
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none; border-bottom: none;" id="cell_<?php print $i; ?>">
 			<?php
-				$expected=$ovajAT["expected"];
+				$expected=$thisAT["expected"];
 				?>
-				<input type="hidden" value="<?php print (count($expected)); ?>" name="brvar_<?php print $i; ?>">
+				<input type="hidden" value="<?php print (count($expected)); ?>" name="numVar_<?php print $i; ?>">
 				<?php
 				for ($j=0; $j<count($expected); $j++) {							
 					?>
 						<span id="variant_<?php print $i; ?>_<?php print ($j+1); ?>">
 							<div style="height:1px; visibility:hidden; margin:0;"></div>
-							<font class="plava">Varijanta <span id="br_<?php print $i; ?>_<?php print ($j+1); ?>"><?php print ($j+1); ?></span></font>
-							<input type="button" value="Obriši" id="bris_<?php print $i; ?>_<?php print ($j+1); ?>" onclick="brisanjeVarijante(this.id);">
+							<font class="darkBlueColor">Variant <span id="num_<?php print $i; ?>_<?php print ($j+1); ?>"><?php print ($j+1); ?></span></font>
+							<input type="button" value="Delete" id="erase_<?php print $i; ?>_<?php print ($j+1); ?>" onclick="eraseVariant(this.id);">
 							<br>
 							<textarea rows="3" cols="80" name="expected_<?php print $i; ?>_<?php print ($j+1); ?>"><?php print replace_ln_n($expected[$j]); ?></textarea>
 							<div style="height:1px; visibility:hidden; margin:0;"></div>
@@ -165,46 +166,54 @@ Naziv: <font color="red"><?php print $json["name"]; ?></font>
 			</td>
 		</tr>
 		<tr>
-			<td class="tekst celija smaller stronger" align="left" style="border-top: none; border-bottom: none;" bgcolor="#fafdbb">&nbsp;</td>	
-			<td class="tekst celija smaller stronger" align="left" style="border-top: none; border-bottom: none;">
-				<input type="button" value="Dodaj varijantu" id="dodvar_<?php print $i; ?>" onclick="dodavanjeVarijante(this.id);">
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none; border-right: none;" bgcolor="#fafdbb">&nbsp;</td>	
+			<td class="simpleText tableCell smaller stronger" align="left" style="border-top: none;">
+				<input type="button" value="Add a variant" id="addVar_<?php print $i; ?>" onclick="addVariant(this.id);">
 			</td>
 		</tr>
 		<tr name="adv_display" style="<?php if (!$advanced) print "display: none;"; ?>">
-			<td colspan=2 class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">
-			Vrijeme čekanja
-			<input type="text" value='<?php print $ovajAT["running_params"]["timeout"]; ?>' name="timeout_<?php print $i; ?>" style="width: 100px;">
-			Memorija
-			<input type="text" value='<?php print $ovajAT["running_params"]["vmem"]; ?>' name="vmem_<?php print $i; ?>" style="width: 100px;">
+			<td colspan=2 class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none;">
+			Timeout
+			<input type="text" value='<?php print $thisAT["running_params"]["timeout"]; ?>' name="timeout_<?php print $i; ?>" style="width: 100px;">
+			Memory
+			<input type="text" value='<?php print $thisAT["running_params"]["vmem"]; ?>' name="vmem_<?php print $i; ?>" style="width: 100px;">
 			</td>			
 		</tr>
 		<tr name="adv_display" style="<?php if (!$advanced) print "display: none;"; ?>">
-			<td colspan=2 class="tekst celija smaller stronger" align="left" bgcolor="#fafdbb">
-			Ocekuje se izuzetak
-			<?php if ($ovajAT["expected_exception"]=="true") print "<input type='checkbox' checked name='expected_exception_".$i."'>"; else print "<input type='checkbox' name='expected_exception_".$i."'>"; ?> |
-			Ocekuje se krah
-			<?php if ($ovajAT["expected_crash"]=="true") print "<input type='checkbox' checked name='expected_crash_".$i."'>"; else print "<input type='checkbox' name='expected_crash_".$i."'>"; ?> |
-			Ignoriši prazno
-			<?php if ($ovajAT["ignore_whitespace"]=="true") print "<input type='checkbox' checked name='ignore_whitespace_".$i."'>"; else print "<input type='checkbox' name='ignore_whitespace_".$i."'>"; ?> |
+			<td colspan=2 class="simpleText tableCell smaller stronger" align="left" bgcolor="#fafdbb" style="border-top: none;">
+			Expected exception
+			<?php if ($thisAT["expected_exception"]=="true") print "<input type='checkbox' checked name='expected_exception_".$i."'>"; else print "<input type='checkbox' name='expected_exception_".$i."'>"; ?> |
+			Expected crash
+			<?php if ($thisAT["expected_crash"]=="true") print "<input type='checkbox' checked name='expected_crash_".$i."'>"; else print "<input type='checkbox' name='expected_crash_".$i."'>"; ?> |
+			Ignore whitespace
+			<?php if ($thisAT["ignore_whitespace"]=="true") print "<input type='checkbox' checked name='ignore_whitespace_".$i."'>"; else print "<input type='checkbox' name='ignore_whitespace_".$i."'>"; ?> |
 			Regex
-			<?php if ($ovajAT["regex"]=="true") print "<input type='checkbox' checked name='regex_".$i."'>"; else print "<input type='checkbox' name='regex_".$i."'>"; ?> |
-			Podstring
-			<?php if ($ovajAT["substring"]=="true") print "<input type='checkbox' checked name='substring_".$i."'>"; else print "<input type='checkbox' name='substring_".$i."'>"; ?>
+			<?php if ($thisAT["regex"]=="true") print "<input type='checkbox' checked name='regex_".$i."'>"; else print "<input type='checkbox' name='regex_".$i."'>"; ?> |
+			Substring
+			<?php if ($thisAT["substring"]=="true") print "<input type='checkbox' checked name='substring_".$i."'>"; else print "<input type='checkbox' name='substring_".$i."'>"; ?>
 			</td>	
 		</tr>
 		</table><br>						
 		</span>			
 	</span>
 	<div style="height:1px; visibility:hidden; margin:0;"></div>
-	<input type="submit" value="Potvrdi izmjene">
+	<input type="submit" value="Confirm changes">
 	</form>	
+
+<center><br>
+	<font style="font-family: arial;" size="2" color="#555555">
+	Autotest editor for C9 WebIDE by Armin Dajić<br>
+	© Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering in Sarajevo 2015-2017.
+	</font>	
+</center>
+
 <script type='text/javascript'>
-	// Za Mozillu treba custom pageshow event, posto onload event nece funkcionisati nakon 'Back'
+	// For FF we need custom pageshow event, because onload event won't fire after 'Back'
 	if (browser.name.indexOf("Firefox") != -1) {
         $(window).bind('pageshow', function() {
             // Firefox doesn't reload the page when the user uses the back button, or when we call history.go.back().
             // Doc: https://developer.mozilla.org/en-US/docs/Listening_to_events_in_Firefox_extensions 
-            FFhistorija();
+            FFhistory();
         }); 
     }
 </script>

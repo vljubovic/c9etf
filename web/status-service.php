@@ -100,6 +100,8 @@ if (isset($_REQUEST['serverStatus'])) {
 
 if (isset($_REQUEST['stats'])) {
 	foreach($conf_nodes as $node) {
+		if ($users[$login]['server'] == $node['address'])
+			print "*";
 		print $node['name']." ";
 		if (is_local($node['address']))
 			print background("server-stats", "server-stats");

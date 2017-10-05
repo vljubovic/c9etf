@@ -1,6 +1,6 @@
 
 // TOOLS.JS - Useful GUI functions used in admin.php
-// Version: 2017/03/22 12:12
+// Version: 2017/04/03 16:29
 
 
 // Popup messages
@@ -60,6 +60,35 @@ function updateProgress(percent) {
 	var proglabel = document.getElementById('progressBarLabel');
 	progbar.style.width = "" + percent + "%";
 	proglabel.innerHTML = percent * 1  + '%';
+}
+
+
+// Variant of showhide for displaying menus
+
+var _current_menu = false;
+var _hidden_menu = false;
+window.addEventListener("click", function() { 
+	_hidden_menu = false;
+	if (_current_menu && _current_menu.style.display == "block") {
+		_current_menu.style.display="none";
+		_hidden_menu = _current_menu;
+	}
+}, true);
+
+
+function showMenu(parent, menuWidgetId) {
+	var menu = document.getElementById(menuWidgetId);
+	_current_menu = menu;
+	var rect = parent.getBoundingClientRect();
+	menu.style.left = rect.left +  window.scrollX + "px";
+	var top = rect.bottom +  window.scrollY;
+	menu.style.top = top + "px";
+	if (menu.style.display == "none" && menu != _hidden_menu)
+		menu.style.display="block";
+	else
+		menu.style.display="none";
+	
+	return false;
 }
 
 

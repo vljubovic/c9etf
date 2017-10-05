@@ -1,6 +1,7 @@
 
 // WEBIDE-TABS.JS - Functionality of "tabs" with admin tools related to webide (requires phpwebide.js)
-// Version: dev
+// Version: 12.6.2017 10:09
+
 
 var pwi_tabs_list = [ "activity", "svn", "git", "deleted" ];
 var pwi_tabs_svn_clicked = false;
@@ -63,5 +64,15 @@ function pwi_tabs_svn_click(el, path, rev) {
 	el.className = "svn-log-clicked";
 	pwi_tabs_svn_clicked = el;
 	pwi_toolbar_restore_button('svn', rev);
+	return false;
+}
+
+
+function pwi_tabs_git_click(el, path, rev) {
+	pwi_editor_load(path, 'git', rev); 
+	if (pwi_tabs_svn_clicked) pwi_tabs_svn_clicked.className = "svn-log";
+	el.className = "svn-log-clicked";
+	pwi_tabs_svn_clicked = el;
+	pwi_toolbar_restore_button('git', rev);
 	return false;
 }
