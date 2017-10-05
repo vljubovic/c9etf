@@ -257,8 +257,8 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_evaluate_vectors_ele
 // Debugging the debugger is painful due to async file writes - this fixes it at the cost of 
 // performance (we're not always debugging the debugger)
 // Also log file is stored in users workspace and timestamp added
-echo "gdb_sync_log.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_sync_log.diff`;
+//echo "gdb_sync_log.diff\n";
+//echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_sync_log.diff`;
 
 // Don't crash debugger when there is open brace (but not closed!) inside string
 // Also some warnings
