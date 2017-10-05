@@ -14,7 +14,8 @@ require_once("../lib/config.php");
 
 $users_file = $conf_base_path . "/users";
 eval(file_get_contents($users_file));
-$realname = $users[$login]['realname'];
+$realname = "";
+if (array_key_exists('realname', $users[$login])) $realname = $users[$login]['realname'];
 if (empty($realname)) $realname = $login;
 
 ?>
