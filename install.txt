@@ -8,10 +8,11 @@ php-fpm
 php-cli
 inotify-tools
 subversion
-php-svn
 php-ldap
 git
 apache2-utils
+
+C9 admin page also uses php-svn package but it no longer exists with php7 on Ubuntu 16.04.
 
 Optional:
 gdb
@@ -21,6 +22,9 @@ sqlite3 - for debugging svn problems
 valgrind
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
+
+We strongly suggest that ntp is installed and configured so that time is accurate,
+or atleast that clocks on all nodes are synchronized.
 
 
 OPERATING SYSTEM CONFIGURATION
@@ -39,9 +43,6 @@ that says:
 UMASK		022
 and set it to:
 UMASK		077
-
-We strongly suggest that ntp is installed and configured so that time is accurate,
-or atleast that clocks on all nodes are synchronized
 
 
 C9 INSTALLATION
@@ -79,6 +80,11 @@ can not be automated, you need to go through it manually. It configures a
 default workspace that will be copied to all the other users. Just click Next until
 you see a window that informs you that Cloud9 is successfully installed and click
 the button named Finish.
+
+If you have problems accessing this webpage, check if your OS is running a firewall
+such as ufw. You can temporarily disable this firewall to complete this step and 
+reenable it later:
+ $ sudo service ufw stop
 
 Now you can safely close the browser window, then interrupt nodejs process in console 
 (just press Ctrl+C) and exit c9 user:
