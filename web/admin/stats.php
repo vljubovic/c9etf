@@ -156,7 +156,12 @@ function admin_stats() {
 function admin_bsstats() {
 	global $conf_base_path;
 	$bs_path = "/tmp/buildservice";
-	$queue = count(file("/tmp/buildservice/queuefile"));
+	$file = file_get_contents("/tmp/buildservice/queuefile");
+	if (empty($file)) {
+		$queue=0; 
+	} else {
+		$queue = count(explode("\n", $queue));
+	}
 	$stats = json_decode(file_get_contents("/tmp/buildservice/stats"), true);
 	
 	// Show statistics
