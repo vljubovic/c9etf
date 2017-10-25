@@ -184,6 +184,8 @@ function ws_assignments() {
 	}
 	foreach($assignments as $key => $value) {
 		if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
+		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users)) 
+			unset($assignments[$key]);
 	}
 	usort($assignments, "cmp");
 		

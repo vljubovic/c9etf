@@ -33,6 +33,7 @@ function assignment_change($course, $year, $external) {
 		print "<p><a href=\"$backlink\">Go back</a></p>\n";
 		return;
 	}
+	if (isset($_REQUEST['hidden'])) $hidden = "true"; else $hidden = "false";
 	
 	// Check for duplicates
 	$asgn = array();
@@ -105,6 +106,7 @@ function assignment_change($course, $year, $external) {
 	$asgn['path'] = $path;
 	$asgn['homework_id'] = $homework_id;
 	$asgn['tasks'] = $tasks;
+	$asgn['hidden'] = $hidden;
 	foreach ($assignments as &$a)
 		if ($a['id'] == $asgn_id) $a=$asgn;
 	
@@ -127,6 +129,8 @@ function assignment_edit($course, $year, $external) {
 		print "<p><a href=\"$backlink\">Go back</a></p>\n";
 		return;
 	}
+	
+	if (array_key_exists('hidden', $asgn) && $asgn['hidden'] == "true") $hidden_html = "CHECKED"; else $hidden_html = "";
 	
 	?>
 	<p><a href="<?=$backlink?>">Back to course details</a></p>
@@ -151,6 +155,7 @@ function assignment_edit($course, $year, $external) {
 	?>
 	<tr><td>Path:</td><td><input type="text" name="path" value="<?=$asgn['path']?>"></td></tr>
 	<tr><td>No. tasks:</td><td><input type="text" name="tasks" value="<?=$asgn['tasks']?>"></td></tr>
+	<tr><td>Hidden:</td><td><input type="checkbox" name="hidden" <?=$hidden_html?>></td></tr>
 	<tr><td colspan="2" align="right"><input type="submit" value="Change"></td></tr>
 	</table>
 	</form>
