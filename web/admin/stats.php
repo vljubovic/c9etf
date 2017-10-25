@@ -160,7 +160,7 @@ function admin_bsstats() {
 	if (empty($file)) {
 		$queue=0; 
 	} else {
-		$queue = count(explode("\n", $queue));
+		$queue = count(explode("\n", $file));
 	}
 	$stats = json_decode(file_get_contents("/tmp/buildservice/stats"), true);
 	
