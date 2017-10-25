@@ -64,9 +64,13 @@ function assignment_table($course, $year, $external) {
 	}
 	
 	foreach ($assignments as $a) {
-		if ($a['type'] == "homework") $color = "#f4d1aa";
-		else if ($a['type'] == "tutorial") $color = "#d7d9fd";
-		else $color = "#d2edb8";
+		$style = "text-align: left; ";
+		if ($a['type'] == "homework" && $a['hidden'] == "true") $style .= "background: #f4e1c3; color: #666;";
+		else if ($a['type'] == "tutorial" && $a['hidden'] == "true") $style .= "background: #e7e9fd; color: #666;";
+		else if ($a['hidden'] == "true") $style .= "background: #e2f3c8; color: #666;";
+		else if ($a['type'] == "homework") $style .= "background: #f4d1aa";
+		else if ($a['type'] == "tutorial") $style .= "background: #d7d9fd";
+		else $style .= "background: #d2edb8";
 		
 		$edit_link = "assignment/edit.php?action=edit&amp;$url_part&amp;assignment=" . $a['id'];
 		
@@ -75,7 +79,7 @@ function assignment_table($course, $year, $external) {
 		
 		?>
 		<tr>
-			<td class="text cell stronger" align="left" bgcolor="<?=$color?>"><?=$a['name']?></td>
+			<td class="text cell stronger" style="<?=$style?>"><?=$a['name']?></td>
 			<td><a href="<?=$edit_link?>"><i class="fa fa-gear"></i></a></td>
 			<?php
 		
@@ -88,18 +92,21 @@ function assignment_table($course, $year, $external) {
 					$autotest = json_decode(file_get_contents($at_path), true);
 					if (!empty($autotest) && array_key_exists("test_specifications", $autotest))
 						$count_tests = count($autotest['test_specifications']);
+				
+					$link = "autotest/preview.php?fileData=$at_path";
+					$deploy_js_this = $deploy_js . $a['id'] . ", $i, '$at_name', 'all-users');";
+					
+					?>
+					<td>
+						<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
+						<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
+					</td>
+					<?php
+				} else {
+					?>
+					<td>&nbsp;</td>
+					<?php
 				}
-			
-				
-				$link = "autotest/preview.php?fileData=$at_path";
-				$deploy_js_this = $deploy_js . $a['id'] . ", $i, '$at_name', 'all-users');";
-				
-				?>
-				<td>
-					<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
-					<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
-				</td>
-				<?php
 			} else
 				print "<td>&nbsp;</td>\n";
 		}
@@ -140,6 +147,23 @@ function assignment_table($course, $year, $external) {
 					Number of tasks: <input type="text" style="width: 30px;" name="nr_tasks"><br>
 					<input type="submit" value="Confirm">
 				</form>
+				
+				<?php
+				
+				// Previous year
+				if ($external) {
+					$prev_course_path = $conf_data_path . "/X$course" . "_" . ($year-1);
+				} else {
+					$prev_course_path = $conf_data_path . "/$course" . "_" . ($year-1);
+				}
+				$prev_asgn_file_path = $prev_course_path . "/assignments";
+
+				if (file_exists($prev_course_path) && file_exists($prev_asgn_file_path)) {
+					?>
+					<font class="text stronger"><a href="assignment/copy.php?<?=$url_part?>">Copy assignment from last year</a></font>
+					<?php
+				}
+				?>
 			</font>
 		</div>
 	<?php
