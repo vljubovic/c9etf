@@ -552,6 +552,11 @@ if ($logged_in) {
 		Message to all users:<br>
 		<input type="text" size="50" name="broadcast"> <input type="submit" value="Send"></form>
 		<p id="p-stats"><a href="admin.php?stats">Usage statistics</a></p>
+		
+		<div style="position:absolute; top:200px; left:600px; width: 400px; border: 1px solid black; background: #ddd; font-size: small; padding: 5px" id="admin_news">
+		<h2>Admin news</h2>
+		<input type="button" value="Close" onclick="document.getElementById('admin_news').style.display='none';">
+		</div>
 		<?php
 	}
 	
