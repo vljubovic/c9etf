@@ -1,9 +1,10 @@
 
 // USER_TABLE.JS - JavaScript functions for dynamic loading of user per-assignment stats table
-// Version: 2016/10/20 12:45
+// Version: 2017/10/23 16:11
 
 
 var show_others_regex = /^(T|Z|ZSR)\d+$/;
+var global_stats = {};
 
 
 function userTableLoadAll() {
@@ -94,7 +95,13 @@ function userTableMaybeAddColumn(assignments_assoc) {
 			th.id = cell_id;
 			th.assignmentName = asgn;
 			th.assignmentPath = assignments_assoc[asgn].path;
-			th.innerHTML = asgn;
+			var url = location.href;
+			var x1 = url.indexOf("&path=");
+			var x2 = url.indexOf("&", x1+1);
+			url = url.substring(0,x1+6) + assignments_assoc[asgn].path + url.substring(x2);
+			//th.innerHTML = asgn;
+			th.innerHTML = "<a href=\"" + url + "\">" + asgn + "</a>";
+			//th.onclick = function() { var murl=url; location.assign(murl); }
 			
 			// If previous_id is false, means all header fields (if any) are smaller
 			if (previous_id == false) {
@@ -147,6 +154,8 @@ function userTableUpdateRow(data, user) {
 	accesstime_cell.innerHTML = data.last_access[user];
 	if (data.last_access[user] == 0 || data.last_access == false) accesstime_cell.innerHTML = "Never";
 	
+	global_stats[user] = {};
+	
 	// Header contains sorted list of assignments, so we will use it as template
 	var end = tbl.rows[0].cells.length;
 	if (show_others) end--;
@@ -177,6 +186,8 @@ function userTableUpdateRow(data, user) {
 			asgn_cell.innerHTML += "<i class=\"fa fa-check\"></i> " + asgn_stats['test_results'];
 		
 		asgn_cell.innerHTML = "<a href=\"?user=" + user + "&amp;path=" + asgn_path + "&amp;backlink=" + backlink + "\">" + asgn_cell.innerHTML + "</a>";
+		
+		global_stats[user][asgn_path] = { builds: asgn_stats['builds'], builds_succeeded: asgn_stats['builds_succeeded'], test_results: asgn_stats['test_results'] };
 	}
 	
 	// Calculate stats for "others" column
