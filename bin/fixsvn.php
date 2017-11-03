@@ -7,27 +7,34 @@ require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
 
 
+// Don't run if load average too big
+$stats = explode(" ", trim(`tail -1 $conf_base_path/server_stats.log`));
+if ($stats[2] > $conf_limit_loadavg_fixsvn) {
+	print "Load too big, wait some more\n";
+	exit(1);
+}
+
 $debug = true;
 
 // Args
 if ($argc == 1) die("ERROR: username is required\n");
 $username = $argv[1];
 
-$sleep = 60;
-if ($argc > 2) $sleep = $argv[2];
-
 
 $banned_users = array();
-if (in_array($username, $banned_users)) 
-	die("ERROR: username banned\n");
-
-sleep($sleep);
-
+if (in_array($username, $banned_users)) {
+	print "ERROR: User is banned\n"; 
+	exit(0); 
+}
 
 $userdata = setup_paths($username);
 
 $users_file = $conf_base_path . "/users";
 eval(file_get_contents($users_file));
+if (!array_key_exists($username, $users)) {
+	print "ERROR: Unknown user\n"; 
+	exit(0); 
+}
 if ($users[$username]['status'] == 'active') {
 	print "ERROR: User is logged in\n"; 
 	exit(0); 
@@ -292,8 +299,6 @@ function fixsvn($command) {
 	
 	if (!$ok) {
 		print "Unkown error!\n\n";
-		$sleep += 5;
-		exec("php $conf_base_path/bin/fixsvn.php " . $userdata['esa'] . " $sleep &");
 		exit(1);
 	}
 }

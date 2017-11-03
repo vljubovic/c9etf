@@ -1,3 +1,19 @@
 #!/bin/sh
 
-/usr/bin/php /usr/local/webide/bin/fixsvn.php $1 $2
+if [ "$#" -lt 1 ]; then
+	echo "Illegal number of arguments"
+	exit
+fi
+
+if [ "$#" -lt 2 ]; then
+	time=60
+else
+	time=$2
+fi
+
+sleep $time
+until /usr/bin/php /usr/local/webide/bin/fixsvn.php $1
+do
+	time=$((time+5))
+	sleep $time
+done
