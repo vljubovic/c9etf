@@ -72,6 +72,7 @@ function admin_user_table($group_id, $members, $backlink) {
 	<i class="fa fa-check"></i> Last test results (if user tested the code)</p>
 	
 	<script type="text/javascript" src="/static/js/user_table.js"></script>
+	<script type="text/javascript" src="/static/js/activity.js"></script>
 	<script>
 	var usersToLoad = [ <?php
 		foreach ($members as $login => $fullname) {
@@ -82,63 +83,160 @@ function admin_user_table($group_id, $members, $backlink) {
 	?> ];
 	userTableLoadAll();
 	
-	var globalresult = []; // Global array contains last activity for each user
+	var last_active = {}, last_event_type = {};
+	var last_build = {}, last_run = {}; // Timestamp to prevent updating last build time too often
 	var frequency = 500; // Update frequency
 	var colorChangeSpeed = 100; // Update frequency
-	setTimeout(getActive, frequency);
 	var colorLevels = {}
+	
+	var timenow = 0; // Need this to properly reference time from server
+	var last_line = 0;
+	
+	initActive(function(item) {
+		updateUserTableStats(item);
+	}, frequency);
+	
 	setTimeout(updateColor, colorChangeSpeed);
 	
-	function getActive() {
-		var xmlhttp = new XMLHttpRequest();
-		var url = "/admin/active.php";
-		xmlhttp.onreadystatechange = function() {
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-				result = JSON.parse(xmlhttp.responseText);
-				
-				// Update global array
-				for(key in result) {
-					if (result.hasOwnProperty(key) && key != "its_now" && key != "loadavg")
-						globalresult[key]=result[key];
-				}
-				
-				// Regenerate HTML list of active users
-				var timenow = result['its_now'];
-				Object.keys(globalresult).sort().forEach(function(key) {
-					var dist=timenow - globalresult[key]['timestamp'];
-					if (dist>255) return;
-					
-					var td = document.getElementById('user-stats-table-'+key);
-					if(td) {
-						if (dist < 5) colorLevels[key] = 100;
-						var dateCell = td.nextSibling;
-						if (dateCell.tagName != "TD")
-							dateCell = dateCell.nextSibling;
-						dateCell.innerHTML = globalresult[key]['datum'];
-						
-						pfile = globalresult[key]['path'] + globalresult[key]['file'];
-					}
-				});
-			}
-			if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
-				console.error(url + " 500");
-			}
-		}
-		xmlhttp.open("GET", url, true);
-		xmlhttp.send();
+	function updateUserTableStats(activityItem) {
+		// Trigger activity
+		var username = activityItem['username'];
+		var file = activityItem['file'];
+		var dist = timenow - last_active[username];
 		
-		setTimeout(getActive, frequency);
-	}
+		// Is user in this table?
+		if (!document.getElementById("user-stats-table-"+username))
+			return;
+		
+		last_active[username] = timenow;
+		colorLevels[username] = 100;
+		
+		// Handle login/logout
+		if (file == ".login") {
+			last_event_type[username] = "login";
+			console.log("LOGIN "+username);
+		} else if (file == ".logout") {
+			last_event_type[username] = "logout";
+			console.log("LOGOUT "+username);
+		} else
+			last_event_type[username] = "type";
 	
+		// Do we have this activity in table?
+		var path = activityItem['path'];
+		path = path.substring(1, path.length-1);
+		var td_id = activityItem['username'] + "-" + path;
+		var td = document.getElementById(td_id);
+		if (!td) return;
+		
+		if (!global_stats.hasOwnProperty(username) || !global_stats[username])
+			global_stats[username] = {};
+		if (!global_stats[username].hasOwnProperty(path) || !global_stats[username][path])
+			global_stats[username][path] = {};
+		
+		var pfile = activityItem['path'] + file;
+		
+		if (file == ".at_result")
+			parse_at_result(username, pfile, td);
+			
+		if (file == ".output" || file == ".valgrind.out") {
+			console.log("RUN "+username+" "+path);
+			if (!last_run.hasOwnProperty(username) || timenow - last_run[username] > 5) {
+				if (!global_stats[username][path].hasOwnProperty('builds_succeeded'))
+					global_stats[username][path]['builds_succeeded'] = 1;
+				else
+					global_stats[username][path]['builds_succeeded']++;
+				render_cell(username, path, td);
+			}
+			last_run[username] = timenow;
+		}
+			
+		if (file == ".runme" || file == ".gcc.out") {
+			console.log("BUILD "+username+" "+path);
+			if (!last_build.hasOwnProperty(username) || timenow - last_build[username] > 5) {
+				if (!global_stats[username][path].hasOwnProperty('builds_succeeded'))
+					global_stats[username][path]['builds_succeeded'] = 1;
+				else
+					global_stats[username][path]['builds_succeeded']++;
+				render_cell(username, path, td);
+			}
+			last_build[username] = timenow;
+		}
+	}
 	function updateColor() {
 		for (user in colorLevels) {
 			var alpha = colorLevels[user] / 100.0;
 			if (colorLevels[user] <= 10) alpha = 0;
-			console.log("Set color for "+user+" to "+ alpha);
-			document.getElementById('color-ball-'+user).style.color = "rgba(0, 160, 0, " + alpha + ")";
-			colorLevels[user] -= 10;
+			var ball = document.getElementById('color-ball-'+user);
+			if (ball) {
+				if (last_event_type[user] == "login") {
+					ball.className = "fa fa-sign-in";
+					ball.style.color = "rgb(0, 0, 0)";
+				} else if (last_event_type[user] == "logout") {
+					ball.className = "fa fa-sign-out";
+					ball.style.color = "rgb(160, 0, 0)";
+				} else {
+					ball.className = "fa fa-circle";
+					ball.style.color = "rgba(0, 160, 0, " + alpha + ")";
+					colorLevels[user] -= 10;
+				}
+			}
 		}
 		setTimeout(updateColor, colorChangeSpeed);
+	}
+	
+	function parse_at_result(user, file, td) {
+		console.log("parse_at "+user+" "+file);
+		var xmlhttp = new XMLHttpRequest();
+		var url = "services/file.php?user="+user+"&path="+file;
+		xmlhttp.onreadystatechange = function() {
+			if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+				if (xmlhttp.responseText.length > 2 && xmlhttp.responseText != "ERROR: File doesn't exist\n") {
+					var results = JSON.parse(xmlhttp.responseText);
+					var status = "";
+					var path = file.substring(1, file.lastIndexOf('/'));
+										
+					// Compile failed
+					if (results.status == 3 || results.status == 6) {
+						global_stats[user][path]['test_results'] = "0/0";
+					}
+					
+					// Iterate through test results
+					pwi_tests_total=pwi_tests_passed=0;
+					for (var key in results.test_results) {
+						var found_result = results.test_results[key];
+						
+						// Test statistics
+						pwi_tests_total++;
+						if (found_result && found_result.status == 1)
+							pwi_tests_passed++;
+					}
+					
+					global_stats[user][path]['test_results'] = "" + pwi_tests_passed + "/" + pwi_tests_total;
+					console.log("USER "+user+": path: '"+path+"' result "+global_stats[user][path]['test_results']);
+					render_cell(user, path, td);
+				}
+				
+			}
+		}
+		xmlhttp.open("GET", url, true);
+		xmlhttp.send();
+	}
+	
+	function render_cell(user, path, td) {
+		console.log("render_cell "+user+" "+path);
+		var backlink = "FIXME";
+		// Render cell
+		td.innerHTML = "";
+		if (global_stats[user][path].hasOwnProperty('time') && global_stats[user][path]['time'] !== undefined)
+			td.innerHTML += "<i class=\"fa fa-clock-o\"></i> " + global_stats[user][path]['time'];
+		if (global_stats[user][path].hasOwnProperty('builds') && global_stats[user][path]['builds'] !== undefined)
+			td.innerHTML += "<i class=\"fa fa-wrench\"></i> " + global_stats[user][path]['builds'];
+		if (global_stats[user][path].hasOwnProperty('builds_succeeded') && global_stats[user][path]['builds_succeeded'] !== undefined)
+			td.innerHTML += "<i class=\"fa fa-gear\"></i> " + global_stats[user][path]['builds_succeeded'];
+		if (global_stats[user][path].hasOwnProperty('test_results') && global_stats[user][path]['test_results'] !== undefined)
+			td.innerHTML += "<i class=\"fa fa-check\"></i> " + global_stats[user][path]['test_results'];
+			
+		td.innerHTML = "<a href=\"?user=" + user + "&amp;path=" + path + "&amp;backlink=" + backlink + "\">" + td.innerHTML + "</a>";
 	}
 	</SCRIPT>
 	<?php

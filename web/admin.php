@@ -345,59 +345,17 @@ if ($logged_in) {
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
 		<h1>Active users</h1>
+		<script type="text/javascript" src="/static/js/activity.js"></script>
 		<SCRIPT>
-		var globalresult = []; // Global array contains last activity for each user
+		var global_activity = []; // Global array contains last activity for each user
+		var last_line = 0;
 		var frequency = 500; // Update frequency
-		setTimeout(getActive, frequency);
-		
-		function getActive() {
-			var xmlhttp = new XMLHttpRequest();
-			var url = "/admin/active.php";
-			xmlhttp.onreadystatechange = function() {
-				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-					result = JSON.parse(xmlhttp.responseText);
-					
-					// Update global array
-					for(key in result) {
-						if (result.hasOwnProperty(key) && key != "its_now" && key != "loadavg")
-							globalresult[key]=result[key];
-					}
-					
-					// Set load average statistics
-					var loadavg = document.getElementById('loadavg');
-					loadavg.innerHTML = result['loadavg'];
-					
-					// Regenerate HTML list of active users
-					var obj=document.getElementById('activeUsers');
-					obj.innerHTML="";
-					var timenow = result['its_now'];
-					Object.keys(globalresult).sort().forEach(function(key) {
-						var dist=timenow - globalresult[key]['timestamp'];
-						if (dist>255) return;
-						var color = dist.toString(16);
-						if (dist<16) color="0"+color;
-						if (globalresult[key]['file'] == ".logout")
-							color = "#FF"+color+color;
-						else if (globalresult[key]['file'] == ".login")
-							color = "#"+color+"FF" + color;
-						else
-							color = "#"+color+color+color;
-						pfile = globalresult[key]['path'] + globalresult[key]['file'];
-						pfile = pfile.substr(1);
-						link = "admin.php?user="+key+"&amp;path="+pfile;
-						obj.innerHTML += "<div style=\"color:"+color+"\">" + key + " - " +
-							globalresult[key]['datum'] + " - <a href=\"" + link + "\">" + pfile + "</a></div>";
-					});
-				}
-				if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
-					console.error(url + " 500");
-				}
-			}
-			xmlhttp.open("GET", url, true);
-			xmlhttp.send();
-			
-			setTimeout(getActive, frequency);
-		}
+		var timenow = 0;
+		initActive(function(item) {
+			global_activity[item['username']] = item;
+		}, frequency);
+		setInterval(renderResults, frequency);
+
 		</SCRIPT>
 		<ul>
 			<p>Load average: <span id="loadavg"></div></p>
@@ -406,6 +364,7 @@ if ($logged_in) {
 		</ul>
 		<?php
 		admin_log("active users");
+
 	}
 	
 	// Page for a single course
