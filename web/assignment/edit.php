@@ -118,7 +118,7 @@ function assignment_change($course, $year, $external) {
 
 
 function assignment_edit($course, $year, $external) {
-	global $assignments, $asgn_file_path, $course_path, $backlink;
+	global $assignments, $asgn_file_path, $course_path, $backlink, $course_data;
 	$asgn_id = intval($_REQUEST['assignment']);
 	
 	$asgn = array();
@@ -165,10 +165,14 @@ function assignment_edit($course, $year, $external) {
 	
 	// Tasks editing
 	for ($task=1; $task<=$asgn['tasks']; $task++) {
-		$file_change_link = "files.php?files_action=change&amp;course=$course&amp;year=$year&amp;external=$external&amp;assignment=$asgn_id&amp;task=$task&amp;";
+		$url_part = "course=$course&amp;year=$year&amp;external=$external&amp;assignment=$asgn_id&amp;task=$task&amp;";
+		$file_change_link = "files.php?files_action=change&amp;$url_part";
 		?>
 		<h3>Task <?=$task?></h3>
 		<?php
+		
+		$zadaca_exists = $autotest_exists = false;
+		
 		if (array_key_exists($task, $asgn['task_files'])) {
 			print "<p>Files:</p>\n<ul>\n";
 			foreach ($asgn['task_files'][$task] as $file) {
@@ -176,6 +180,10 @@ function assignment_edit($course, $year, $external) {
 				$view_link = $task_file_link . "action=View";
 				$delete_link = $task_file_link . "action=Delete";
 				print "<li><a href=\"$view_link\">$file</a> - (<a href=\"$delete_link\">delete</a>)</li>\n";
+				if ($file == ".zadaca")
+					$zadaca_exists = true;
+				if ($file == ".autotest")
+					$autotest_exists = true;
 			}
 			print "</ul>\n";
 		}
@@ -192,7 +200,76 @@ function assignment_edit($course, $year, $external) {
 		<input type="file" name="add"> <input type="submit" name="action" value="Add"></p>
 		</form>
 		<?php
+		
+		//print "ae $autotest_exists<br>";
+		//print "le ".array_key_exists("language", $course_data)
+		
+		if (!$autotest_exists && array_key_exists("language", $course_data)) {
+			?>
+			<p><a href="../autotest/create.php?<?=$url_part?>">Create .autotest file</a></p>
+			<?php
+		}
+		
+		if (!$zadaca_exists && $asgn['type']=="homework") {
+			?>
+			<p><a href="edit.php?action=create_zadaca&amp;<?=$url_part?>">Create .zadaca file</a></p>
+			<?php
+		}
 	}
+}
+
+
+function assignment_create_zadaca($course, $year, $external) {
+	global $assignments, $asgn_file_path, $course_path, $backlink, $course_data;
+	
+	$asgn_id = intval($_REQUEST['assignment']);
+	$task = intval($_REQUEST['task']);
+	
+	// Validation checking
+	$asgn = array();
+	foreach ($assignments as $a)
+		if ($a['id'] == $asgn_id) $asgn=$a;
+	if (empty($asgn)) {
+		niceerror("Unknown assignment");
+		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		return;
+	}
+	if ($task > $asgn['tasks']) { 
+		niceerror("Unknown task");
+		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		return;
+	}
+	if (array_key_exists($task, $asgn['task_files'])) {
+		if (in_array(".zadaca", $asgn['task_files'][$task])) {
+			niceerror("File .zadaca already exists");
+			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			return;
+		}
+	} else {
+		$asgn['task_files'][$task] = array();
+	}
+	
+	// Make directories
+	$files_path = $course_path . "/assignment_files/" . $asgn['path'];
+	if (!file_exists($files_path)) mkdir($files_path);
+	$files_path .= "/Z$task";
+	if (!file_exists($files_path)) mkdir($files_path);
+	
+	$file_path = $files_path . "/.zadaca";
+	
+	// Create .zadaca file
+	$task_name = $asgn['name'] . ", Zadatak $task";
+	$zadaca = array( 'id' => $asgn['homework_id'], 'zadatak' => $task, 'naziv' => $task_name );
+	file_put_contents($file_path, json_encode($zadaca, JSON_PRETTY_PRINT));
+	
+	$asgn['task_files'][$task][] = ".zadaca";
+	
+	foreach ($assignments as &$a)
+		if ($a['id'] == $asgn_id) $a=$asgn;
+	file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+	
+	nicemessage("File .zadaca successfully created");
+	print "<p><a href=\"$backlink\">Go back</a></p>\n";
 }
 
 
@@ -314,6 +391,7 @@ session_start();
 require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
 require_once("../login.php");
+require_once("../admin/courses.php");
 
 
 // Verify session and permissions, set headers
@@ -356,6 +434,17 @@ $assignments = array();
 if (file_exists($asgn_file_path))
 	$assignments = json_decode(file_get_contents($asgn_file_path), true);
 
+
+// Find course 
+$courses = admin_courses();
+$course_data = false;
+foreach ($courses as $c) {
+	if ($c['id'] == $course && $external==1 && $c['type'] == 'external')
+		$course_data = $c;
+	if ($c['id'] == $course && $external==0 && $c['type'] != 'external')
+		$course_data = $c;
+}
+
 	
 // HTML
 
@@ -373,6 +462,7 @@ if (file_exists($asgn_file_path))
 if (isset($_REQUEST['action'])) {
 	if ($_REQUEST['action'] == "create") assignment_create($course, $year, $external);
 	if ($_REQUEST['action'] == "edit") assignment_edit($course, $year, $external);
+	if ($_REQUEST['action'] == "create_zadaca") assignment_create_zadaca($course, $year, $external);
 	if ($_REQUEST['action'] == "change") assignment_change($course, $year, $external);
 }
 

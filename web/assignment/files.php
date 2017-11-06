@@ -150,8 +150,10 @@ function assignment_files_change() {
 		$file_path = $files_path . "/$file_name";
 		if (!file_exists($file_path)) {
 			print "<p><b style=\"color:red\">File $file_name doesn't exist.</b></p>";
-			print "<p><a href=\"$backlink\">Back</a></p>\n";
-			exit(0);
+			if ($_REQUEST['action'] == "View") { 
+				print "<p><a href=\"$backlink\">Back</a></p>\n";
+				exit(0);
+			}
 		}
 	}
 	
