@@ -1,6 +1,6 @@
 
 // ACTIVITY.JS - Functions for monitoring user activity
-// Version: 2017/11/05 10:56
+// Version: 2017/11/07 19:35
 
 
 function initActive(updateFunc, frequency) {
@@ -15,9 +15,9 @@ function initActive(updateFunc, frequency) {
 			if (loadavg) loadavg.innerHTML = result['loadavg'];
 			timenow = result['its_now'];
 			
-			last_line = result['lines'] - 1000;
-			
-			setInterval(function(){ getActive(updateFunc); }, frequency);
+			last_line = result['lines'] - 100;
+
+			setTimeout(function(){ getActive(updateFunc); }, frequency);
 		}
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
 			console.error(url + " 500");
@@ -46,6 +46,7 @@ function getActive(updateFunc) {
 			var loadavg = document.getElementById('loadavg');
 			if (loadavg) loadavg.innerHTML = result['loadavg'];
 			timenow = result['its_now'];
+			setTimeout(function(){ getActive(updateFunc); }, frequency);
 		}
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
 			console.error(url + " 500");
