@@ -2,8 +2,10 @@
 
 
 function assignment_change($course, $year, $external) {
-	global $assignments, $asgn_file_path, $course_path, $backlink;
+	global $assignments, $asgn_file_path, $course_path, $course_link;
 	$asgn_id = intval($_REQUEST['assignment']);
+	
+	$backlink = assignment_edit_link($asgn_id);
 	
 	// Check parameter validity
 	$type = trim($_REQUEST['type']);
@@ -107,10 +109,7 @@ function assignment_change($course, $year, $external) {
 	$asgn['homework_id'] = $homework_id;
 	$asgn['tasks'] = $tasks;
 	$asgn['hidden'] = $hidden;
-	foreach ($assignments as &$a)
-		if ($a['id'] == $asgn_id) $a=$asgn;
-	
-	file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+	assignment_update($asgn);
 	
 	nicemessage("Assignment $asgn_id successfully changed");
 	print "<p><a href=\"$backlink\">Go back</a></p>\n";
@@ -118,22 +117,19 @@ function assignment_change($course, $year, $external) {
 
 
 function assignment_edit($course, $year, $external) {
-	global $assignments, $asgn_file_path, $course_path, $backlink, $course_data;
+	global $assignments, $asgn_file_path, $course_path, $course_link, $course_data;
 	$asgn_id = intval($_REQUEST['assignment']);
-	
-	$asgn = array();
-	foreach ($assignments as $a)
-		if ($a['id'] == $asgn_id) $asgn=$a;
-	if (empty($asgn)) {
+	$asgn = assignment_get($asgn_id);
+	if (!$asgn) {
 		niceerror("Unknown assignment");
-		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back</a></p>\n";
 		return;
 	}
 	
 	if (array_key_exists('hidden', $asgn) && $asgn['hidden'] == "true") $hidden_html = "CHECKED"; else $hidden_html = "";
 	
 	?>
-	<p><a href="<?=$backlink?>">Back to course details</a></p>
+	<p><a href="<?=$course_link?>">Back to course details</a></p>
 	
 	<h2>Edit assignment</h2>
 	<form action="edit.php" method="POST">
@@ -201,9 +197,6 @@ function assignment_edit($course, $year, $external) {
 		</form>
 		<?php
 		
-		//print "ae $autotest_exists<br>";
-		//print "le ".array_key_exists("language", $course_data)
-		
 		if (!$autotest_exists && array_key_exists("language", $course_data)) {
 			?>
 			<p><a href="../autotest/create.php?<?=$url_part?>">Create .autotest file</a></p>
@@ -219,17 +212,17 @@ function assignment_edit($course, $year, $external) {
 }
 
 
-function assignment_create_zadaca($course, $year, $external) {
-	global $assignments, $asgn_file_path, $course_path, $backlink, $course_data;
+function assignment_edit_create_zadaca($course, $year, $external) {
+	global $assignments, $asgn_file_path, $course_path, $course_link, $course_data;
 	
 	$asgn_id = intval($_REQUEST['assignment']);
 	$task = intval($_REQUEST['task']);
 	
+	$backlink = assignment_edit_link($asgn_id);
+	
 	// Validation checking
-	$asgn = array();
-	foreach ($assignments as $a)
-		if ($a['id'] == $asgn_id) $asgn=$a;
-	if (empty($asgn)) {
+	$asgn = assignment_get($asgn_id);
+	if (!$asgn) {
 		niceerror("Unknown assignment");
 		print "<p><a href=\"$backlink\">Go back</a></p>\n";
 		return;
@@ -239,34 +232,9 @@ function assignment_create_zadaca($course, $year, $external) {
 		print "<p><a href=\"$backlink\">Go back</a></p>\n";
 		return;
 	}
-	if (array_key_exists($task, $asgn['task_files'])) {
-		if (in_array(".zadaca", $asgn['task_files'][$task])) {
-			niceerror("File .zadaca already exists");
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
-			return;
-		}
-	} else {
-		$asgn['task_files'][$task] = array();
-	}
 	
-	// Make directories
-	$files_path = $course_path . "/assignment_files/" . $asgn['path'];
-	if (!file_exists($files_path)) mkdir($files_path);
-	$files_path .= "/Z$task";
-	if (!file_exists($files_path)) mkdir($files_path);
-	
-	$file_path = $files_path . "/.zadaca";
-	
-	// Create .zadaca file
-	$task_name = $asgn['name'] . ", Zadatak $task";
-	$zadaca = array( 'id' => $asgn['homework_id'], 'zadatak' => $task, 'naziv' => $task_name );
-	file_put_contents($file_path, json_encode($zadaca, JSON_PRETTY_PRINT));
-	
-	$asgn['task_files'][$task][] = ".zadaca";
-	
-	foreach ($assignments as &$a)
-		if ($a['id'] == $asgn_id) $a=$asgn;
-	file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+	assignment_create_zadaca($asgn, $task);
+	assignment_update($asgn);
 	
 	nicemessage("File .zadaca successfully created");
 	print "<p><a href=\"$backlink\">Go back</a></p>\n";
@@ -274,7 +242,7 @@ function assignment_create_zadaca($course, $year, $external) {
 
 
 function assignment_create($course, $year, $external) {
-	global $assignments, $asgn_file_path, $course_path, $backlink;
+	global $assignments, $asgn_file_path, $course_path, $course_link;
 	
 	// Input values & validation
 	$type = $_REQUEST['type'];
@@ -282,28 +250,28 @@ function assignment_create($course, $year, $external) {
 		$type = trim($_REQUEST['type_other']);
 		if (!preg_match("/\w/", $type)) {
 			niceerror("Invalid assignment type");
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back</a></p>\n";
 			return;
 		}
 	}
 	else if ($type == "homework") $homework_id = intval($_REQUEST['homework_id']);
 	else if ($type != "tutorial" && $type != "exam" && $type != "independent") {
 		niceerror("Invalid assignment type");
-		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back</a></p>\n";
 		return;
 	}
 	
 	$number = intval($_REQUEST['assignment_number']);
 	if ($number < 1 || $number > 100) {
 		niceerror("Invalid assignment number ".htmlentities($_REQUEST['assignment_number']));
-		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back</a></p>\n";
 		return;
 	}
 	
 	$tasks = intval($_REQUEST['nr_tasks']);
 	if ($tasks < 1 || $tasks > 100) {
 		niceerror("Invalid number of tasks ".htmlentities($_REQUEST['nr_tasks']));
-		print "<p><a href=\"$backlink\">Go back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back</a></p>\n";
 		return;
 	}
 	
@@ -344,37 +312,21 @@ function assignment_create($course, $year, $external) {
 		if ($a['name'] == $asgn['name']) {
 			niceerror("Duplicate assignment name ".$asgn['name']);
 			print "<p>Try using a different assignment number (currently: $number).</p>";
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back</a></p>\n";
 			return;
 		}
 		if ($a['path'] == $asgn['path']) {
 			niceerror("Duplicate assignment path ".$asgn['path']);
 			print "<p>Try using a different assignment number (currently: $number).</p>";
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back</a></p>\n";
 			return;
 		}
 	}
 	$asgn['task_files'] = array();
 	
-	// Create folders
-	$asgn_files_path = $course_path . "/assignment_files";
-	if (!file_exists($asgn_files_path)) mkdir($asgn_files_path);
-	$asgn_files_path = $asgn_files_path . "/". $asgn['path'];
-	if (!file_exists($asgn_files_path)) mkdir($asgn_files_path);
-	
 	for ($i=1; $i<=$tasks; $i++) {
-		$task_path = $asgn_files_path . "/Z$i";
-		if (!file_exists($task_path)) mkdir($task_path);
-		
-		$task_name = $asgn['name'] . ", Zadatak $i";
-		
-		// Create .zadaca file 
-		if ($type == "homework") {
-			$zadaca = array( 'id' => $homework_id, 'zadatak' => $i, 'naziv' => $task_name );
-			$zadaca_path = $task_path . "/.zadaca";
-			file_put_contents($zadaca_path, json_encode($zadaca, JSON_PRETTY_PRINT));
-			$asgn['task_files'][$i] = array(".zadaca");
-		}
+		// This will create folders and add .zadaca file if type is homework
+		assignment_create_zadaca($asgn, $i);
 	}
 	
 	// Write assignments
@@ -382,73 +334,35 @@ function assignment_create($course, $year, $external) {
 	file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
 	
 	nicemessage("Assignment successfully created");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
+	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+	print "<p><a href=\"" . assignment_edit_link($asgn['id']) . "\">Edit assignment</a></p>\n";
 }
 
 
 
-session_start();
-require_once("../../lib/config.php");
-require_once("../../lib/webidelib.php");
-require_once("../login.php");
-require_once("../admin/courses.php");
+require_once("../../lib/config.php"); // Webide config
+require_once("../../lib/webidelib.php"); // Webide library
+require_once("../login.php"); // Login
+require_once("../admin/lib.php"); // Admin library
+require_once("../admin/courses.php"); // Courses
+require_once("lib.php"); // Assignment library
 
 
 // Verify session and permissions, set headers
-
-$logged_in = false;
-if (isset($_SESSION['login'])) {
-	$login = $_SESSION['login'];
-	$session_id = $_SESSION['server_session'];
-	if (preg_match("/[a-zA-Z0-9]/",$login)) $logged_in = true;
-}
-
-if (!$logged_in || !in_array($login, $conf_admin_users)) {
-	?>
-	<p style="color:red; weight: bold">Your session expired. Please log out then log in.</p>
-	<?php
-	return 0;
-}
-
-ini_set('default_charset', 'UTF-8');
-header('Content-Type: text/html; charset=UTF-8');
+admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+admin_set_headers();
 
 
 // Set vars
-$course = intval($_REQUEST['course']);
-$year = intval($_REQUEST['year']);
-$external = $_REQUEST['external'];
-if (isset($_REQUEST['X'])) $external=1;
-
-if ($external) {
-	$course_path = $conf_data_path . "/X$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year&amp;X";
-} else {
-	$course_path = $conf_data_path . "/$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year";
-}
-if (!file_exists($course_path)) mkdir($course_path);
-
-$asgn_file_path = $course_path . "/assignments";
-$assignments = array();
-if (file_exists($asgn_file_path))
-	$assignments = json_decode(file_get_contents($asgn_file_path), true);
-
+assignment_global_init();
 
 // Find course 
-$courses = admin_courses();
-$course_data = false;
-foreach ($courses as $c) {
-	if ($c['id'] == $course && $external==1 && $c['type'] == 'external')
-		$course_data = $c;
-	if ($c['id'] == $course && $external==0 && $c['type'] != 'external')
-		$course_data = $c;
-}
+$course_data = admin_courses_get($course, $external);
 
-	
+
 // HTML
 
-	?>
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -462,7 +376,7 @@ foreach ($courses as $c) {
 if (isset($_REQUEST['action'])) {
 	if ($_REQUEST['action'] == "create") assignment_create($course, $year, $external);
 	if ($_REQUEST['action'] == "edit") assignment_edit($course, $year, $external);
-	if ($_REQUEST['action'] == "create_zadaca") assignment_create_zadaca($course, $year, $external);
+	if ($_REQUEST['action'] == "create_zadaca") assignment_edit_create_zadaca($course, $year, $external);
 	if ($_REQUEST['action'] == "change") assignment_change($course, $year, $external);
 }
 

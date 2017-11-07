@@ -1,90 +1,51 @@
 <?php
 
 
-session_start();
-require_once("../../lib/config.php");
-require_once("../../lib/webidelib.php");
-require_once("../login.php");
-require_once("../admin/courses.php");
+require_once("../../lib/config.php"); // Webide config
+require_once("../../lib/webidelib.php"); // Webide library
+require_once("../login.php"); // Login
+require_once("../admin/lib.php"); // Admin library
+require_once("../admin/courses.php"); // Courses
+require_once("../assignment/lib.php"); // Assignment library
+
+
 
 
 // Verify session and permissions, set headers
+admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+admin_set_headers();
 
-$logged_in = false;
-if (isset($_SESSION['login'])) {
-	$login = $_SESSION['login'];
-	$session_id = $_SESSION['server_session'];
-	if (preg_match("/[a-zA-Z0-9]/",$login)) $logged_in = true;
-}
-
-if (!$logged_in || !in_array($login, $conf_admin_users)) {
-	?>
-	<p style="color:red; weight: bold">Your session expired. Please log out then log in.</p>
-	<?php
-	return 0;
-}
-
-ini_set('default_charset', 'UTF-8');
-header('Content-Type: text/html; charset=UTF-8');
 
 // Set vars
-$course = intval($_REQUEST['course']);
-$year = intval($_REQUEST['year']);
-$external = $_REQUEST['external'];
-if (isset($_REQUEST['X'])) $external=1;
-$asgn_id = intval($_REQUEST['assignment']);
-$task = intval($_REQUEST['task']);
-
-if ($external) {
-	$course_path = $conf_data_path . "/X$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year&amp;X";
-} else {
-	$course_path = $conf_data_path . "/$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year";
-}
-if (!file_exists($course_path)) mkdir($course_path);
+assignment_global_init();
 
 
 // Find assignment
-$asgn_file_path = $course_path . "/assignments";
-$assignments = array();
-if (file_exists($asgn_file_path))
-	$assignments = json_decode(file_get_contents($asgn_file_path), true);
-else {
-	niceerror("Assignment not found");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
-	return;
-}
+$asgn_id = intval($_REQUEST['assignment']);
+$task = intval($_REQUEST['task']);
 
-$asgn = false;
-foreach($assignments as $a) {
-	if ($a['id'] == $asgn_id) $asgn = $a;
-}
+$asgn = assignment_get($asgn_id);
 if ($asgn == false) {
 	niceerror("Assignment not found");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
+	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 	return;
 }
+$asgn_edit_link = "../assignment/" . assignment_edit_link($asgn_id);
+
 
 
 // Find course 
-$courses = admin_courses();
-$course_data = false;
-foreach ($courses as $c) {
-	if ($c['id'] == $course && $external==1 && $c['type'] == 'external')
-		$course_data = $c;
-	if ($c['id'] == $course && $external==0 && $c['type'] != 'external')
-		$course_data = $c;
-}
+$course_data = admin_courses_get($course, $external);
 
 if ($course_data === false) {
 	niceerror("Course not found");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
+	print "<p><a href=\"admin.php\">Go back</a></p>\n";
 	return;
 }
 if (!array_key_exists("language", $course_data)) {
 	niceerror("Required data not found");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
+	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+	print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 	return;
 }
 
@@ -107,12 +68,7 @@ $autotest['run'] = "false";
 $autotest['test_specifications'] = array();
 
 // Path for file
-$files_path = $course_path . "/assignment_files";
-if (!file_exists($files_path)) mkdir($files_path);
-$files_path .= "/" . $asgn['path'];
-if (!file_exists($files_path)) mkdir($files_path);
-$files_path .= "/Z$task";
-if (!file_exists($files_path)) mkdir($files_path);
+$files_path = assignment_get_task_path($asgn, $task);
 
 $destination_path = $files_path . "/.autotest";
 if (file_exists($destination_path)) {
@@ -125,12 +81,11 @@ file_put_contents($destination_path, json_encode($autotest, JSON_PRETTY_PRINT));
 
 // Update assignments
 $asgn['task_files'][$task][] = ".autotest";
-foreach($assignments as &$a)
-	if ($a['id'] == $asgn_id) $a=$asgn;
-file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+assignment_update($asgn);
 
 nicemessage("Autotest file created!");
-print "<p><a href=\"$backlink\">Go back</a></p>\n";
+print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 
 
 

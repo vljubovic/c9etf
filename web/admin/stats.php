@@ -1,5 +1,9 @@
 <?php
 
+// ADMIN/STATS.PHP - pluggable modules for admin.php for showing various stats
+
+
+// Webide usage stats
 function admin_stats() {
 	global $conf_base_path;
 
@@ -153,6 +157,7 @@ function admin_stats() {
 }
 
 
+// Buildservice stats
 function admin_bsstats() {
 	global $conf_base_path;
 	$bs_path = "/tmp/buildservice";
@@ -182,6 +187,7 @@ function admin_bsstats() {
 
 
 
+// Results for an exam
 function admin_exam_stats() {
 	global $conf_base_path;
 	

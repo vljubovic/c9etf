@@ -66,50 +66,20 @@ function assignment_copy($course, $year, $external, $asgn_id) {
 
 
 
-session_start();
-require_once("../../lib/config.php");
-require_once("../../lib/webidelib.php");
-require_once("../login.php");
+require_once("../../lib/config.php"); // Webide config
+require_once("../../lib/webidelib.php"); // Webide library
+require_once("../login.php"); // Login
+require_once("../admin/lib.php"); // Admin library
+require_once("lib.php"); // Assignment library
 
 
 // Verify session and permissions, set headers
+admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+admin_set_headers();
 
-$logged_in = false;
-if (isset($_SESSION['login'])) {
-	$login = $_SESSION['login'];
-	$session_id = $_SESSION['server_session'];
-	if (preg_match("/[a-zA-Z0-9]/",$login)) $logged_in = true;
-}
-
-if (!$logged_in || !in_array($login, $conf_admin_users)) {
-	?>
-	<p style="color:red; weight: bold">Your session expired. Please log out then log in.</p>
-	<?php
-	return 0;
-}
-
-ini_set('default_charset', 'UTF-8');
-header('Content-Type: text/html; charset=UTF-8');
 
 // Set vars
-$course = intval($_REQUEST['course']);
-$year = intval($_REQUEST['year']);
-$external = $_REQUEST['external'];
-if (isset($_REQUEST['X'])) $external=1;
-
-if ($external) {
-	$course_path = $conf_data_path . "/X$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year&amp;X";
-} else {
-	$course_path = $conf_data_path . "/$course" . "_$year";
-	$backlink = "../admin.php?course=$course&amp;year=$year";
-}
-if (!file_exists($course_path)) mkdir($course_path);
-
-$asgn_file_path = $course_path . "/assignments";
-$assignments = array();
-if (file_exists($asgn_file_path))
-	$assignments = json_decode(file_get_contents($asgn_file_path), true);
+assignment_global_init();
 
 
 // HTML
@@ -125,7 +95,9 @@ if (file_exists($asgn_file_path))
 <h1>Copy assignments from previous year</h1>
 	<?php
 
-// Previous year
+
+// Initialize various variables related to course/assignment data for the
+// previous year of same course
 if ($external) {
 	$prev_course_path = $conf_data_path . "/X$course" . "_" . ($year-1);
 } else {

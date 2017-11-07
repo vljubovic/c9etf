@@ -1,5 +1,9 @@
 <?php
 
+// ADMIN/FILES.PHP - various functions for handling course files
+
+
+
 // This function provides a list of course files with some buttons
 // Meant to be called from admin.php
 function assignment_files($course, $year, $external) {
@@ -52,81 +56,42 @@ function assignment_files($course, $year, $external) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
-
-	function admin_log($msg) {
-		$login = $_SESSION['login'];
-		$conf_base_path = "/usr/local/webide";
-		$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
-		file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
-	}
-
-	global $conf_admin_users, $conf_data_path;
+	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users;
 	
-	session_start();
-	require_once("../../lib/config.php");
-	require_once("../../lib/webidelib.php");
-	require_once("../login.php");
+	require_once("../../lib/config.php"); // Webide config
+	require_once("../../lib/webidelib.php"); // Webide library
+	require_once("../login.php"); // Login
+	require_once("../admin/lib.php"); // Admin library
+	require_once("lib.php"); // Assignment library
 
-	
 	// Verify session and permissions, set headers
-	
-	$logged_in = false;
-	if (isset($_SESSION['login'])) {
-		$login = $_SESSION['login'];
-		$session_id = $_SESSION['server_session'];
-		if (preg_match("/[a-zA-Z0-9]/",$login)) $logged_in = true;
-	}
-
-	if (!$logged_in || !in_array($login, $conf_admin_users)) {
-		?>
-		<p style="color:red; weight: bold">Your session expired. Please log out then log in.</p>
-		<?php
-		return 0;
-	}
-	
-	ini_set('default_charset', 'UTF-8');
-	header('Content-Type: text/html; charset=UTF-8');
-	
+	admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+	admin_set_headers();
 	
 	// Set core variables
-	$course = intval($_REQUEST['course']);
-	$year = intval($_REQUEST['year']);
-	$external = $_REQUEST['external'];
+	assignment_global_init();
 	
-	if ($external) {
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-		$backlink = "../admin.php?course=$course&amp;year=$year&amp;X";
-	} else {
-		$course_path = $conf_data_path . "/$course" . "_$year";
-		$backlink = "../admin.php?course=$course&amp;year=$year";
-	}
-	if (!file_exists($course_path)) mkdir($course_path);
 	
 	if (isset($_REQUEST['assignment'])) {
 		$asgn_id = intval($_REQUEST['assignment']);
 		$task = intval($_REQUEST['task']);
+		$asgn_edit_link = assignment_edit_link($asgn_id);
 		
-		$asgn_file_path = $course_path . "/assignments";
-		$assignments = array();
-		if (file_exists($asgn_file_path))
-			$assignments = json_decode(file_get_contents($asgn_file_path), true);
-			
-		$asgn = array();
-		foreach ($assignments as $a) 
-			if ($a['id'] == $asgn_id) $asgn=$a;
-		if (empty($asgn)) {
+		$asgn = assignment_get($asgn_id);
+		if (!$asgn) {
 			niceerror("Assignment not found");
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 			return;
 		}
 		
 		if ($task < 1 || $task > $asgn['tasks']) {
 			niceerror("Invalid task number");
-			print "<p><a href=\"$backlink\">Go back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+			print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 			return;
 		}
 		
-		$files_path = $course_path . "/assignment_files/" . $asgn['path'] . "/Z$task";
+		$files_path = assignment_get_task_path($asgn, $task);
 	} else {
 		$files_path = $course_path . "/files";
 		if (!file_exists($files_path)) mkdir($files_path);
@@ -149,9 +114,10 @@ function assignment_files_change() {
 		$file_name = basename($_REQUEST['file']);
 		$file_path = $files_path . "/$file_name";
 		if (!file_exists($file_path)) {
-			print "<p><b style=\"color:red\">File $file_name doesn't exist.</b></p>";
+			print "<p><b style=\"color:red\">File $file_path doesn't exist.</b></p>";
 			if ($_REQUEST['action'] == "View") { 
-				print "<p><a href=\"$backlink\">Back</a></p>\n";
+				print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+				print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 				exit(0);
 			}
 		}
@@ -164,13 +130,15 @@ function assignment_files_change() {
 		print "<pre>";
 		print htmlentities(file_get_contents($file_path));
 		print "</pre>\n";
-		print "<p><a href=\"$backlink\">Back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+		print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 	}
 	if ($_REQUEST['action'] == "Delete") {
 		unlink($file_path);
 		admin_log("delete $file_path");
 		print "<p>File deleted</p>";
-		print "<p><a href=\"$backlink\">Back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+		print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 		
 		// Update assignment task_files
 		if (isset($_REQUEST['assignment'])) {
@@ -178,9 +146,7 @@ function assignment_files_change() {
 				if ($asgn['task_files'][$task][$i] == $file_name) 
 					unset($asgn['task_files'][$task][$i]);
 			}
-			foreach($assignments as &$a)
-				if ($a['id'] == $asgn_id) $a=$asgn;
-			file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+			assignment_update($asgn);
 		}
 	}
 	if ($_REQUEST['action'] == "Add") {
@@ -194,7 +160,8 @@ function assignment_files_change() {
 		
 		if (file_exists($destination_path) || empty($destination) || strlen($destination)<2) {
 			print "<p><b style=\"color:red\">File named ".$_FILES['add']['name'].". already exists.</b> Please choose another name and resend</p>";
-			print "<p><a href=\"$backlink\">Back</a></p>\n";
+			print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+			print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 			exit(0);
 		}
 		
@@ -203,14 +170,13 @@ function assignment_files_change() {
 		// Update assignment task_files
 		if (isset($_REQUEST['assignment'])) {
 			$asgn['task_files'][$task][] = $destination;
-			foreach($assignments as &$a)
-				if ($a['id'] == $asgn_id) $a=$asgn;
-			file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
+			assignment_update($asgn);
 		}
 
 		admin_log("upload $destination_path");
 		print "<p>File uploaded.</p>\n";
-		print "<p><a href=\"$backlink\">Back</a></p>\n";
+		print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+		print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
 	}
 	
 	?>

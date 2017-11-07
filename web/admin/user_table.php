@@ -1,7 +1,11 @@
 <?php
 
+// ADMIN/USER_TABLE.PHP - admin.pgp pluggable module for active table of users in a group with
+// various stats per folder/project and real-time updating
+
+
 function admin_user_table($group_id, $members, $backlink) {
-	global $conf_limit_loadavg_web;
+	global $conf_limit_loadavg_web, $users;
 	
 	$assignments = $stats = $last_access = array();
 	
@@ -40,9 +44,12 @@ function admin_user_table($group_id, $members, $backlink) {
 	}
 	print "</thead></tr>\n";
 	foreach ($members as $login => $fullname) {
-
+		if ($users[$login]['status'] == "active")
+			$className = "";
+		else 
+			$className = "user-is-offline";
 		?>
-		<tr>
+		<tr class="<?=$className?>">
 		<td id="user-stats-table-<?=$login?>"><a href="?user=<?=$login?>&amp;backlink=<?=$backlink?>"><i class="fa fa-circle" style="color: rgba(0, 160, 0, 0)" id="color-ball-<?=$login?>"></i> <?=$fullname?></a></td>
 		<td>/</td>
 		<td>
@@ -87,6 +94,7 @@ function admin_user_table($group_id, $members, $backlink) {
 	var last_build = {}, last_run = {}; // Timestamp to prevent updating last build time too often
 	var frequency = 500; // Update frequency
 	var colorChangeSpeed = 100; // Update frequency
+	var retryParseAt = 2000; // Update frequency
 	var colorLevels = {}
 	
 	var timenow = 0; // Need this to properly reference time from server
@@ -105,8 +113,14 @@ function admin_user_table($group_id, $members, $backlink) {
 		var dist = timenow - last_active[username];
 		
 		// Is user in this table?
-		if (!document.getElementById("user-stats-table-"+username))
+		var user_td = document.getElementById("user-stats-table-"+username);
+		if (!user_td)
 			return;
+			
+		// Update date/time filed
+		user_td = user_td.nextSibling;
+		if (user_td.tagName != "TD") user_td = user_td.nextSibling;
+		user_td.innerHTML = activityItem.datum;
 		
 		last_active[username] = timenow;
 		colorLevels[username] = 100;
@@ -167,17 +181,21 @@ function admin_user_table($group_id, $members, $backlink) {
 			var alpha = colorLevels[user] / 100.0;
 			if (colorLevels[user] <= 10) alpha = 0;
 			var ball = document.getElementById('color-ball-'+user);
+			var tr = ball.parentElement.parentElement.parentElement;
 			if (ball) {
 				if (last_event_type[user] == "login") {
 					ball.className = "fa fa-sign-in";
 					ball.style.color = "rgb(0, 0, 0)";
+					tr.className = "";
 				} else if (last_event_type[user] == "logout") {
 					ball.className = "fa fa-sign-out";
 					ball.style.color = "rgb(160, 0, 0)";
+					tr.className = "user-is-offline";
 				} else {
 					ball.className = "fa fa-circle";
 					ball.style.color = "rgba(0, 160, 0, " + alpha + ")";
 					colorLevels[user] -= 10;
+					tr.className = "";
 				}
 			}
 		}
@@ -194,7 +212,7 @@ function admin_user_table($group_id, $members, $backlink) {
 					var results = JSON.parse(xmlhttp.responseText);
 					var status = "";
 					var path = file.substring(1, file.lastIndexOf('/'));
-										
+					
 					// Compile failed
 					if (results.status == 3 || results.status == 6) {
 						global_stats[user][path]['test_results'] = "0/0";
@@ -214,6 +232,8 @@ function admin_user_table($group_id, $members, $backlink) {
 					global_stats[user][path]['test_results'] = "" + pwi_tests_passed + "/" + pwi_tests_total;
 					console.log("USER "+user+": path: '"+path+"' result "+global_stats[user][path]['test_results']);
 					render_cell(user, path, td);
+				} else {
+					setTimeout(function() { parse_at_result(user, file, td); }, retryParseAt);
 				}
 				
 			}

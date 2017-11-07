@@ -40,6 +40,10 @@ require_once("login.php");
 eval(file_get_contents("../users"));
 
 
+// Library
+require_once("admin/lib.php");
+
+
 // Admin modules
 require_once("admin/courses.php");
 require_once("admin/permissions.php");
@@ -577,12 +581,3 @@ echo "It spent " . rutime($ru, $rustart, "stime") .
 </body>
 </html>
 
-<?php
-
-function admin_log($msg) {
-	global $login, $conf_base_path;
-	$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
-	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
-}
-
-?>
