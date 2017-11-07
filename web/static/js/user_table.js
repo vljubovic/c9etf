@@ -1,6 +1,6 @@
 
 // USER_TABLE.JS - JavaScript functions for dynamic loading of user per-assignment stats table
-// Version: 2017/10/23 16:11
+// Version: 2017/10/25 18:20
 
 
 var show_others_regex = /^(T|Z|ZSR)\d+$/;
@@ -187,7 +187,7 @@ function userTableUpdateRow(data, user) {
 		
 		asgn_cell.innerHTML = "<a href=\"?user=" + user + "&amp;path=" + asgn_path + "&amp;backlink=" + backlink + "\">" + asgn_cell.innerHTML + "</a>";
 		
-		global_stats[user][asgn_path] = { builds: asgn_stats['builds'], builds_succeeded: asgn_stats['builds_succeeded'], test_results: asgn_stats['test_results'] };
+		global_stats[user][asgn_path] = { time: mins, builds: asgn_stats['builds'], builds_succeeded: asgn_stats['builds_succeeded'], test_results: asgn_stats['test_results'] };
 	}
 	
 	// Calculate stats for "others" column

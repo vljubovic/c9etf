@@ -15,7 +15,7 @@ function initActive(updateFunc, frequency) {
 			if (loadavg) loadavg.innerHTML = result['loadavg'];
 			timenow = result['its_now'];
 			
-			last_line = result['lines'] - 100;
+			last_line = result['lines'] - 1000;
 			
 			setInterval(function(){ getActive(updateFunc); }, frequency);
 		}

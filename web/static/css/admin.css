@@ -1,5 +1,6 @@
 /* 
  * ADMIN.CSS - style for admin control panel
+ * 2017/11/06 11:50
  */
 
 @import url(font-awesome.min.css);
@@ -214,6 +215,12 @@ h1{
 }
 .users-table tr:nth-child(odd){
     background-color: #f9f9f9;
+}
+.users-table tr:nth-child(odd).user-is-offline{
+    background-color: #d9d9d9;
+}
+.users-table tr:nth-child(even).user-is-offline{
+    background-color: #f0f0f0;
 }
 .users-table td{
     padding: 3px;
