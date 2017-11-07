@@ -46,7 +46,6 @@ require_once("admin/lib.php");
 
 // Admin modules
 require_once("admin/courses.php");
-require_once("admin/permissions.php");
 require_once("admin/stats.php");
 require_once("admin/user_table.php");
 

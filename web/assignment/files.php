@@ -65,12 +65,12 @@ function assignment_files_change() {
 	require_once("lib.php"); // Assignment library
 
 	// Verify session and permissions, set headers
-	admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+	admin_session();
 	admin_set_headers();
 	
 	// Set core variables
 	assignment_global_init();
-	
+	admin_check_permissions($course, $year, $external);
 	
 	if (isset($_REQUEST['assignment'])) {
 		$asgn_id = intval($_REQUEST['assignment']);

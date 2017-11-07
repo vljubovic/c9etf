@@ -117,7 +117,7 @@ function admin_user_table($group_id, $members, $backlink) {
 		if (!user_td)
 			return;
 			
-		// Update date/time filed
+		// Update date/time field
 		user_td = user_td.nextSibling;
 		if (user_td.tagName != "TD") user_td = user_td.nextSibling;
 		user_td.innerHTML = activityItem.datum;

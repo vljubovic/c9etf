@@ -12,12 +12,13 @@ require_once("../assignment/lib.php"); // Assignment library
 
 
 // Verify session and permissions, set headers
-admin_check_permissions($_REQUEST['course'], $_REQUEST['year']);
+admin_session();
 admin_set_headers();
 
 
 // Set vars
 assignment_global_init();
+admin_check_permissions($course, $year, $external);
 
 
 // Find assignment

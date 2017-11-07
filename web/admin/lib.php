@@ -11,8 +11,8 @@ function admin_log($msg) {
 }
 
 // Check if user has permissions to access admin UI and specific course
-function admin_check_permissions($course = 0, $year = 0) {
-	global $conf_admin_users;
+function admin_session() {
+	global $login, $conf_admin_users;
 
 	session_start();
 	$logged_in = false;
@@ -38,6 +38,35 @@ function admin_check_permissions($course = 0, $year = 0) {
 function admin_set_headers() {
 	ini_set('default_charset', 'UTF-8');
 	header('Content-Type: text/html; charset=UTF-8');
+}
+
+function admin_permissions($login, $year) {
+	global $conf_sysadmins, $conf_data_path;
+	$perms = array();
+	
+	// Sysadmins can see all courses, other just those they are teachers for
+	if (!in_array($login, $conf_sysadmins)) {
+		$perms_path = $conf_data_path . "/permissions.json";
+		if (file_exists($perms_path)) {
+			$all_perms = json_decode(file_get_contents($perms_path), true);
+			if (array_key_exists($login, $all_perms)) $perms = $all_perms[$login];
+		}
+	}
+	return $perms;
+}
+
+function admin_check_permissions($course, $year, $external) {
+	global $login;
+	$perms = admin_permissions($login, $year);
+	$cid = "$course" . "_$year";
+	if ($external) $cid = "X$cid";
+	foreach($perms as $perm) {
+		if ($perm == $cid) return;
+	}
+	?>
+	<p style="color:red; weight: bold">You don't have permission to access this page.</p>
+	<?php
+	exit(0);
 }
 
 ?>
