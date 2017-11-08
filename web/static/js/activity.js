@@ -15,7 +15,7 @@ function initActive(updateFunc, frequency) {
 			if (loadavg) loadavg.innerHTML = result['loadavg'];
 			timenow = result['its_now'];
 			
-			last_line = result['lines'] - 100;
+			last_line = result['lines'] - 1000;
 
 			setTimeout(function(){ getActive(updateFunc); }, frequency);
 		}
@@ -36,7 +36,7 @@ function getActive(updateFunc) {
 			
 			// Update global array
 			for(key in result) {
-				if (result.hasOwnProperty(key) && key != "its_now" && key != "loadavg") {
+				if (result.hasOwnProperty(key) && key != "its_now" && key != "loadavg" && key != "lines") {
 					updateFunc(result[key]);
 					last_line++;
 				}
