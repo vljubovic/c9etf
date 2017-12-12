@@ -75,7 +75,7 @@ case $cmd in
 		
 		rm -f "$zipfile"
 		cd "$path"
-		zip -r "$zipfile" *
+		find . -not -path '*/\.*' -type f -size -100k  | xargs zip -r "$zipfile"
 		chmod 644 "$zipfile"
 		cat "$zipfile"
 		;;
