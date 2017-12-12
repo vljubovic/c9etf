@@ -40,6 +40,17 @@
 	width: 1.2em;
 }
 
+.log-reformat {
+	background: #efe;
+}
+
+.log-reformat:before {
+	content: '\f044';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
 .log-create {
 	background: #ff0;
 }

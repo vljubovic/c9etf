@@ -139,46 +139,119 @@ function show_log($log, $skip_empty = true) {
 		return join("<br>", $niz);
 	}
 	
-	function print_polje($klasa, $lijevo, $id_detalji, $detalji) {
-		if (count($detalji) == 0) {
-		?>
-		<div class="log <?=$klasa?>">
-			<span class="log-lijevo"><?=$lijevo?></span>
-		</div>
-		<?php
+	function print_field($class, $left, $id_details, $details) {
+		if (count($details) == 0) {
+			?>
+			<div class="log <?=$class?>">
+				<span class="log-lijevo"><?=$left?></span>
+			</div>
+			<?php
 			return;
 		}
 		?>
-		<div class="log <?=$klasa?>" onclick="javascript:showhide('<?=$id_detalji?>')">
-			<span class="log-lijevo"><?=$lijevo?></span>
+		<div class="log <?=$class?>" onclick="javascript:showhide('<?=$id_details?>')">
+			<span class="log-lijevo"><?=$left?></span>
 			<span class="log-detalji-link">detalji</span>
 		</div>
-		<div id="<?=$id_detalji?>" class="log-detalji">
+		<div id="<?=$id_details?>" class="log-detalji">
 		<?php
-		foreach ($detalji as $detalj) {
+		foreach ($details as $detail) {
 			?>
-			<div class="log-detalji1"><?=date("H:i:s", $detalj['time'])?>
+			<div class="log-detalji1"><?=date("H:i:s", $detail['time'])?>
 			<?php
-			if (array_key_exists('add_lines', $detalj['text'])) 
-				print "<span class=\"log-detalji1-add\">".htmlize($detalj['text']['add_lines'])."</span>";
-			if (array_key_exists('remove_lines', $detalj['text'])) 
-				print "<span class=\"log-detalji1-remove\">".htmlize($detalj['text']['remove_lines'])."</span>";
-			if (array_key_exists('change', $detalj['text'])) 
-				print "<span class=\"log-detalji1-change\">".htmlize($detalj['text']['change'])."</span>";
-			if (array_key_exists('lines', $detalj['text'])) 
-				print "<span class=\"log-detalji1-lines\">".htmlize($detalj['text']['lines'])."</span>";
+			if (array_key_exists('add_lines', $detail['text'])) 
+				print "<span class=\"log-detalji1-add\">".htmlize($detail['text']['add_lines'])."</span>";
+			if (array_key_exists('remove_lines', $detail['text'])) 
+				print "<span class=\"log-detalji1-remove\">".htmlize($detail['text']['remove_lines'])."</span>";
+			if (array_key_exists('change', $detail['text'])) 
+				print "<span class=\"log-detalji1-change\">".htmlize($detail['text']['change'])."</span>";
+			if (array_key_exists('lines', $detail['text'])) 
+				print "<span class=\"log-detalji1-lines\">".htmlize($detail['text']['lines'])."</span>";
 			print "</div>\n";
 		}
 		print "</div>\n";
 	}
 	
 	function print_mod(&$mod) {
+		static $rbr=1;
 		$klasa = "log-edit";
 		$lijevo = date("H:i:s", $mod['start']) . " - " . date("H:i:s", $mod['end']) . " rad na datoteci " . $mod['path'];
-		$id_detalji = "modified-".$mod['end'];
-		print_polje ($klasa, $lijevo, $id_detalji, $mod['diffs']);
+		$id_detalji = "modified-".$rbr++;
+		print_field($klasa, $lijevo, $id_detalji, $mod['diffs']);
 		$mod['path'] = ""; 
 		$mod['diffs'] = array();
+	}
+	
+	function cleanup_line_reformat($txt) {
+		$txt = str_replace("{", "", $txt);
+		$txt = str_replace("}", "", $txt);
+		$txt = preg_replace("/\s+/", " ", $txt);
+		$txt = preg_replace("/(\w) (\W)/", "$1$2", $txt);
+		$txt = preg_replace("/(\W) (\w)/", "$1$2", $txt);
+		$txt = preg_replace("/(\W) (\W)/", "$1$2", $txt);
+		return trim($txt);
+	}
+	
+	// Remove all pasted lines with no actual change
+	function cleanup_reformat($change) {
+		if (!array_key_exists('add_lines', $change) || !array_key_exists('remove_lines', $change))
+			return $change;
+		
+		//print_r($change);
+		
+		foreach($change['remove_lines'] as $key => $removed) {
+			$removed = cleanup_line_reformat($removed);
+			//print "REMOVED: '".htmlspecialchars($removed)."'<br>\n";
+			$found = empty($removed);
+			if (!$found) foreach($change['add_lines'] as $key2 => $added) {
+				$added = cleanup_line_reformat($added);
+				if (empty($added)) {
+					unset($change['add_lines'][$key2]);
+					continue;
+				}
+				if ($removed == $added) {
+					unset($change['add_lines'][$key2]);
+					$found = true;
+					break;
+				}
+			}
+			//print "Found $found<br>\n";
+			if ($found) unset($change['remove_lines'][$key]);
+		}
+		//print_r($change);
+		return $change;
+
+		/*
+		foreach($detail['text']['add_lines'] as $txt) {
+			//print "BEFORE: ".htmlspecialchars($txt)."<br>\n";
+			$txt = cleanup_reformat($txt);
+			//print "TXT: '".htmlspecialchars($txt)."'<br>\n";
+			if (!empty($txt)) $added[] = $txt;
+		}
+		}
+		//print "ADDED:<br>\n";
+		//print_r($added);
+		//print "<br>\n";
+		foreach ($details as $detail) {
+			if (array_key_exists('remove_lines', $detail['text']))
+			foreach($detail['text']['remove_lines'] as $txt) {
+				$txt = cleanup_reformat($txt);
+				//print "REMOVED: '".htmlspecialchars($txt)."'<br>\n";
+				$found = empty($txt);
+				foreach($added as $key => $addtxt) {
+					if ($txt == $addtxt) {
+						unset($added[$key]);
+						$found = true;
+						break;
+					}
+				}
+				//print "Found $found<br>\n";
+				if (!$found) return false;
+			}
+		}
+		//print "REMAINING:<br>\n";
+		//print_r($added);
+		if (count($added) == 0) return true;*/
 	}
 	
 	$brojac = 0;
@@ -199,20 +272,40 @@ function show_log($log, $skip_empty = true) {
 			// Izmjena fajla
 			if ($stavka['text'] == "modified") {
 				// Da li je paste
+				$reformatiranih_linija = 0;
+				if (array_key_exists('add_lines', $stavka['diff'])) $reformatiranih_linija += count($stavka['diff']['add_lines']);
+				if (array_key_exists('remove_lines', $stavka['diff'])) $reformatiranih_linija += count($stavka['diff']['remove_lines']);
+				if (array_key_exists('change', $stavka['diff'])) $reformatiranih_linija += count($stavka['diff']['change']);
+				
+				$sdiff = cleanup_reformat($stavka['diff']);
+				
 				$promijenjenih_linija = 0;
-				if (array_key_exists('add_lines', $stavka['diff'])) $promijenjenih_linija += count($stavka['diff']['add_lines']);
-				if (array_key_exists('remove_lines', $stavka['diff'])) $promijenjenih_linija += count($stavka['diff']['remove_lines']);
-				if (array_key_exists('change', $stavka['diff'])) $promijenjenih_linija += count($stavka['diff']['change']);
+				if (array_key_exists('add_lines', $sdiff)) $promijenjenih_linija += count($sdiff['add_lines']);
+				if (array_key_exists('remove_lines', $sdiff)) $promijenjenih_linija += count($sdiff['remove_lines']);
+				if (array_key_exists('change', $sdiff)) $promijenjenih_linija += count($sdiff['change']);
+				//print "PL $promijenjenih_linija RL $reformatiranih_linija<br>\n";
+				
+				if ($promijenjenih_linija == 0 && $reformatiranih_linija > 0) {
+					if ($mod['path'] != "")
+						print_mod($mod);
+					
+					$detalji = array(array( 'time' => $stavka['time'], 'text' => $stavka['diff'] ));
+					$klasa = "log-reformat";
+					$lijevo = $vrijeme . " reformatiranje koda u datoteci " . $stavka['path'];
+					$id_detalji = "paste-$rbr";
+					print_field($klasa, $lijevo, $id_detalji, $detalji);
+					continue; // Da se ne bi započeo $mod
+				}
+				
 				if ($promijenjenih_linija > $paste_limit_linija) {
 					if ($mod['path'] != "")
 						print_mod($mod);
-						
-					// Printamo paste
+					
+					$detalji = array(array( 'time' => $stavka['time'], 'text' => $sdiff ));
 					$klasa = "log-paste";
 					$lijevo = $vrijeme . " paste u datoteci " . $stavka['path'] . " ($promijenjenih_linija linija)";
 					$id_detalji = "paste-$rbr";
-					$detalji = array(array( 'time' => $stavka['time'], 'text' => $stavka['diff'] ));
-					print_polje($klasa, $lijevo, $id_detalji, $detalji);
+					print_field($klasa, $lijevo, $id_detalji, $detalji);
 					continue; // Da se ne bi započeo $mod
 				}
 				
@@ -221,14 +314,14 @@ function show_log($log, $skip_empty = true) {
 						print_mod($mod);
 					else {
 						$mod['end'] = $stavka['time'];
-						$diff = array('time' => $stavka['time'], 'text' => $stavka['diff']);
+						$diff = array('time' => $stavka['time'], 'text' => $sdiff);
 						array_push($mod['diffs'], $diff);
 					}
 				}
 				if ($mod['path'] == "") { 
 					$mod['path'] = $stavka['path'];
 					$mod['start'] = $mod['end'] = $stavka['time'];
-					$mod['diffs'] = array( array('time' => $stavka['time'], 'text' => $stavka['diff']) );
+					$mod['diffs'] = array( array('time' => $stavka['time'], 'text' => $sdiff) );
 				}
 			} else {
 				if ($mod['path'] != "")
@@ -251,7 +344,7 @@ function show_log($log, $skip_empty = true) {
 						$lijevo .= " (binarna)";
 					else
 						$detalji = array(array ( 'time' => $stavka['time'], 'text' => array ( 'add_lines' => explode("\n", $stavka['content']) ) ));
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 				//if (isset($_REQUEST['putanja']) && ($stavka['filename'] == $_REQUEST['putanja'] || array_key_exists('path', $stavka) && $stavka['path'] == $_REQUEST['putanja'])) 
 				//	$bio_create = true;
 			}
@@ -261,14 +354,14 @@ function show_log($log, $skip_empty = true) {
 				$lijevo = "$vrijeme obrisana datoteka " . $stavka['path'];
 				$id_detalji = "delete-$rbr";
 				$detalji = array();
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 			if ($stavka['text'] == "rename") {
 				$klasa = "log-rename";
 				$lijevo = "$vrijeme promijenjeno ime datoteke iz " . $stavka['old_filepath'] . " u " .$stavka['path'];
 				$id_detalji = "delete-$rbr";
 				$detalji = array();
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 			if ($stavka['text'] == "move") {
 				$klasa = "log-rename";
@@ -277,7 +370,7 @@ function show_log($log, $skip_empty = true) {
 				$lijevo = "$vrijeme datoteka " . $stavka['old_filepath'] . " premještena u folder $fouldeur";
 				$id_detalji = "delete-$rbr";
 				$detalji = array();
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 			if ($stavka['text'] == "compiled") {
 			//print_r($stavka);
@@ -291,7 +384,7 @@ function show_log($log, $skip_empty = true) {
 				if (array_key_exists('output',$stavka) && !empty($stavka['output']))
 					$detalji = array(array ( 'time' => $stavka['time'], 'text' => array ( 'add_lines' => explode("\n", $stavka['output']) ) ));
 				//print_r($detalji);
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 			if ($stavka['text'] == "compiled successfully") {
 				$klasa = "log-run";
@@ -304,7 +397,7 @@ function show_log($log, $skip_empty = true) {
 				if (array_key_exists('output',$stavka) && !empty($stavka['output']))
 					$detalji = array(array ( 'time' => $stavka['time'], 'text' => array ( 'add_lines' => explode("\n", $stavka['output']) ) ));
 				//print_r($detalji);
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 			if ($stavka['text'] == "ran tests") {
 				$klasa = "log-test";
@@ -316,7 +409,7 @@ function show_log($log, $skip_empty = true) {
 				$id_detalji = "test-$rbr";
 				$detalji = array();
 				//print_r($detalji);
-				print_polje($klasa, $lijevo, $id_detalji, $detalji);
+				print_field($klasa, $lijevo, $id_detalji, $detalji);
 			}
 		}
 		if ($stavka['text'] == "logout" && $bio_create) break;
