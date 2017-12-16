@@ -68,9 +68,17 @@ detect_node_type();
 // ACTIONS
 
 switch($action) {
+	case "hello":
+		print "Hello world!\n\n";
+		debug_log ("hello world");
+		break;
+	
 	// Login or create user
 	case "login":
-		$password = $argv[3];
+		$ip_address = $argv[3];
+		
+		print "Password: ";
+		$password = fgets(STDIN);
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {

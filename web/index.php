@@ -107,7 +107,21 @@ if (isset($_POST['login'])) {
 	}
 	
 	if ($greska == "") {
-		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $pass_esa > /dev/null 2>&1 &", array(), $foo));
+		unlink ("/tmp/error-output.txt");
+		$descriptorspec = array(
+			0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
+			1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
+			2 => array("file", "/tmp/error-output.txt", "a") // stderr is a file to write to
+		);
+		$output = array();
+		$process = proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $ip_address", $descriptorspec, $pipes);
+		if (is_resource($process)) {
+			fwrite($pipes[0], $pass);
+			fclose($pipes[0]);
+			$rez = stream_get_contents($pipes[1]);
+			fclose($pipes[1]);
+			proc_close($process);
+		}
 		header("Location: status.php");
 		return;
 	}
