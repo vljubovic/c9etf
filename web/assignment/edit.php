@@ -344,7 +344,6 @@ require_once("../../lib/config.php"); // Webide config
 require_once("../../lib/webidelib.php"); // Webide library
 require_once("../login.php"); // Login
 require_once("../admin/lib.php"); // Admin library
-require_once("../admin/courses.php"); // Courses
 require_once("lib.php"); // Assignment library
 
 

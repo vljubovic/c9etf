@@ -8,7 +8,6 @@ require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
 require_once("../login.php");
 require_once("../admin/lib.php");
-require_once("../admin/courses.php");
 
 
 // Verify session and permissions, set headers

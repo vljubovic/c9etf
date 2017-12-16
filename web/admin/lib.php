@@ -40,6 +40,7 @@ function admin_set_headers() {
 	header('Content-Type: text/html; charset=UTF-8');
 }
 
+// List of permissions for a given user
 function admin_permissions($login) {
 	global $conf_sysadmins, $conf_data_path;
 	$perms = array();
@@ -55,6 +56,7 @@ function admin_permissions($login) {
 	return $perms;
 }
 
+// Check if user has permission for admin access to a specific course
 function admin_check_permissions($course, $year, $external) {
 	global $login;
 	$perms = admin_permissions($login, $year);
@@ -67,6 +69,29 @@ function admin_check_permissions($course, $year, $external) {
 	<p style="color:red; weight: bold">You don't have permission to access this page.</p>
 	<?php
 	exit(0);
+}
+
+
+// Get list of all courses
+function admin_courses() {
+	global $conf_data_path;
+	
+	$courses_path = $conf_data_path . "/courses.json";
+	if (file_exists($courses_path))
+		return json_decode(file_get_contents($courses_path), true);
+	return array();
+}
+
+// Get data on specific course
+function admin_courses_get($course, $external) {
+	$courses = admin_courses();
+	foreach ($courses as $c) {
+		if ($c['id'] == $course && $external==1 && $c['type'] == 'external')
+			return $c;
+		if ($c['id'] == $course && $external==0 && $c['type'] != 'external')
+			return $c;
+	}
+	return false;
 }
 
 ?>
