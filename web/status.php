@@ -1,6 +1,7 @@
 <?php
 
 session_start();
+$prijavljen = false;
 
 if (isset($_SESSION['login'])) {
 	$login = $_SESSION['login'];
@@ -8,6 +9,7 @@ if (isset($_SESSION['login'])) {
 	if (preg_match("/[a-zA-Z0-9]/",$login)) $prijavljen = true;
 } else {
 	header("Location: index.php");
+	return;
 }
 
 require_once("../lib/config.php");
@@ -16,7 +18,7 @@ $users_file = $conf_base_path . "/users";
 eval(file_get_contents($users_file));
 $realname = "";
 if ($prijavljen && array_key_exists('realname', $users[$login])) $realname = $users[$login]['realname'];
-if (empty($realname)) $realname = $login;
+if ($prijavljen && empty($realname)) $realname = $login;
 
 ?>
 <html>

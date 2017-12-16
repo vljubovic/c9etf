@@ -35,7 +35,6 @@ parse_stats($user, $assignments, $stats, $last_access, $_REQUEST['path']);
 
 $result = array();
 $result['success'] = "true";
-$result['message'] = $msg;
 $result['data'] = array();
 $result['data']['assignments'] = $assignments;
 $result['data']['stats'] = $stats;
