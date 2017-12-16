@@ -65,7 +65,7 @@ if (in_array($login, $conf_admin_users) && !in_array($login, $conf_sysadmins)) {
 			if ($cyear != $conf_current_year) $cpath .= (2004 + $cyear);
 			
 			//print "course $course external $external cyear $cyear cpath $cpath\n";
-			if ($path == $cpath || starts_with($path, $cpath . "/")) {
+			if ($path == $cpath || starts_with($path, $cpath . "/") || starts_with($path, "/" . $cpath . "/")) {
 				$found = true;
 				break;
 			}
@@ -98,7 +98,7 @@ else if ($_REQUEST['type'] == "exists") {
 }
 else if ($_REQUEST['type'] == "mtime") {
 	if (isset($_REQUEST['format']))
-		echo date($_REQUEST['format'], `sudo $conf_base_path/bin/wsaccess $username filemtime "$path"`);
+		echo date($_REQUEST['format'], chop(`sudo $conf_base_path/bin/wsaccess $username filemtime "$path"`));
 	else
 		passthru("sudo $conf_base_path/bin/wsaccess $username filemtime \"$path\"");
 }
@@ -108,6 +108,9 @@ else {
 	return 0;
 }
 
-admin_log("file.php - ".$_REQUEST['type']." - $path");
+if (!isset($_REQUEST['type']))
+	admin_log("file.php - file - $username - $path");
+else
+	admin_log("file.php - ".$_REQUEST['type']." - $username - $path");
 
 ?>
