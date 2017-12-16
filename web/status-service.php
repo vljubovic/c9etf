@@ -37,6 +37,7 @@ eval(file_get_contents($users_file));
 $elogin = escape_filename($login);
 $login_watch_path = $conf_base_path . "/watch/webidectl.login.$elogin";
 $verify_watch_path = $conf_base_path . "/watch/webidectl.verify-user.$elogin";
+$nodeup_path = "/tmp/web-background/is-node-up-$elogin";
 
 if (isset($_REQUEST['serverStatus'])) {
 	if ($users[$login]['status'] != "active" && !file_exists($login_watch_path) && !file_exists($verify_watch_path)) {
@@ -95,12 +96,13 @@ if (isset($_REQUEST['serverStatus'])) {
 	if ($login === "test" && !strstr($nginx_test, "syntax is ok") && !strstr($nginx_test, "returned only 0 bytes")) print "nginx ".$nginx_test;
 	
 	print "ok";
-	return 0;
+	return;
 }
 
 if (isset($_REQUEST['stats'])) {
+	//return;
 	foreach($conf_nodes as $node) {
-		if ($users[$login]['server'] == $node['address'])
+		if (array_key_exists('server', $users[$login]) && $users[$login]['server'] == $node['address'])
 			print "*";
 		print $node['name']." ";
 		if (is_local($node['address']))
@@ -112,14 +114,14 @@ if (isset($_REQUEST['stats'])) {
 			print $result . "\n";
 		}
 	}
-	return 0;
+	return;
 }
 
 
 if (file_exists($login_watch_path) || file_exists($verify_watch_path)) {
 	print "starting";
-	unlink("/tmp/web-background/is-node-up-$login");
-	return 0;
+	if (file_exists($nodeup_path)) unlink($nodeup_path);
+	return;
 }
 
 //$result = `sudo $conf_base_path/bin/webidectl is-node-up $login`;

@@ -10,7 +10,7 @@ function zamger_login($username, $password) {
 	// Globalne promjenljive potrebne za json_login funkciju...
 	global $conf_json_user, $conf_json_pass, $session_id;
 
-	$old_login = $_COOKIE['old_login'];
+	if(array_key_exists('old_login', $_COOKIE)) $old_login = $_COOKIE['old_login'];
 	//if (!empty($old_login) && $old_login != $username && $_SERVER['REMOTE_ADDR'] != "80.65.65.76") return "Pogrešni pristupni podaci";
 	
 	$conf_json_user = $username;

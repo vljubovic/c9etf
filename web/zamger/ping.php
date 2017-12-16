@@ -9,13 +9,13 @@ require_once($conf_base_path . "/lib/webidelib.php");
 
 session_start();
 if (!isset($_SESSION['server_session'])) {
-	print "ERROR ".$_SESSION['login'];
+	print "ERROR test";
 } else {
 	$parameters = array();
 	$parameters[session_name()] = $_SESSION['server_session'];
 	$username_esa = escapeshellarg($_SESSION['login']);
 	$username_efn = escape_filename($_SESSION['login']);
-	
+		
 	//$result = json_request_retry($conf_json_base_url . "ping.php", $parameters);
 	
 
