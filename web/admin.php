@@ -322,10 +322,13 @@ if ($logged_in) {
 		$backlink = "";
 		if (isset($_REQUEST['backlink']))
 			$backlink = htmlentities($_REQUEST['backlink'], ENT_QUOTES);
+		
+		$add_title = "";
+		if (isset($_REQUEST['path'])) $add_title = " - " . $_REQUEST['path'];
 		?>
 		<p id="p-return"><a href="admin.php?<?=$backlink?>">Return to course page</a></p>
 		
-		<h1><?=$group_name?></h1>
+		<h1><?=$group_name.$add_title?></h1>
 		<?php
 		
 		$link_here = urlencode("group=$group");
@@ -367,7 +370,6 @@ if ($logged_in) {
 		</ul>
 		<?php
 		admin_log("active users");
-
 	}
 	
 	// Page for a single course
@@ -394,7 +396,7 @@ if ($logged_in) {
 			if ($c['id'] == $course) $course_data = $c;
 		}
 		
-		$perms = admin_permissions($login, $year);
+		$perms = admin_permissions($login);
 		if (!empty($perms) && !in_array($course_path, $perms)) {
 			admin_log("course $course_path access denied");
 			niceerror("You are not allowed to access this course");
@@ -473,7 +475,7 @@ if ($logged_in) {
 		}
 	
 		if (isset($_REQUEST['year'])) $year = intval($_REQUEST['year']); else $year = $conf_current_year;
-		$perms = admin_permissions($login, $year);
+		$perms = admin_permissions($login);
 		
 		function coursecmp($a, $b) { return $a['name']>$b['name']; }
 		
@@ -579,4 +581,3 @@ echo "It spent " . rutime($ru, $rustart, "stime") .
   <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2017.</div>
 </body>
 </html>
-

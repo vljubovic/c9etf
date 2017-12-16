@@ -1,6 +1,6 @@
 
 // PHPWEBIDE.JS - JavaScript portion of lightweight webide
-// Version: 8.4.2017 11:08
+// Version: 16.12.2017 12:40
 
 
 // ------------ GLOBALS ----------------
@@ -139,6 +139,14 @@ function pwi_tree_load(final_callback) {
 	var url = "services/file.php?user="+pwi_current_user+"&path="+path+"&type=tree";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
+				var response = JSON.parse(xmlhttp.responseText);
+				showMsg(response.message);
+				setTimeout(hideMsg,5000);
+				pwi_clear_task("pwi_tree_load");
+				return;
+			}
+			
 			var items = xmlhttp.responseText.split("\n");
 			for (i=0; i<items.length; i++) {
 				var item=items[i];
@@ -159,6 +167,9 @@ function pwi_tree_load(final_callback) {
 					element.id = item;
 				else
 					element.id = path + "/" + item;
+				
+				// Fix for # in path/filename
+				element.id = element.id.replace("#", "%23");
 					
 				if (lastchr == "/") {
 					element.className += "filelist-folder";
@@ -656,6 +667,13 @@ function pwi_editor_load(path, type, rev) {
 	
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
+				var response = JSON.parse(xmlhttp.responseText);
+				showMsg(response.message);
+				setTimeout(hideMsg,5000);
+				pwi_clear_task("pwi_editor_load "+path);
+				return;
+			}
 			var editor = ace.edit("editor");
 			editor.setValue(xmlhttp.responseText);
 			editor.getSession().setMode("ace/mode/c_cpp"); // FIXME hardcodirano

@@ -40,7 +40,7 @@ function admin_set_headers() {
 	header('Content-Type: text/html; charset=UTF-8');
 }
 
-function admin_permissions($login, $year) {
+function admin_permissions($login) {
 	global $conf_sysadmins, $conf_data_path;
 	$perms = array();
 	
