@@ -46,6 +46,7 @@ if (isset($_POST['login'])) {
 	$pass = $_POST['password'];
 	$login_esa = escapeshellarg($login);
 	$pass_esa = escapeshellarg($pass);
+	$ip_address = $_SERVER['REMOTE_ADDR'];
 	
 	$users_file = $conf_base_path . "/users";
 	eval(file_get_contents($users_file));
@@ -104,6 +105,29 @@ if (isset($_POST['login'])) {
 
 	if ($greska == "") {
 		$greska = login($login, $pass);
+	}
+	
+	
+	// Check if user already logged in from a different IP address?
+	if ($greska == "" && array_key_exists($login, $users) && $users[$login]["status"] == "active" && $users[$login]["ip_address"] != $ip_address) {
+		?>
+		<html>
+		<head>
+		<title>ETF WebIDE</title>
+		<link rel="stylesheet" href="static/css/login.css">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		</head>
+
+
+		<body>
+			<h1>Već ste prijavljeni sa drugog računara</h1>
+			<p>Želite li da odjavite drugi računar kako biste mogli nastaviti?</p>
+			<input type="button" value=" Da " onclick="javascript:window.location = 'index.php?logout';">
+			<input type="button" value=" Ne " onclick="alert('Ne možemo nastaviti dalje dok se ne odjavite.'); window.location = 'index.php';">
+			</body>
+		</html>
+		<?php
+		return 0;
 	}
 	
 	if ($greska == "") {
