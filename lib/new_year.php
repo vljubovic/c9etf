@@ -1,5 +1,7 @@
 <?php
 
+// Script that moves all data into old year folders so they don't get in the way
+
 require_once("config.php");
 require_once("webidelib.php");
 
@@ -21,6 +23,10 @@ foreach($users as $username => $options) {
 		}
 	}
 	run_as($username, "cd $workspace; svn commit -m \"new year\" .");
+	exec("$conf_base_path/bin/userstats $username");
+	foreach($courses as $course) {
+		exec("php $conf_base_path/lib/rename_folder.php $course $course$old_year");
+	}
 }
 
 ?>
