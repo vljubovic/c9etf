@@ -132,6 +132,8 @@ function assignment_edit($course, $year, $external) {
 	<p><a href="<?=$course_link?>">Back to course details</a></p>
 	
 	<h2>Edit assignment</h2>
+	<script src="../static/js/assignment.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../static/js/tools.js" type="text/javascript" charset="utf-8"></script> <!-- showProgress -->
 	<form action="edit.php" method="POST">
 	<input type="hidden" name="action" value="change">
 	<input type="hidden" name="course" value="<?=$course?>">
@@ -160,6 +162,9 @@ function assignment_edit($course, $year, $external) {
 	<?php
 	
 	// Tasks editing
+	$deploy_js = "return deployAssignmentFile($course, $year, ";
+	if ($external) $deploy_js .= "true, "; else $deploy_js .= "false, "; 
+	
 	for ($task=1; $task<=$asgn['tasks']; $task++) {
 		$url_part = "course=$course&amp;year=$year&amp;external=$external&amp;assignment=$asgn_id&amp;task=$task&amp;";
 		$file_change_link = "files.php?files_action=change&amp;$url_part";
@@ -175,7 +180,11 @@ function assignment_edit($course, $year, $external) {
 				$task_file_link = $file_change_link . "file=" . urlencode($file) . "&amp;";
 				$view_link = $task_file_link . "action=View";
 				$delete_link = $task_file_link . "action=Delete";
-				print "<li><a href=\"$view_link\">$file</a> - (<a href=\"$delete_link\">delete</a>)</li>\n";
+				$server_file_name = urlencode($asgn['path']) . "/Z$task/" . urlencode($file);
+				
+				$deploy_js_this = $deploy_js . $asgn_id . ", $task, '$server_file_name', 'all-users');";
+				
+				print "<li><a href=\"$view_link\">$file</a> - (<a href=\"$delete_link\">delete</a>) - (<a href=\"#\" onclick=\"$deploy_js_this\">deploy</a>)</li>\n";
 				if ($file == ".zadaca")
 					$zadaca_exists = true;
 				if ($file == ".autotest")
@@ -367,8 +376,19 @@ $course_data = admin_courses_get($course, $external);
 <head>
 	<title>Assignments - actions</title>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
+	<!-- Progress bar window -->
+	<div id="progressWindow">
+		<div id="progressBarMsg"></div>
+		<div id="myProgress">
+			<div id="myBar">
+				<div id="progressBarLabel">10%</div>
+			</div>
+		</div>
+	</div>
+	
 	<?php
 
 // Actions

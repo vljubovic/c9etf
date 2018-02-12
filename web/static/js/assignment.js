@@ -1,6 +1,6 @@
 
 // ASSIGNMENT.JS - Functions for deploying assignment files to users
-// Version: 2017/07/02 06:20
+// Version: 2018/02/12 11:20
 
 var currentlyDeploying = false;
 
@@ -23,7 +23,7 @@ function deployAssignmentFile(course, year, external, asgn_id, task_id, filename
 		return;
 	}
 	
-	var url = "assignment/ws.php?action=deploy&" 
+	var url = "/assignment/ws.php?action=deploy&" 
 		+ assignmentBuildUrl(course, year, external, asgn_id, task_id, filename, user);
 	
 	var xmlhttp = new XMLHttpRequest();
@@ -57,7 +57,7 @@ function deploymentStatus(user) {
 	if (currentlyDeploying == false) {
 		return;
 	}
-	var url = "assignment/ws.php?action=deploy_status&id="+currentlyDeploying;
+	var url = "/assignment/ws.php?action=deploy_status&id="+currentlyDeploying;
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
@@ -103,7 +103,7 @@ function deploymentStatus(user) {
 
 
 function listAssignmentFiles(course, year, external, assignment, task, callback_function) {
-	var url = "assignment/ws.php?action=files&"
+	var url = "/assignment/ws.php?action=files&"
 		+ assignmentBuildUrl(course, year, external, assignment, task);
 	
 	var xmlhttp = new XMLHttpRequest();
@@ -122,7 +122,7 @@ function listAssignmentFiles(course, year, external, assignment, task, callback_
 
 
 function assignmentFromPath(task_path, callback_function) {
-	var url = "assignment/ws.php?action=from_path&task_path=" + task_path;
+	var url = "/assignment/ws.php?action=from_path&task_path=" + task_path;
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {

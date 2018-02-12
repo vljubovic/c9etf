@@ -65,9 +65,9 @@ function assignment_table($course, $year, $external) {
 	
 	foreach ($assignments as $a) {
 		$style = "text-align: left; ";
-		if ($a['type'] == "homework" && $a['hidden'] == "true") $style .= "background: #f4e1c3; color: #666;";
-		else if ($a['type'] == "tutorial" && $a['hidden'] == "true") $style .= "background: #e7e9fd; color: #666;";
-		else if ($a['hidden'] == "true") $style .= "background: #e2f3c8; color: #666;";
+		if (array_key_exists('hidden', $a) && $a['type'] == "homework" && $a['hidden'] == "true") $style .= "background: #f4e1c3; color: #666;";
+		else if (array_key_exists('hidden', $a) && $a['type'] == "tutorial" && $a['hidden'] == "true") $style .= "background: #e7e9fd; color: #666;";
+		else if (array_key_exists('hidden', $a) && $a['hidden'] == "true") $style .= "background: #e2f3c8; color: #666;";
 		else if ($a['type'] == "homework") $style .= "background: #f4d1aa";
 		else if ($a['type'] == "tutorial") $style .= "background: #d7d9fd";
 		else $style .= "background: #d2edb8";
@@ -75,7 +75,7 @@ function assignment_table($course, $year, $external) {
 		$edit_link = "assignment/edit.php?action=edit&amp;$url_part&amp;assignment=" . $a['id'];
 		
 		$deploy_js = "return deployAssignmentFile($course, $year, ";
-		if ($external) $deploy_js .= "true, ";
+		if ($external) $deploy_js .= "true, "; else $deploy_js .= "false, ";
 		
 		?>
 		<tr>
