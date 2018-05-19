@@ -1,6 +1,6 @@
 
 // PHPWEBIDE.JS - JavaScript portion of lightweight webide
-// Version: 16.12.2017 12:40
+// Version: 2018/05/19 10:56
 
 
 // ------------ GLOBALS ----------------
@@ -136,7 +136,7 @@ function pwi_tree_load(final_callback) {
 	
 	// AJAX call to list files
 	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user="+pwi_current_user+"&path="+path+"&type=tree";
+	var url = "services/file.php?user="+pwi_current_user+"&path="+encodeURIComponent(path)+"&type=tree";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
@@ -370,6 +370,7 @@ function pwi_toolbar_is_tested(tests) {
 				document.getElementById('phpwebide_test_results').style.display = "inline";
 				
 				var results = JSON.parse(xmlhttp.responseText);
+				
 				var results_widget = document.getElementById('phpwebide_test_results_widget');
 				var results_button = document.getElementById('phpwebide_test_results_data');
 				
@@ -452,13 +453,13 @@ function pwi_toolbar_is_test_outdated() {
 	var at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
 	
 	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + autotest_file + "&type=mtime";
+	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(autotest_file) + "&type=mtime";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			var autotest_mtime = parseInt(xmlhttp.responseText);
 			
 			var xmlhttp2 = new XMLHttpRequest();
-			var url = "services/file.php?user=" + pwi_current_user + "&path=" + at_result_file + "&type=mtime";
+			var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(at_result_file) + "&type=mtime";
 			xmlhttp.onreadystatechange = function() {
 				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 					var at_result_mtime = parseInt(xmlhttp.responseText);
@@ -489,7 +490,7 @@ function pwi_toolbar_restore_button(type, rev) {
 // Update modified time
 function pwi_toolbar_modified_time() {
 	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + pwi_current_path + "&type=mtime&format=d. m. Y. H:i:s";
+	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(pwi_current_path) + "&type=mtime&format=d. m. Y. H:i:s";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			document.getElementById('phpwebide_modified_time').innerHTML = xmlhttp.responseText;
@@ -662,7 +663,7 @@ function pwi_editor_load(path, type, rev) {
 	pwi_add_task("pwi_editor_load "+path);
 	
 	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + path + "&type=" + type;
+	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(path) + "&type=" + type;
 	if (rev) url += "&rev=" + rev;
 	
 	xmlhttp.onreadystatechange = function() {
