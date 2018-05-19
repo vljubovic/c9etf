@@ -369,14 +369,22 @@ function pwi_toolbar_is_tested(tests) {
 			} else {
 				document.getElementById('phpwebide_test_results').style.display = "inline";
 				
-				var results = JSON.parse(xmlhttp.responseText);
-				
 				var results_widget = document.getElementById('phpwebide_test_results_widget');
 				var results_button = document.getElementById('phpwebide_test_results_data');
 				
 				// Clear results widget
 				while (results_widget.firstChild)
 					results_widget.removeChild(results_widget.firstChild);
+				results_button.innerHTML = '';
+				
+				var results;
+				try {
+					results = JSON.parse(xmlhttp.responseText);
+				} catch(e) {
+					console.log("JSON is malformed");
+					pwi_clear_task("pwi_is_tested");
+					return;
+				}
 				
 				// Compile failed
 				if (results.status == 3 || results.status == 6) {

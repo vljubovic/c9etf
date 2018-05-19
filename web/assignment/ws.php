@@ -330,7 +330,7 @@ function ws_deploy() {
 	// Input values & validation
 	$course = intval($_REQUEST['course']);
 	$year = intval($_REQUEST['year']);
-	$external = $_REQUEST['external'];
+	if (isset($_REQUEST['external'])) $external = $_REQUEST['external'];
 	if (isset($_REQUEST['X'])) $external=1;
 	$asgn_id = intval($_REQUEST['assignment']);
 	$task = intval($_REQUEST['task']);
