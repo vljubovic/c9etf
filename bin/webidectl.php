@@ -87,12 +87,12 @@ switch($action) {
 				debug_log ("already logged in $username (".$users[$username]["server"]." ".$users[$username]["port"].")");
 				print $users[$username]["port"]; // Already logged in, print port
 			} else if ($users[$username]["status"] == "inactive") {
-				activate_user($username, $password);
+				activate_user($username, $password, $ip_address);
 			}
 		}
 		else {
 			create_user($username, $password);
-			activate_user($username, $password);
+			activate_user($username, $password, $ip_address);
 		}
 		break;
 	
@@ -906,7 +906,7 @@ exit(0);
 // This can be used on any node
 // If node type is control, it will run relevant commands on all other nodes
 
-function activate_user($username, $password) {
+function activate_user($username, $password, $ip_address) {
 	global $conf_defaults_path, $conf_base_path, $conf_c9_group, $conf_nodes, $users;
 	global $conf_ssh_tunneling, $conf_port_upper, $conf_port_lower, $conf_my_address;
 	global $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr;
@@ -947,7 +947,7 @@ function activate_user($username, $password) {
 				$stats = server_stats();
 			else
 				$stats = server_stats($node['name']);
-			if (is_local($node['address'])) $stats[1] += 1000000;
+			if (is_local($node['address'])) $stats[1] += 4000000;
 			
 			// Skip nodes without minimum level of resources
 			if (!check_limits($stats, false)) {
@@ -1003,7 +1003,8 @@ function activate_user($username, $password) {
 			}
 		}
 		$users[$username]['status'] = "active";
-		debug_log ("activate_user $username $best_node $port");
+		$users[$username]['ip_address'] = $ip_address;
+		debug_log ("activate_user $username $best_node $port $ip_address");
 		
 		
 		write_files();
@@ -1028,7 +1029,7 @@ function activate_user($username, $password) {
 			$users[$username]['port'] = $port;
 			start_node($username);
 		}
-		debug_log ("activate_user $username $port");
+		debug_log ("activate_user $username $port $ip_address");
 		write_files();
 	}
 	
