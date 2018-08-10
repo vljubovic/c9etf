@@ -1745,7 +1745,7 @@ function clear_server() {
 			
 			// During the next 1200s = 20 minutes, run fixsvn operations
 			$time = 60 + rand(0, 1200);
-			proc_close(proc_open("php $conf_base_path/bin/fixsvn.php " . $userdata['esa'] . " $time  2>&1 >/dev/null &", array(), $foo));
+			proc_close(proc_open("$conf_base_path/bin/fixsvn " . $userdata['esa'] . " $time  2>&1 >/dev/null &", array(), $foo));
 		}
 		return;
 	}
@@ -1883,7 +1883,7 @@ function fixsvn($username) {
 	global $conf_base_path;
 	$username_esa = escapeshellarg($username);
 	$vrijeme = 60 + rand(0, 100);
-	proc_close(proc_open("php $conf_base_path/bin/fixsvn.php $username_esa $vrijeme &", array(), $foo));
+	proc_close(proc_open("$conf_base_path/bin/fixsvn $username_esa $vrijeme &", array(), $foo));
 }
 
 // Create git repository for user
