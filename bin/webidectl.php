@@ -650,6 +650,11 @@ switch($action) {
 		
 	// Nightly tasks for storage node
 	case "storage-nightly":
+		if ($argc > 2 && $argv[2] == "all-stats")
+			$all_stats = true;
+		else
+			$all_stats = false;
+		
 		$total = count($users);
 		$current=1;
 		$total_usage_stats = array();
@@ -672,6 +677,10 @@ switch($action) {
 			$userdata = setup_paths($username);
 			$username_esa = $userdata['esa'];
 			$workspace = $userdata['workspace'];
+			if (!file_exists($workspace)) {
+				print "Workspace not found for $username...\n";
+				continue;
+			}
 			
 			// Clean core files
 			print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
@@ -681,10 +690,6 @@ switch($action) {
 			
 			// Git commit
 			$msg = date("d.m.Y", time() - 60*60*24);
-			if (!file_exists($workspace)) {
-				print "Workspace not found for $username...\n";
-				continue;
-			}
 			if (!file_exists($workspace . "/.git")) {
 				print "Creating git for user $username...\n";
 				git_init($username);
@@ -754,21 +759,30 @@ switch($action) {
 			$user_svn_backup = setup_paths($username)['svn'] . ".old";
 			if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
 				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+				
+			// Check disk usage
+			do {
+				$home_usage = -1; $root_usage = -1;
+				foreach(explode("\n", shell_exec("df")) as $line) {
+					$parts = preg_split("/\s+/", $line);
+					if (count($parts) < 6) continue;
+					if ($parts[5] == "/")
+						$root_usage = $parts[3];
+					if (starts_with($parts[5], $conf_home_path))
+						$home_usage = $parts[3];
+				}
+				if ($home_usage == -1) $home_usage = $root_usage;
+				$home_usage /= 1024;
+
+				if ($home_usage >= $conf_limit_diskspace * 5) break;
+				print "Disk usage $home_usage MB < " . ($conf_limit_diskspace * 5) . "MB\n";
+				print "Waiting until disk is freed\n\n";
+				sleep(120);
+			} while (1);
 		}
 		
 		// Do we need cleanup?
 		print "\n\nCLEANUP USERS\n=============\n\n";
-		$home_usage = -1; $root_usage = -1;
-		foreach(explode("\n", shell_exec("df")) as $line) {
-			$parts = preg_split("/\s+/", $line);
-			if (count($parts) < 6) continue;
-			if ($parts[5] == "/")
-				$root_usage = $parts[3];
-			if (starts_with($parts[5], $conf_home_path))
-				$home_usage = $parts[3];
-		}
-		if ($home_usage == -1) $home_usage = $root_usage;
-		$home_usage /= 1024;
 		
 		// Second pass - delete backup workspace or svn if neccessary
 		$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
@@ -776,7 +790,7 @@ switch($action) {
 		$current = 1;
 
 		foreach ($users_shuffled as $rand_user => $options) {
-			if ($rand_user == "vljubovic" || $rand_user == "ezajko" || $rand_user == "") continue;
+			if ($rand_user == "") continue;
 			if ($conf_diskspace_cleanup <= 0 || $home_usage > $conf_diskspace_cleanup) break;
 
 			print "Cleanup: $rand_user ($current/$total) - ".date("d.m.Y h:i:s")."\n";
@@ -823,30 +837,71 @@ switch($action) {
 		// Output usage stats to a file
 		print "\n\nUSAGE STATS\n===========\n\n";
 		$fp = fopen('/usr/local/webide/log/usage_stats.txt', 'w');
-		fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\nUSER\t\tWS\tWS.OLD\tSVN\tSVN.OLD\tSVN.INODES\n");
+		fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\n");
+		fwrite($fp, "USER            WS      WS.OLD  SVN     SVN.OLD SVN.INODES  STATS\n");
 		$users_sorted = $users;
 		ksort($users_sorted);
+		$total_ws = $total_ws_old = $total_svn = $total_svn_old = $total_stats = 0;
+		
+		$stats_paths = array("/home/c9/stats");
+		foreach(scandir($stats_paths[0]) as $file) {
+			$path = $stats_paths[0] . "/$file";
+			if ($file != "." && $file != ".." && is_dir($path))
+				$stats_paths[] = $path;
+		}
+		print_r($stats_paths);
+		
 		foreach ($users_sorted as $username => $options) {
-			if ($username == "vljubovic" || $username == "ezajko" || $username == "") continue;
+			if ($username == "") continue;
 			print "Usage stats: $username - ".date("d.m.Y h:i:s")."\n";
 			$user_ws = setup_paths($username)['workspace'];
 			$total_usage_stats[$username]['ws'] = intval(shell_exec("du -s $user_ws"));
 
 			$user_ws_backup = $user_ws . ".old";
 			if (!file_exists($user_ws_backup)) $total_usage_stats[$username]['ws.old'] = 0;
-			else if ($total_usage_stats[$username]['ws.old'] === false) $total_usage_stats[$username]['ws.old'] = "?";
+			else if ($total_usage_stats[$username]['ws.old'] === false) {
+				if ($all_stats)
+					$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+				else
+					$total_usage_stats[$username]['ws.old'] = "?";
+			}
 
 			$user_svn = setup_paths($username)['svn'];
-			if ($total_usage_stats[$username]['svn'] === false) $total_usage_stats[$username]['svn'] = "?";
+			if ($total_usage_stats[$username]['svn'] === false || $total_usage_stats[$username]['svn'] == "?") {
+				if ($all_stats)
+					$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $user_svn"));
+				else
+					$total_usage_stats[$username]['svn'] = "?";
+			}
 			if ($total_usage_stats[$username]['inodes'] === false) $total_usage_stats[$username]['inodes'] = "?";
 
 			$user_svn_backup = $user_svn . ".old";
 			if (!file_exists($user_svn_backup)) $total_usage_stats[$username]['svn.old'] = 0;
-			else if ($total_usage_stats[$username]['svn.old'] === false) $total_usage_stats[$username]['svn.old'] = "?";
+			else if ($total_usage_stats[$username]['svn.old'] === false) {
+				if ($all_stats)
+					$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+				else
+					$total_usage_stats[$username]['svn.old'] = "?";
+			}
 			
-			fwrite($fp, "$username\t".$total_usage_stats[$username]['ws']."\t".$total_usage_stats[$username]['ws.old']."\t");
-			fwrite($fp, $total_usage_stats[$username]['svn']."\t".$total_usage_stats[$username]['svn.old']."\t".$total_usage_stats[$username]['inodes']."\n");
+			$stats_usage = 0;
+			foreach($stats_paths as $path) {
+				$stats_file = $path . "/$username.stats";
+				if (file_exists($stats_file)) $stats_usage += filesize($stats_file);
+			}
+			
+			fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", $username, $total_usage_stats[$username]['ws'], $total_usage_stats[$username]['ws.old'], $total_usage_stats[$username]['svn'], $total_usage_stats[$username]['svn.old'], $total_usage_stats[$username]['inodes'], $stats_usage));
+			$total_ws += $total_usage_stats[$username]['ws'];
+			$total_ws_old += $total_usage_stats[$username]['ws.old'];
+			$total_svn += $total_usage_stats[$username]['svn'];
+			$total_svn_old += $total_usage_stats[$username]['svn.old'];
+			$total_stats += $stats_usage;
 		}
+		fwrite($fp, "\n\n");
+		fwrite($fp, sprintf("%-14s%-10d%-8d%-10d%-8d%-12d%d\n", "TOTAL", $total_ws, $total_ws_old, $total_svn, $total_svn_old, 0,  $total_stats));
+		fwrite($fp, "SUM TOTAL: " . ($total_ws+$total_ws_old+$total_svn+$total_svn_old+$total_stats) . "\n");
+		$nr_users = count($users_sorted);
+		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
 		fclose($fp);
 		break;
 	
@@ -1874,8 +1929,6 @@ function user_reinstall_svn($username) {
 	$stats = preg_replace("/('last_revision' \=\> )(\d+)/m", '${1}1', $stats);
 	$stats = preg_replace("/('last_update_rev' \=\> )(\d+)/m", '${1}2', $stats);
 	file_put_contents($stats_filename, $stats);
-	
-	//`rm -fr $student_workspace.old`;
 }
 
 // (Attempt to) fix SVN conflicts for all users
