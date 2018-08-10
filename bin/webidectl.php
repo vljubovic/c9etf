@@ -77,8 +77,10 @@ switch($action) {
 	case "login":
 		$ip_address = $argv[3];
 		
-		print "Password: ";
-		$password = fgets(STDIN);
+		if ($is_control_node) {
+			print "Password: ";
+			$password = fgets(STDIN);
+		}
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {
