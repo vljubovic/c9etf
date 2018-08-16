@@ -915,7 +915,127 @@ switch($action) {
 		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
 		fclose($fp);
 		break;
-	
+		
+	case "sync-local":
+		if (!$is_storage_node) break;
+		if (!array_key_exists("volatile-remote", $users[$user])) break;
+		if ($users[$user]["status"] == "active") break;
+		
+		// Check if folder is in use
+		$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
+		$remote_inuse = $remote_home . "/.in_use";
+		$local_inuse = $userdata['home'] . "/.in_use";
+		if (file_exists($local_inuse)) { 
+			print "ERROR: in use\n"; 
+			break; 
+		}
+		$is_remote_in_use = 0;
+		exec("rsync -n $remote_inuse 2>&1 >/dev/null", $output, $is_remote_in_use);
+		if ($is_remote_in_use == 0) { print "ERROR: in use\n"; break; }
+		
+		// If timestamp is recent then no need to sync
+		$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
+		$local_mtime = intval(file_get_contents($last_path));
+		$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
+		exec("rsync -a $remote_last_path /tmp/somelast");
+		$remote_mtime = intval(file_get_contents("/tmp/somelast"));
+		unlink("/tmp/somelast");
+		
+		// Start syncing
+		$remote_svn_path = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
+		if (file_exists($userdata['home'])) touch($local_inuse);
+		$local_home = substr($userdata['home'], 0, strlen($userdata['home']) - strlen($user));
+		$local_svn = substr($userdata['svn'], 0, strlen($userdata['svn']) - strlen($user));
+		exec("rsync -a $local_inuse $remote_inuse");
+		
+		if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) break; // 5 seconds allowed for syncing time
+		
+		exec("rsync -a $remote_home $local_home");
+		exec("rsync -a $remote_svn_path $local_svn");
+		
+		// Sync stats files
+		$stats_paths = array("/home/c9/stats");
+		foreach(scandir($stats_paths[0]) as $file) {
+			$path = $stats_paths[0] . "/$file";
+			if ($file != "." && $file != ".." && is_dir($path))
+				$stats_paths[] = $path;
+		}
+		
+		foreach($stats_paths as $stats_path) {
+			$stats_path .= "/$username.stats";
+			$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
+			// Stats files should never dissapear
+			if (file_exists($remote_stats_path))
+				exec("rsync -a $remote_stats_path $stats_path");
+		}
+		
+		// Local folder is now ready to use, but remote is still locked
+		if (!file_exists($local_inuse)) {
+			touch($local_inuse);
+			exec("rsync -a $local_inuse $remote_inuse");
+		}
+		unlink($local_inuse);
+		
+		break;
+		
+	case "sync-remote":
+		if (!$is_storage_node) break;
+		if (!array_key_exists("volatile-remote", $users[$user])) break;
+		
+		// Update remote timestamp
+		$local_last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
+		$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
+		exec("rsync -a $local_last_path $remote_last_path");
+		
+		// Start syncing
+		$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
+		$remote_home_trunc = substr($remote_home, 0, strlen($remote_home) - strlen($user));
+		$remote_svn = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
+		$remote_svn_trunc = substr($remote_svn, 0, strlen($remote_svn) - strlen($user));
+		
+		// Create dirs
+		if (strchr($users[$user]["volatile-remote"], ":")) {
+			$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
+			$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
+			exec("ssh $host \"mkdir $path\"");
+			exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
+			$path = substr($remote_svn, strpos($users[$user]["volatile-remote"], ":")+1);
+			exec("ssh $host \"mkdir $path\"");
+			exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
+		}
+		
+		touch($userdata['home'] . "/.in_use");
+		$local_home = $userdata['home'];
+		$local_svn = $userdata['svn'];
+		exec("rsync -a $local_home $remote_home_trunc");
+		exec("rsync -a $local_svn $remote_svn_trunc");
+		
+		$stats_paths = array("/home/c9/stats");
+		foreach(scandir($stats_paths[0]) as $file) {
+			$path = $stats_paths[0] . "/$file";
+			if ($file != "." && $file != ".." && is_dir($path))
+				$stats_paths[] = $path;
+		}
+		
+		foreach($stats_paths as $stats_path) {
+			$stats_path .= "/$username.stats";
+			$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
+			if (file_exists($stats_path))
+				exec("rsync -a $stats_path $remote_stats_path");
+		}
+		
+		// Unlock both folders
+		unlink($userdata['home'] . "/.in_use");
+		// Hack - we must assume that protocol is ssh :(
+		if (strchr($users[$user]["volatile-remote"], ":")) {
+			$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
+			$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
+			exec("ssh $host \"rm $path/.in_use\"");
+		} else
+			unlink("$remote_home/.in_use");
+
+		break;
+		
 	case "help":
 		print "webidectl.php\n\nUsage:\n";
 		print "\tlogin username password \t- doesn't check password!\n";
@@ -991,18 +1111,26 @@ function activate_user($username, $password, $ip_address) {
 		exec("htpasswd -bc " . $userdata['htpasswd'] . " " . $userdata['esa'] . " $password_esa 2>&1");
 		exec("chown " . $userdata['esa'] . ":$conf_c9_group " . $userdata['htpasswd']);
 		chmod($userdata['htpasswd'], 0644);
-
-		// Let SVN know that user logged in
-		// This must be done before syncsvn to avoid conflicts
-		$script  = "date > " . $userdata['workspace'] . "/.login; ";
-		$script .= "date +%s > $conf_home_path/last/" . $userdata['efn'] . ".last";
-		run_as($username, $script);
-	
-		// Start syncsvn
-		if ($is_svn_node)
-			syncsvn($username);
-		else
-			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl login " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
+		
+		// Try to sync local folder against remote (if volatile-remote)
+		if (array_key_exists("volatile-remote", $users[$username])) {
+			if (file_exists($userdata['home'] . "/.in_use")) { 
+				print "ERROR: in use\n"; 
+				debug_log("Workspace in use for $username");
+				return; 
+			}
+			if ($is_svn_node)
+				$cmd = "$conf_base_path/bin/webidectl sync-local " . $userdata['esa'];
+			else
+				$cmd = "ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-local " . $userdata['esa'] . "\"";
+			$result = `$cmd`;
+			if (strstr($result, "ERROR: in use")) {
+				print "ERROR: in use\n"; 
+				debug_log("Workspace in use for $username");
+				return; 
+			}
+			debug_log("sync-local $username, result: $result");
+		}
 		
 		// Find the compute node to run this on
 		$best_node = ""; $best_value = 0;
@@ -1039,7 +1167,19 @@ function activate_user($username, $password, $ip_address) {
 		print "Best node $best_node value $best_value\n";
 		file_put_contents("$conf_base_path/log/" . $userdata['efn'], "\n\n=====================\nStarting webide at: ".date("d.m.Y H:i:s")."\n\n", FILE_APPEND);
 		$users[$username]['server'] = $best_node;
+
+		// Let SVN know that user logged in
+		// This must be done before syncsvn to avoid conflicts
+		$script  = "date > " . $userdata['workspace'] . "/.login; ";
+		run_as($username, $script);
+	
+		// Start syncsvn
+		if ($is_svn_node)
+			syncsvn($username);
+		else
+			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl login " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 		
+		// Finally start service on best node
 		if (is_local($best_node)) {
 			$port = find_free_port(); 
 			print "Found port: $port\n";
@@ -1068,13 +1208,20 @@ function activate_user($username, $password, $ip_address) {
 				proc_close(proc_open("ssh -N -L $local_port:localhost:$port $best_node &", array(), $foo));
 			}
 		}
+		
+		// Update local user database
 		$users[$username]['status'] = "active";
 		$users[$username]['ip_address'] = $ip_address;
 		debug_log ("activate_user $username $best_node $port $ip_address");
 		
-		
 		write_files();
 		write_nginx_config();
+		
+		// Update last access time to now
+		$lastfile = $conf_home_path . "/last/$username.last";
+		file_put_contents($lastfile, time());
+		chown($lastfile, $username);
+		chmod($lastfile, 0666);
 
 		// Personalize files in users home
 		if (!($handle = opendir("$conf_defaults_path/c9/customize"))) return;
@@ -1255,6 +1402,15 @@ function deactivate_user($username) {
 		// Users file is updated only now, to prevent user from logging back in during other procedures
 		// (BFL should prevent it but alas...)
 		write_files();
+		
+		// Sync locally changed files to remote
+		if (array_key_exists("volatile-remote", $users[$username])) {
+			if ($is_svn_node)
+				proc_close(proc_open("$conf_base_path/bin/webidectl sync-remote " . $userdata['esa'] . " 2>&1 &", array(), $foo));
+			else
+				proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-remote " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
+			debug_log("sync-remote $username");
+		}
 	}
 }
 
