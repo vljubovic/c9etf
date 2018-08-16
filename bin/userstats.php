@@ -9,11 +9,12 @@ debug_log("starting");
 
 
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".valgrind.out");
-$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/", "/autotest.txt/");
+$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/", "/autotest.txt/", "/.gdb_proxy/", 
+"/speedtest.cpp/");
 $vrijeme_kreiranja = 0; // Dodajemo ovoliko sekundi za svaki kreirani fajl. Ovo se dosta poveća...
 $vrijeme_limit = 60; // Pauzu veću od ovoliko sekundi računamo kao ovoliko sekundi
 $file_content_limit = 100000; // Ignorišemo fajlove veće od 100k
-$split_folder = array("OR");
+$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016");
 
 //$svn_base = $workspace_path . "/svn";
 $prefix = "";
@@ -63,9 +64,11 @@ function read_stats($username) {
 	foreach ($stats as $key => $value) {
 		if (is_array($value) && array_key_exists("goto", $value)) {
 			$goto_path = $conf_stats_path . "/" . $value['goto'];
-			eval(file_get_contents($goto_path));
-			foreach($stats_goto as $ks => $vs)
-				$stats[$ks] = $vs;
+			if (file_exists($goto_path)) {
+				eval(file_get_contents($goto_path));
+				foreach($stats_goto as $ks => $vs)
+					$stats[$ks] = $vs;
+			}
 			$stats_goto = null;
 		}
 	}
@@ -197,6 +200,8 @@ function clean_stats() {
 				unset($event['diff']);
 			if (array_key_exists('content', $event))
 				unset($event['content']);
+			if (array_key_exists('output', $event))
+				unset($event['output']);
 		}
 	}
 }
@@ -300,10 +305,15 @@ function update_stats($username) {
 			$compiled = $runned = $tested = false;
 			$filename = end($path_parts);
 			if ($filename == ".gcc.out") {
-				$compiled = true;
-				if (count($path_parts) > 1) {
-					array_pop($path_parts);
-					$filepath = substr($filepath, 0, strlen($filepath) - strlen("/.gcc.out"));
+				// Provjeravamo da li je prazan fajl
+				$scpath = str_replace(" ", "%20", $svn_file_path);
+				$content = trim(@svn_cat($scpath, $entry['rev']));
+				if (!empty($content)) {
+					$compiled = true;
+					if (count($path_parts) > 1) {
+						array_pop($path_parts);
+						$filepath = substr($filepath, 0, strlen($filepath) - strlen("/.gcc.out"));
+					}
 				}
 			}
 			else if ($filename == "runme" || $filename == ".runme") {
@@ -331,8 +341,8 @@ function update_stats($username) {
 					$rev = $entry['rev'];
 					$old_rev = $stats[$filepath]['last_revision'];
 					$scpath = str_replace(" ", "\\ ", $svn_file_path);
-					$scpath = str_replace(")", "\\)", $svn_file_path);
-					$scpath = str_replace("(", "\\(", $svn_file_path);
+					$scpath = str_replace(")", "\\)", $scpath);
+					$scpath = str_replace("(", "\\(", $scpath);
 					$diff_contents = `svn diff $scpath@$old_rev $scpath@$rev`;
 					$diff_result = compressed_diff($diff_contents);
 				}
