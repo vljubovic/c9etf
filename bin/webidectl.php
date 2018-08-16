@@ -1717,7 +1717,7 @@ function syncsvn($username) {
 	$run_as      = $userdata['esa'];
 	
 	// We can't use run_as because this command never ends, so we need to redirect output
-	exec("su $run_as -c '$syncsvncmd $user_efn $watch_path 2>&1 >> $conf_syncsvn_log &' 2>&1 >/dev/null");
+	//exec("su $run_as -c '$syncsvncmd $user_efn $watch_path 2>&1 >> $conf_syncsvn_log &' 2>&1 >/dev/null");
 }
 
 // Migrate old workspace (just calls external script on the appropriate server)
