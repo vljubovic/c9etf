@@ -72,6 +72,24 @@ switch($action) {
 		print "Hello world!\n\n";
 		debug_log ("hello world");
 		break;
+		
+	// Change user data
+	case "change-user":
+		$key = $argv[3];
+		$value = $argv[4];
+		if ($value === "-")
+			unset($users[$user][$key]);
+		else
+			$users[$user][$key] = $value;
+		write_files();
+		
+		if ($is_control_node) {
+			foreach($conf_nodes as $node) {
+				if (!is_local($node['address']))
+					run_on($node['address'], "$conf_base_path/bin/webidectl change-user " . $userdata['esa'] . " " . escapeshellarg($key) . " " . escapeshellarg($value));
+			}
+		}
+		break;
 	
 	// Login or create user
 	case "login":
