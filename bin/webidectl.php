@@ -1,5 +1,14 @@
 <?php
 
+// =========================================
+// WEBIDECTL.PHP
+// C9@ETF project (c) 2015-2018
+//
+// Master control script
+// =========================================
+
+
+
 # Run as root
 
 require(dirname(__FILE__) . "/../lib/config.php");
@@ -65,7 +74,7 @@ switch($action) {
 		print "Hello world!\n\n";
 		debug_log ("hello world");
 		break;
-		
+	
 	// Change user data
 	case "change-user":
 		$key = $argv[3];
@@ -637,7 +646,6 @@ switch($action) {
 
 	// Revert to older revision on svn
 	case "is-node-up":
-		$userdata = setup_paths($username);
 		if ($users[$username]["status"] != "active")
 			print "false\n";
 		else {
@@ -860,7 +868,6 @@ switch($action) {
 			if ($file != "." && $file != ".." && is_dir($path))
 				$stats_paths[] = $path;
 		}
-		print_r($stats_paths);
 		
 		foreach ($users_sorted as $username => $options) {
 			if ($username == "") continue;
@@ -900,6 +907,7 @@ switch($action) {
 				$stats_file = $path . "/$username.stats";
 				if (file_exists($stats_file)) $stats_usage += filesize($stats_file);
 			}
+			$stats_usage /= 1024;
 			
 			fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", $username, $total_usage_stats[$username]['ws'], $total_usage_stats[$username]['ws.old'], $total_usage_stats[$username]['svn'], $total_usage_stats[$username]['svn.old'], $total_usage_stats[$username]['inodes'], $stats_usage));
 			$total_ws += $total_usage_stats[$username]['ws'];
@@ -912,7 +920,7 @@ switch($action) {
 		fwrite($fp, sprintf("%-14s%-10d%-8d%-10d%-8d%-12d%d\n", "TOTAL", $total_ws, $total_ws_old, $total_svn, $total_svn_old, 0,  $total_stats));
 		fwrite($fp, "SUM TOTAL: " . ($total_ws+$total_ws_old+$total_svn+$total_svn_old+$total_stats) . "\n");
 		$nr_users = count($users_sorted);
-		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
+		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
 		fclose($fp);
 		break;
 		
@@ -1035,13 +1043,13 @@ switch($action) {
 			unlink("$remote_home/.in_use");
 
 		break;
-		
+	
 	case "help":
 		print "webidectl.php\n\nUsage:\n";
-		print "\tlogin username password \t- doesn't check password!\n";
+		print "\tlogin username \t- doesn't check password!\n";
 		print "\tlogout username\n";
 		print "\tstop-node username \t\t- stop nodejs without logging out user\n\t\t\t\t\t  can be called even if user is listed as not logged in\n";
-		print "\tadd-user username password \t- creates data for new user\n\t\t\t\t\t  will be called automatically by login if neccessary\n";
+		print "\tadd-user username \t- creates data for new user\n\t\t\t\t\t  will be called automatically by login if neccessary\n";
 		print "\tadd-local-user username password - adds user into local userlist (doesn't call add-user)\n";
 		print "\tremove username \t\t- remove user data from system\n";
 		print "\tcollaborate username \t\t- start collab version of nodejs for user\n";
@@ -1095,6 +1103,7 @@ exit(0);
 function activate_user($username, $password, $ip_address) {
 	global $conf_defaults_path, $conf_base_path, $conf_c9_group, $conf_nodes, $users;
 	global $conf_ssh_tunneling, $conf_port_upper, $conf_port_lower, $conf_my_address;
+	global $conf_home_path;
 	global $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr;
 	
 	$userdata = setup_paths($username);
@@ -1312,7 +1321,7 @@ function create_user($username, $password) {
 			run_on($storage_node_addr, "$conf_base_path/bin/webidectl git-init " . $userdata['esa']);
 
 	// Fix c9 link
-	if ($is_control_node)
+	if ($is_storage_node)
 		run_as($username, "cd " . $userdata['home'] . "; ln -s $conf_base_path/c9fork fork");
 	
 	$users[$username] = array();
@@ -1415,7 +1424,7 @@ function deactivate_user($username, $skip_svn = false) {
 }
 
 function remove_user($username) {
-	global $users, $conf_nodes, $conf_base_path, $conf_shared_path;
+	global $users, $conf_nodes, $conf_base_path, $conf_shared_path, $conf_home_path;
 	global $is_storage_node, $is_control_node, $is_svn_node, $is_compute_node;
 	
 	$userdata = setup_paths($username);
@@ -1472,7 +1481,7 @@ function remove_user($username) {
 }
 
 function verify_user($username) {
-	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users;
+	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users, $conf_home_path;
 	
 	$userdata = setup_paths($username);
 	if (!array_key_exists('server', $users[$username])) return;
@@ -1622,7 +1631,7 @@ function kick_user($username) {
 
 // Start nodejs instance for user
 function start_node($username) {
-	global $conf_base_path, $users;
+	global $conf_base_path, $conf_home_path, $users;
 	
 	$userdata = setup_paths($username);
 	$useropts = $users[$username];
@@ -2303,7 +2312,7 @@ function find_free_port() {
 
 // Time of last activity from user
 function last_access($username) {
-	global $conf_base_path, $is_svn_node, $is_control_node, $svn_node_addr;
+	global $conf_base_path, $conf_home_path, $is_svn_node, $is_control_node, $svn_node_addr;
 	
 	$userdata = setup_paths($username);
 	
