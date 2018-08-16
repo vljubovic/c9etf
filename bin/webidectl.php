@@ -1322,7 +1322,7 @@ function create_user($username, $password) {
 
 // The philosophy is that deactivate can be called on user who is marked inactive, 
 // to stop whatever running services etc. for this user, except on svn node
-function deactivate_user($username) {
+function deactivate_user($username, $skip_svn = false) {
 	global $users, $is_control_node, $is_compute_node, $conf_base_path, $is_svn_node, $svn_node_addr, $conf_svn_problems_log, $conf_ssh_tunneling;
 	
 	// Prevent overloading svn server during clear_server
@@ -1369,7 +1369,7 @@ function deactivate_user($username) {
 				}
 			}
 		}
-		if (!$is_svn_node)
+		if (!$is_svn_node && !$skip_svn)
 			proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
 	}
 	
@@ -1984,7 +1984,7 @@ function clear_server() {
 	// Logout all users
 	foreach ($users as $username => $options) {
 		if ($options['status'] == "active")
-			deactivate_user($username);
+			deactivate_user($username, true);
 	}
 	
 	// Force restart, since deactivate will just reload... this kills some hanging connections
