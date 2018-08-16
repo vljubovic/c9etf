@@ -38,13 +38,6 @@ $skip_bfl = array(
 );
 
 
-// Log action
-/*if ($action != "last" && $argc>4) debug_log("$action $argv[2] $argv[3] $argv[4]");
-else if ($action != "last" && $action != "login" && $argc>3) debug_log("$action $argv[2] $argv[3]");
-else if ($action != "last" && $argc>2) debug_log("$action $argv[2]");
-else if ($action != "last") debug_log("$action");*/
-
-
 srand(make_seed());
 
 // BFL - Big Fucking Lock
@@ -547,7 +540,7 @@ switch($action) {
 	// Update last-access time for user
 	case "last-update";
 		if ($is_control_node) {
-			$lastfile = $conf_base_path . "/last/$username.last";
+			$lastfile = $conf_home_path . "/last/$username.last";
 			file_put_contents($lastfile, time());
 			chown($lastfile, $username);
 			chmod($lastfile, 0666);
@@ -1002,7 +995,7 @@ function activate_user($username, $password, $ip_address) {
 		// Let SVN know that user logged in
 		// This must be done before syncsvn to avoid conflicts
 		$script  = "date > " . $userdata['workspace'] . "/.login; ";
-		$script .= "date +%s > $conf_base_path/last/" . $userdata['efn'] . ".last";
+		$script .= "date +%s > $conf_home_path/last/" . $userdata['efn'] . ".last";
 		run_as($username, $script);
 	
 		// Start syncsvn
@@ -1312,7 +1305,7 @@ function remove_user($username) {
 		$localuser_file = $conf_base_path . "/localusers/" . $userdata['efn'];
 		if (file_exists($localuser_file)) unlink($localuser_file);
 		
-		$lastfile = $conf_base_path . "/last/$username.last";
+		$lastfile = $conf_home_path . "/last/$username.last";
 		if (file_exists($lastfile)) unlink($lastfile);
 		
 		foreach($conf_nodes as $node)
@@ -1393,7 +1386,7 @@ function verify_user($username) {
 		}
 		
 		// Update time of last access
-		$lastfile = $conf_base_path . "/last/$username.last";
+		$lastfile = $conf_home_path . "/last/$username.last";
 		file_put_contents($lastfile, time());
 		chown($lastfile, $username);
 		chmod($lastfile, 0666);
@@ -1486,7 +1479,7 @@ function start_node($username) {
 	$log_path    = "$conf_base_path/log/" . $userdata['efn'];
 	$watch_path  = $userdata['node_watch'];
 	
-	$lastfile = $conf_base_path . "/last/" . $userdata['efn'] . ".last";
+	$lastfile = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
 	
 	touch($log_path);
 	chown($log_path, $username);
@@ -2158,7 +2151,7 @@ function last_access($username) {
 	
 	$userdata = setup_paths($username);
 	
-	$last_path = $conf_base_path . "/last/" . $userdata['efn'] . ".last";
+	$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
 	if (file_exists($last_path)) return intval(file_get_contents($last_path));
 
 	// No last file, check svn data

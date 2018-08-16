@@ -83,22 +83,22 @@ echo "\n";
 
 // Create c9 user
 `groupadd $conf_c9_group`;
-`useradd $conf_c9_user -g $conf_c9_group -m`;
-`mkdir /home/$conf_c9_user/workspace`;
-`chown $conf_c9_user:$conf_c9_group /home/$conf_c9_user/workspace`;
+`useradd $conf_c9_user -g $conf_c9_group -d $conf_home_path/$conf_c9_user -m`;
+`mkdir $conf_home_path/$conf_c9_user/workspace`;
+`chown $conf_c9_user:$conf_c9_group $conf_home_path/$conf_c9_user/workspace`;
 
 
 // PERMISSIONS SETUP
 
 // Create some directories (git doesn't permit empty directories)
-$directories=array("log", "watch", "data", "c9fork", "last", "web/buildservice", "localusers", "htpasswd", "defaults/c9/plugins", "defaults/c9/plugins/_", "defaults/c9/managed", "defaults/c9/managed/plugins", "defaults/c9/dev", "defaults/c9/dev/plugins");
+$directories=array("log", "watch", "data", "c9fork", "web/buildservice", "localusers", "htpasswd", "defaults/c9/plugins", "defaults/c9/plugins/_", "defaults/c9/managed", "defaults/c9/managed/plugins", "defaults/c9/dev", "defaults/c9/dev/plugins");
 foreach($directories as $dir) {
 	`mkdir $conf_base_path/$dir`;
 	`chmod 755 $conf_base_path/$dir`;
 }
 
 // Directories and files that should be writable by user processes
-$user_writable=array("log", "watch", "last");
+$user_writable=array("log", "watch");
 foreach($user_writable as $path) {
 	`chgrp $conf_c9_group $conf_base_path/$path`;
 	`chmod 775 $conf_base_path/$path`;
@@ -122,6 +122,13 @@ foreach($web_readable as $path) {
 
 // Create a pipe file for vmstat
 `mkfifo $conf_base_path/lib/vmstat.pipe`;
+
+// 'last' dir in home
+`mkdir $conf_home_path/last`;
+`chown $conf_c9_user:$conf_c9_group $conf_home_path/last`;
+`chmod 775 $conf_home_path/last`;
+
+
 
 // INSTALLATION
 
