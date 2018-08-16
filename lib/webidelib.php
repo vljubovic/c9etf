@@ -34,7 +34,7 @@ function setup_paths($username) {
 
 // Safe string to use for filename with no surprises
 function escape_filename($raw) {
-	return preg_replace('/[^A-Za-z0-9_\-]/', '_', $raw);
+	return preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $raw);
 }
 
 function is_local($host) {
