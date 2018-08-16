@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir $1
+ln -s /usr/local/webide/c9fork $1/fork
+cp /usr/local/webide/defaults/home/.gitconfig $1
+cd $1
+svn co file:///home/c9/svn/$1 workspace
+cd ..
+chown -R $1:c9 $1
+chmod 700 $1/workspace

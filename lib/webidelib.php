@@ -1,6 +1,9 @@
 <?php
 
 // =========================================
+// WEBIDELIB.PHP
+// C9@ETF project (c) 2015-2018
+//
 // Some commonly used functions for webide
 // =========================================
 

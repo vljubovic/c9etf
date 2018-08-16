@@ -1,0 +1,7 @@
+#!/bin/bash
+
+tar cJf /lhome/$2.tar.xz /lhome/$1/$2 /lhome/c9/svn/$2 /lhome/c9/stats/$2.stats /lhome/c9/stats/*/$2.stats
+rm -fr /lhome/$1/$2
+rm -fr /lhome/c9/svn/$2
+rm /lhome/c9/stats/$2.stats
+rm /lhome/c9/stats/*/$2.stats
