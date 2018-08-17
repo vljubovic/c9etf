@@ -2260,6 +2260,11 @@ function write_nginx_config() {
 	}
 
 	$nginx_final_config = str_replace( "# --- HERE ---", $config, file_get_contents($conf_base_path . "/nginx.skeleton.conf") );
+	
+	// Find php socket file
+	$sock_file = `find /var/run/ | grep php | grep sock`;
+	$nginx_final_config = str_replace( "SOCKET_FILENAME", $sock_file, $nginx_final_config );
+	
 	file_put_contents($conf_nginx_conf_path, $nginx_final_config);
 	$retval = 0; $output = "";
 	exec("service nginx reload", $output, $retval);
