@@ -208,7 +208,6 @@ diff -Naur c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs c9fork
      <% } %>
      <script>
          var plugins = <%-: architectConfig | JSONToJS %>;
-         var start = Date.now();
          
          <% if (packed) { %>
 -            require.MODULE_LOAD_URL = "/static/standalone/modules"
