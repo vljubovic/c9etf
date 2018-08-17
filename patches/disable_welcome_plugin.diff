@@ -7,14 +7,12 @@ diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
          },
 -        {
 -            packagePath: "plugins/c9.ide.welcome/welcome",
--            staticPrefix: staticPrefix + "/plugins/c9.ide.welcome",
 -            intro: "Welcome to Cloud9. Use this welcome screen "
 -              + "to tweak the look &amp; feel of the Cloud9 user interface. ",
 -            checkOS: true
 -        },
 +        //{
 +        //    packagePath: "plugins/c9.ide.welcome/welcome",
-+        //    staticPrefix: staticPrefix + "/plugins/c9.ide.welcome",
 +        //    intro: "Welcome to Cloud9. Use this welcome screen "
 +        //      + "to tweak the look &amp; feel of the Cloud9 user interface. ",
 +        //    checkOS: true

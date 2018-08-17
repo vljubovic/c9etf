@@ -1,6 +1,6 @@
-diff -Naur c9upstream/node_modules/vfs-local/localfs.js c9fork/node_modules/vfs-local/localfs.js
---- c9upstream/node_modules/vfs-local/localfs.js	2017-04-09 19:19:24.487924972 +0200
-+++ c9fork/node_modules/vfs-local/localfs.js	2017-04-10 11:14:31.524959132 +0200
+diff -Naur c9upstream/plugins/node_modules/vfs-local/localfs.js c9fork/plugins/node_modules/vfs-local/localfs.js
+--- c9upstream/plugins/node_modules/vfs-local/localfs.js	2017-04-09 19:19:24.487924972 +0200
++++ c9fork/plugins/node_modules/vfs-local/localfs.js	2017-04-10 11:14:31.524959132 +0200
 @@ -1737,7 +1737,7 @@
          if (options.getStatus) {
              options = options.getStatus;
@@ -16,6 +16,7 @@ diff -Naur c9upstream/node_modules/vfs-local/localfs.js c9fork/node_modules/vfs-
              _execFile(TMUX, 
 -                ["-L", tmuxName, "-C", "kill-session", "-t", options.session], 
 +                ["-L", tmuxName, "-S", options.socketPath, "-C", "kill-session", "-t", options.session], 
+                 options,
                  function(err){
                      if (!options.command)
                          return callback(err, {});
@@ -23,8 +24,8 @@ diff -Naur c9upstream/node_modules/vfs-local/localfs.js c9fork/node_modules/vfs-
                  return callback(new Error("Missing session name"));
              
              (function findSession(retries){
--                _execFile(TMUX, ["-u2", "-L", tmuxName, "list-sessions"], function(err, stdout) {
-+                _execFile(TMUX, ["-u2", "-L", tmuxName, "-S", options.socketPath, "list-sessions"], function(err, stdout) {
+-                _execFile(TMUX, ["-u2", "-L", tmuxName, "list-sessions"], options, function(err, stdout) {
++                _execFile(TMUX, ["-u2", "-L", tmuxName, "-S", options.socketPath, "list-sessions"], options, function(err, stdout) {
                      if (err) stdout = ""; // This happens when the tmux server has not been started yet
                  
                      var re = new RegExp("^" + escapeRegExp(options.session) + ":", "m");

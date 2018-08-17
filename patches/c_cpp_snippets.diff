@@ -1,6 +1,6 @@
-diff -Naur c9upstream/node_modules/ace/lib/ace/snippets/c_cpp.snippets c9fork/node_modules/ace/lib/ace/snippets/c_cpp.snippets
---- c9upstream/node_modules/ace/lib/ace/snippets/c_cpp.snippets	2017-04-09 19:19:24.399924835 +0200
-+++ c9fork/node_modules/ace/lib/ace/snippets/c_cpp.snippets	2017-04-10 10:44:41.500656371 +0200
+diff -Naur c9upstream/plugins/node_modules/ace/lib/ace/snippets/c_cpp.snippets c9fork/plugins/node_modules/ace/lib/ace/snippets/c_cpp.snippets
+--- c9upstream/plugins/node_modules/ace/lib/ace/snippets/c_cpp.snippets	2017-04-09 19:19:24.399924835 +0200
++++ c9fork/plugins/node_modules/ace/lib/ace/snippets/c_cpp.snippets	2017-04-10 10:44:41.500656371 +0200
 @@ -129,3 +129,40 @@
  	[${1}](${2}){
  		${3:/* code */}
