@@ -1,5 +1,14 @@
 <?php
 
+// =========================================
+// STATS_MONITOR.PHP
+// C9@ETF project (c) 2015-2018
+//
+// Background process that monitors various system statistics
+// =========================================
+
+
+
 require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
 
@@ -26,17 +35,17 @@ while ($line = fgets($file)) {
 
 	foreach(file("/proc/meminfo") as $memdata) {
 		if (strpos($memdata, "MemTotal") === 0)
-			$memtotal = substr($memdata, 17, 8);
+			$memtotal = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "MemFree") === 0)
-			$memfree = substr($memdata, 17, 8);
+			$memfree = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "Buffers") === 0)
-			$membuf = substr($memdata, 17, 8);
+			$membuf = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "Cached") === 0)
-			$memcach = substr($memdata, 17, 8);
+			$memcach = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "SwapTotal") === 0)
-			$memswaptotal = substr($memdata, 17, 8);
+			$memswaptotal = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "SwapFree") === 0)
-			$memswapfree = substr($memdata, 17, 8);
+			$memswapfree = intval(substr($memdata, 17, 8));
 	}
 	
 	$memreal = $memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
