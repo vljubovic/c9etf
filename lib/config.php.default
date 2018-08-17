@@ -19,7 +19,7 @@ $conf_base_path = "/usr/local/webide";
 //$conf_home_path = "/rhome";
 $conf_home_path = "/home";
 
-// Shared data path (accessible from all nodes, presumably under conf_home_path
+// Shared data path (accessible from all nodes, presumably under conf_home_path)
 $conf_shared_path = $conf_home_path . "/c9";
 
 // Path where SVN repos are stored
@@ -45,9 +45,9 @@ $conf_port_lower = 35000;
 $conf_port_upper = 36000;
 
 // If memory usage crosses this limit, enter "emergency mode"
-// - In normal mode cleanup operation is slow and non-intrusive, but sometimes it can cause system to slow down
-// and use even more memory. In emergency mode idle processes are just killed at once, which guarantees
-// quick recovery of RAM.
+// - In normal mode cleanup operation is slow and non-intrusive, but sometimes it 
+// can cause system to slow down and use even more memory. In emergency mode idle 
+// processes are just killed immediately, which guarantees quick recovery of RAM.
 $conf_memory_emergency = 10; // in GB
 
 // Start cleaning backups if diskpace in home partition drops below this limit
@@ -59,16 +59,18 @@ $conf_limit_loadavg = 0; //
 $conf_limit_users = 0;
 $conf_limit_active_users = 0;
 $conf_limit_diskspace = 100; // in MB
-$conf_limit_inodes = 10000;
+$conf_limit_inodes = 10000; // Minimum number of free inodes in home partition
 
-// If users home+SVN repo cross these limits, SVN reinstall is triggered which regains space/inodes but
-// drops SVN history (this is not a problem since history is preserved in more efficient PHP format)
+// If users home+SVN repo cross these limits, SVN reinstall is triggered which regains 
+// space/inodes but drops SVN history (this is not a problem since history is preserved
+// in more efficient PHP format)
 $conf_max_user_inodes = 0; // 5000;
 $conf_max_user_svn_disk_usage = 50000; // in kB
 
 // Log files
 $conf_svn_problems_log = $conf_base_path . "/log/svn_problems.log";
-$conf_syncsvn_log = $conf_home_path . "/c9/monitor.out"; // This must be in home path so it would be visible from control server
+ // This must be in home path so it would be visible from control server
+$conf_syncsvn_log = $conf_home_path . "/c9/monitor.out";
 
 // Timeout after which we assume that node is inaccessible
 $conf_node_timeout = 60;
@@ -109,7 +111,8 @@ $conf_admin_users = array('admin');
 // Users with maximum privileges on admin interface
 $conf_sysadmins = array('admin');
 
-// Resource limits for web interface (control node), to ensure that web is somewhat responsive
+// Resource limits for web interface (control node)
+// To ensure that web is somewhat responsive, no new logins will be accepted
 $conf_limit_loadavg_web = 13;
 $conf_limit_users_web = 300;
 $conf_limit_memory_web = 13; // in GB

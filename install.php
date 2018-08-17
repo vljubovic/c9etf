@@ -269,21 +269,21 @@ echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_evaluate_vectors_ele
 
 // Don't crash debugger when there is open brace (but not closed!) inside string
 // Also some warnings
-echo "gdb_fix_brace_inside_string.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_brace_inside_string.diff`;
+//echo "gdb_fix_brace_inside_string.diff\n";
+//echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_brace_inside_string.diff`;
 
 // Make sure truncated packages (sometimes returned by gdb) are valid JSON
 // Such packages sometimes caused crashes
-echo "gdb_fix_truncated_package.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_truncated_package.diff`;
+//echo "gdb_fix_truncated_package.diff\n";
+//echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_truncated_package.diff`;
 
 // Properly escape octal numbers in gdb output (also sometimes causing crashes)
-echo "gdb_fix_escaping_octal_numbers.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_escaping_octal_numbers.diff`;
+//echo "gdb_fix_escaping_octal_numbers.diff\n";
+//echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_fix_escaping_octal_numbers.diff`;
 
 // Cleanup some warnings thrown by nodejs in gdb shim code, add some more debugging
-echo "gdb_warnings_debugging.diff\n";
-echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_warnings_debugging.diff`;
+//echo "gdb_warnings_debugging.diff\n";
+//echo `cd $conf_base_path/c9fork; patch -p1 < ../patches/gdb_warnings_debugging.diff`;
 
 // Use our URL for logout menu action
 echo "logout_url.diff\n";
