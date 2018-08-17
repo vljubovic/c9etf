@@ -70,6 +70,8 @@ the web directly so that you could finish the install procedure.
  $ cd /home/c9/fork
  $ nodejs server.js -p 10000 -a : -l YOURIP -w /home/c9/workspace
 
+(Sometimes it gives an error on the first try, but runs ok on the second.)
+ 
 Instead of YOURIP specify the IP address that you use to reach your server. If 
 server started correctly, you can now open
 

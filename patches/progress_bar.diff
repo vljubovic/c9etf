@@ -1,6 +1,6 @@
-diff -Naur c9upstream/node_modules/architect-build/build_support/mini_require.js c9fork/node_modules/architect-build/build_support/mini_require.js
---- c9upstream/node_modules/architect-build/build_support/mini_require.js	2017-04-09 19:19:24.479924959 +0200
-+++ c9fork/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:55:24.648870829 +0200
+diff -Naur c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js c9fork/plugins/node_modules/architect-build/build_support/mini_require.js
+--- c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-09 19:19:24.479924959 +0200
++++ c9fork/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:55:24.648870829 +0200
 @@ -394,6 +394,10 @@
  }
  
@@ -9,10 +9,10 @@ diff -Naur c9upstream/node_modules/architect-build/build_support/mini_require.js
 +    var progress = document.getElementById('etf.progress');
 +    if (progress) progress.max = progress.max + 1;
 +
-     // TODO use importScripts for webworkers
-     var head = document.head || document.documentElement;
-     var s = document.createElement("script");
-@@ -405,13 +409,17 @@
+     if (typeof importScripts == "function") {
+         nextModule = { name: id, deps: null };
+         if (path[0] == "/")
+@@ -405,14 +409,18 @@
          s.crossOrigin = true;
      
      s.onload = s.onreadystatechange = function(_, isAbort) {
@@ -20,6 +20,7 @@ diff -Naur c9upstream/node_modules/architect-build/build_support/mini_require.js
 +       console.log("Success: "+path);
 +       if (progress) progress.value = progress.value + 1;
 +       if (isAbort || !s.readyState || s.readyState == "loaded" || s.readyState == "complete") {
+             s.remove && s.remove();
              s = s.onload = s.onreadystatechange = null;
              if (!isAbort)
                  callback(null, id);

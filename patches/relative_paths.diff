@@ -194,7 +194,7 @@ diff -Naur c9upstream/plugins/c9.vfs.standalone/standalone.js c9fork/plugins/c9.
 diff -Naur c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs
 --- c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:19:24.619925176 +0200
 +++ c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:34:58.608000754 +0200
-@@ -23,17 +23,17 @@
+@@ -24,16 +24,16 @@
      <% include ../../c9.ide.server/views/load-screen.ejs %>
  
      <% if (packed) { %>
@@ -213,13 +213,13 @@ diff -Naur c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs c9fork
          <% if (packed) { %>
 -            require.MODULE_LOAD_URL = "/static/standalone/modules"
 +            require.MODULE_LOAD_URL = "static/standalone/modules"
-         <% } %>
-         
-         if (isLocalVersion)
+         <% } else { %>
+             if (/es5=1/.test(location.search))
+                 require.config.transform = "es5";
 diff -Naur c9upstream/plugins/c9.vfs.standalone/www/places.html c9fork/plugins/c9.vfs.standalone/www/places.html
 --- c9upstream/plugins/c9.vfs.standalone/www/places.html	2017-04-09 19:19:24.619925176 +0200
 +++ c9fork/plugins/c9.vfs.standalone/www/places.html	2017-04-09 19:36:05.359866087 +0200
-@@ -9,30 +9,30 @@
+@@ -9,29 +9,29 @@
  <script>
  var places = {
      Cloud9: {
@@ -227,14 +227,12 @@ diff -Naur c9upstream/plugins/c9.vfs.standalone/www/places.html c9fork/plugins/c
 -        VFS: "/vfs",
 -        Preview: "/preview",
 -        StaticIde: ["/static/ide.html", "/static/ide.offline.html"],
--        Test: "/static/test.html",
--        List_of_tests: "/static/test.html?",
+-        List_of_tests: ["/static/test.html", "?es5=1"]
 +        IDE: ["ide.html", "?devel=1", "?reset=state", "?reset=settings", "?reset=1", "?noworker=1", "?packed=1", "?collab=0"],
 +        VFS: "vfs",
 +        Preview: "preview",
 +        StaticIde: ["static/ide.html", "static/ide.offline.html"],
-+        Test: "static/test.html",
-+        List_of_tests: "static/test.html?",
++        List_of_tests: ["static/test.html", "?es5=1"]
      },
      Collab: {
 -        main: "/static/plugins/c9.ide.collab/collab_test.html",

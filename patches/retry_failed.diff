@@ -1,6 +1,6 @@
-diff -Naur c9upstream/node_modules/architect-build/build_support/mini_require.js c9fork/node_modules/architect-build/build_support/mini_require.js
---- c9upstream/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:56:36.376844480 +0200
-+++ c9fork/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:59:46.244805181 +0200
+diff -Naur c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js c9fork/plugins/node_modules/architect-build/build_support/mini_require.js
+--- c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:56:36.376844480 +0200
++++ c9fork/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:59:46.244805181 +0200
 @@ -420,11 +420,8 @@
      s.onerror = function(e) {
          console.log("Error: "+path);
