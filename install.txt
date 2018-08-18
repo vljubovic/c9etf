@@ -1,6 +1,13 @@
+
+=========================================
+INSTALL.txt
+C9@ETF project (c) 2015-2018
+=========================================
+
+
 INSTALL INSTRUCTIONS
 
-Install the following packages on Ubuntu 16.04 LTS:
+Install the following packages on Ubuntu 16.04 LTS or 18.04 LTS:
 build-essential
 nodejs
 nginx
@@ -12,7 +19,7 @@ php-ldap
 git
 apache2-utils
 
-C9 admin page also uses php-svn package but it no longer exists with php7 on Ubuntu 16.04.
+C9 admin page also uses php-svn package but it no longer supports php7 (see errata).
 
 Optional:
 gdb
@@ -44,6 +51,11 @@ UMASK		022
 and set it to:
 UMASK		077
 
+In production environments we suggest to have another look at php configuration,
+especially to increase the amount of available memory. Make sure to apply all
+changes to nginx configuration in the file nginx.skeleton.conf in
+/usr/local/webide.
+
 
 C9 INSTALLATION
 
@@ -71,7 +83,7 @@ the web directly so that you could finish the install procedure.
  $ nodejs server.js -p 10000 -a : -l YOURIP -w /home/c9/workspace
 
 (Sometimes it gives an error on the first try, but runs ok on the second.)
- 
+
 Instead of YOURIP specify the IP address that you use to reach your server. If 
 server started correctly, you can now open
 
