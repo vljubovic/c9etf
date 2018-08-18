@@ -22,7 +22,7 @@ function admin_activity_log($user, $path) {
 	
 	// Stats file can reference other files to be included
 	foreach ($stats as $key => $value) {
-		if (is_array($value) && array_key_exists("goto", $value)) {
+		if (is_array($value) && array_key_exists("goto", $value) && starts_with($path, $key . "/")) {
 			$goto_path = $conf_stats_path . "/" . $value['goto'];
 			eval(file_get_contents($goto_path));
 			foreach($stats_goto as $ks => $vs)
