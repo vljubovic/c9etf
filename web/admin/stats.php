@@ -49,8 +49,10 @@ function admin_stats() {
 		$handle = fopen($conf_base_path . "/user_stats.log", "r");
 		if ($handle) {
 			while (($logline = fgets($handle, 4096)) !== false) {
-				$realno=-1;
+				$realno = -1;
 				$parts = explode(" ", trim($logline));
+				if (count($parts)<2) continue;
+				
 				$sec = $parts[0];
 				$no = intval($parts[1]);
 				if (count($parts)>2) $realno = $parts[2];

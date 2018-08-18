@@ -73,14 +73,14 @@ if (isset($_POST['login'])) {
 			return;
 		}
 		
-		$memtotal=`cat /proc/meminfo | grep MemTotal | cut -c 17-25`;
-		$memfree=`cat /proc/meminfo | grep MemFree | cut -c 17-25`;
-		$membuf=`cat /proc/meminfo | grep Buffers | cut -c 17-25`;
-		$memcach=`cat /proc/meminfo | grep ^Cached | cut -c 17-25`;
-		$memswaptotal=`cat /proc/meminfo | grep SwapTotal | cut -c 17-25`;
-		$memswapfree=`cat /proc/meminfo | grep SwapFree | cut -c 17-25`;
+		$memtotal = intval(`cat /proc/meminfo | grep MemTotal | cut -c 17-25`);
+		$memfree = intval(`cat /proc/meminfo | grep MemFree | cut -c 17-25`);
+		$membuf = intval(`cat /proc/meminfo | grep Buffers | cut -c 17-25`);
+		$memcach = intval(`cat /proc/meminfo | grep ^Cached | cut -c 17-25`);
+		$memswaptotal = intval(`cat /proc/meminfo | grep SwapTotal | cut -c 17-25`);
+		$memswapfree = intval(`cat /proc/meminfo | grep SwapFree | cut -c 17-25`);
 
-		$memused=$memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
+		$memused = $memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
 		$memused = $memused / 1024;
 		$memused = $memused / 1024;
 

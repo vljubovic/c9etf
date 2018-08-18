@@ -509,6 +509,8 @@ function update_stats($username) {
 			$previous = "";
 			foreach(array_reverse($subpaths) as $subpath) {
 				if ($previous != "") {
+					if (!array_key_exists("entries", $stats[$subpath]) || empty($stats[$subpath]['entries']))
+						$stats[$subpath]['entries'] = array();
 					if (!in_array($previous, $stats[$subpath]['entries']))
 						array_push($stats[$subpath]['entries'], $previous);
 				}

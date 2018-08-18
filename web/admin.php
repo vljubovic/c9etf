@@ -249,8 +249,10 @@ if ($logged_in) {
 		if (isset($_REQUEST['backlink']))
 			$backlink = htmlentities($_REQUEST['backlink'], ENT_QUOTES);
 		
-		$user_realname = $users[$user]['realname'];
-		if (empty($user_realname)) $user_realname=$user;
+		if (array_key_exists('realname', $users[$user]))
+			$user_realname = $users[$user]['realname'];
+		else
+			$user_realname = $user;
 		
 		// Show modules: phpwebide, log and user stats
 		

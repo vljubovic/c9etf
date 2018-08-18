@@ -8,7 +8,7 @@ C9@ETF project (c) 2015-2018
 SUPPORTED OS-es
 
 C9ETF was tried on Ubuntu Linux versions 14.04, 16.04 and 18.04. It should work with
-Linux distros as well. We would like to hear about your experience using this 
+other Linux distros as well. We would like to hear about your experience using this 
 project with other OS-es. Please contact us at vljubovic AT etf.unsa.ba with details.
 
 

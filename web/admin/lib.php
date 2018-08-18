@@ -29,9 +29,9 @@ function admin_session() {
 		exit(0);
 	}
 	
-	if ($course != 0) {
+	//if ($course != 0) {
 		// TODO
-	}
+	//}
 }
 
 // Standard HTTP headers for admin

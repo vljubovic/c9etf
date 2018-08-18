@@ -95,7 +95,7 @@ switch($action) {
 	
 	// Login or create user
 	case "login":
-		$ip_address = $argv[3];
+		$ip_address = $argv[3]; $password = "";
 		
 		if ($is_control_node) {
 			print "Password: ";
