@@ -57,12 +57,6 @@ function assignment_files($course, $year, $external) {
 // Meant to be invoked directly
 function assignment_files_change() {
 	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users;
-	
-	require_once("../../lib/config.php"); // Webide config
-	require_once("../../lib/webidelib.php"); // Webide library
-	require_once("../login.php"); // Login
-	require_once("../admin/lib.php"); // Admin library
-	require_once("lib.php"); // Assignment library
 
 	// Verify session and permissions, set headers
 	admin_session();
@@ -142,7 +136,7 @@ function assignment_files_change() {
 		
 		// Update assignment task_files
 		if (isset($_REQUEST['assignment'])) {
-			for ($i=0; $i<count($asgn['task_files'][$task]); $i++) {
+			foreach ($asgn['task_files'][$task] as $i => $task_file) {
 				if ($asgn['task_files'][$task][$i] == $file_name) 
 					unset($asgn['task_files'][$task][$i]);
 			}
@@ -185,6 +179,12 @@ function assignment_files_change() {
 	<?php
 }
 
+	
+require_once("../../lib/config.php"); // Webide config
+require_once("../../lib/webidelib.php"); // Webide library
+require_once("../login.php"); // Login
+require_once("../admin/lib.php"); // Admin library
+require_once("lib.php"); // Assignment library
 
 if (isset($_REQUEST['files_action']) && $_REQUEST['files_action'] == "change") assignment_files_change();
 
