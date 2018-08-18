@@ -9,12 +9,6 @@
 function assignment_files($course, $year, $external) {
 	global $conf_data_path, $conf_base_path;
 
-	require_once("../../lib/config.php"); // Webide config
-	require_once("../../lib/webidelib.php"); // Webide library
-	require_once("../login.php"); // Login
-	require_once("../admin/lib.php"); // Admin library
-	require_once("lib.php"); // Assignment library
-
 	if ($external)
 		$course_path = $conf_data_path . "/X$course" . "_$year";
 	else
@@ -63,6 +57,12 @@ function assignment_files($course, $year, $external) {
 // Meant to be invoked directly
 function assignment_files_change() {
 	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users;
+
+	require_once("../../lib/config.php"); // Webide config
+	require_once("../../lib/webidelib.php"); // Webide library
+	require_once("../login.php"); // Login
+	require_once("../admin/lib.php"); // Admin library
+	require_once("lib.php"); // Assignment library
 
 	// Verify session and permissions, set headers
 	admin_session();
