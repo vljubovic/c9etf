@@ -39,7 +39,7 @@ then
 	then
 		echo $oldnode | cut -c 1-5 | xargs kill
 	fi
-	nice -n 10 /usr/local/bin/gdbserver --once :$debugport "$exefile"
+	nice -n 10 /usr/bin/gdbserver --once :$debugport "$exefile"
 else
 	ulimit -c unlimited
 	nice -n 10 valgrind --leak-check=full --log-file="$valgrindout" "$exefile" | tee "$output"
