@@ -1,6 +1,6 @@
 
 // USER_TABLE.JS - JavaScript functions for dynamic loading of user per-assignment stats table
-// Version: 2017/10/25 18:20
+// Version: 2018/18/08 11:40
 
 
 var show_others_regex = /^(T|Z|ZSR)\d+$/;
@@ -44,8 +44,11 @@ function userTableLoad(user, path) {
 			if (typeof usersToLoad == "object" && usersToLoad.length > 0) 
 				setTimeout(userTableLoadAll, 300);
 		}
-		if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
-			console.error("error: " + url + " 500");
+		if (xmlhttp.readyState == 4 && (xmlhttp.status == 500 || xmlhttp.status == 502)) {
+			console.error("error: " + url + ": response code " + xmlhttp.status);
+			
+			if (typeof usersToLoad == "object" && usersToLoad.length > 0) 
+				setTimeout(userTableLoadAll, 300);
 		}
 	}
 	xmlhttp.open("GET", url, true);
@@ -108,7 +111,9 @@ function userTableMaybeAddColumn(assignments_assoc) {
 				if (!show_others) { // Special case, let's append
 					tbl.rows[0].appendChild(th);
 					for (var j=1; j<tbl.rows.length; j++) {
+						var username = tbl.rows[j].cells[0].id.substring(17);
 						var td = document.createElement('td');
+						td.id = username+"-"+assignments_assoc[asgn].path;
 						td.innerHTML = '/';
 						tbl.rows[j].appendChild(td);
 					}
@@ -122,7 +127,9 @@ function userTableMaybeAddColumn(assignments_assoc) {
 
 			// Add column to all other rows
 			for (var j=1; j<tbl.rows.length; j++) {
+				var username = tbl.rows[j].cells[0].id.substring(17);
 				var td = document.createElement('td');
+				td.id = username+"-"+assignments_assoc[asgn].path;
 				td.innerHTML = '/';
 				previous_cell = tbl.rows[j].cells[previous_id];
 				tbl.rows[j].insertBefore(td, previous_cell);

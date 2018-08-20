@@ -1,0 +1,54 @@
+
+=========================================
+ERRATA.txt
+C9@ETF project (c) 2015-2018
+=========================================
+
+
+SUPPORTED OS-es
+
+C9ETF was tried on Ubuntu Linux versions 14.04, 16.04 and 18.04. It should work with
+other Linux distros as well. We would like to hear about your experience using this 
+project with other OS-es. Please contact us at vljubovic AT etf.unsa.ba with details.
+
+
+PHP-SVN
+
+php-svn package is used in userstats module which converts Subversion logs into a
+compressed php-based format that is also used for showing nicely colored change 
+logs in admin UI. If you don't care about this feature, the system will work without
+it just fine.
+
+As of August 2018, svn package supports PHP versions 4-6, but not PHP 7. See:
+https://pecl.php.net/package/svn
+
+If you are using a supported PHP version but your Linux distro doesn't ship a php-svn
+package, you can install it using pecl like this:
+ $ sudo pecl install svn
+(In Ubuntu, pecl is part of php-pear package).
+
+We've found that package version on their Subversion repository works fine with PHP 7. 
+Procedure for installing php-svn package from repo:
+ $ sudo apt install libsvn-dev php-dev
+ $ svn checkout http://svn.php.net/repository/pecl/svn/trunk php-svn
+ $ cd php-svn
+ $ phpize
+ $ ./configure
+ $ make
+ $ sudo make install
+ 
+ 
+NODE.JS VERSION
+
+Cloud9 always requires the latest version of node.js, while Ubuntu repositories 
+include a slightly older version. Normally this is not a problem because supported 
+version of node.js will be downloaded and installed during Cloud9 installation. 
+However, the system node.js is still used during the wizard stage of installation, 
+and using the version from Ubuntu repositories may or may not be a problem. Our 
+experience so far was that the wizard will throw various errors but everything will 
+work in the end.
+
+To be sure, we recommend to download the Current version (not the LTS version!) of
+node.js using nodesource repositories:
+   https://nodejs.org/en/
+   https://nodejs.org/en/download/package-manager/

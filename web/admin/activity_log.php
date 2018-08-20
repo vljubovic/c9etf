@@ -22,7 +22,7 @@ function admin_activity_log($user, $path) {
 	
 	// Stats file can reference other files to be included
 	foreach ($stats as $key => $value) {
-		if (is_array($value) && array_key_exists("goto", $value)) {
+		if (is_array($value) && array_key_exists("goto", $value) && starts_with($path, $key . "/")) {
 			$goto_path = $conf_stats_path . "/" . $value['goto'];
 			eval(file_get_contents($goto_path));
 			foreach($stats_goto as $ks => $vs)
@@ -70,13 +70,20 @@ function merge_down(&$stats, $subpath) {
 
 
 function merge_down_recursive(&$stats, $subpath) {
+	if (!array_key_exists($subpath, $stats)) return array();
+	if (!array_key_exists('events', $stats[$subpath]) || empty($stats[$subpath]['events']) || !is_array($stats[$subpath]['events'])) 
+		return array();
+	
 	foreach($stats[$subpath]['events'] as &$event) {
 		$event['path'] = $subpath; // I ovdje trebamo setovati path
 	}
 	$events = $stats[$subpath]['events'];
-	$entries = $stats[$subpath]['entries'];
-	foreach ($entries as $entry)
-		$events = array_merge($events, merge_down_recursive($stats, $entry));
+	
+	if (array_key_exists('entries', $stats[$subpath])) {
+		$entries = $stats[$subpath]['entries'];
+		foreach ($entries as $entry)
+			$events = array_merge($events, merge_down_recursive($stats, $entry));
+	}
 
 	return $events;
 }
@@ -194,64 +201,38 @@ function show_log($log, $skip_empty = true) {
 	
 	// Remove all pasted lines with no actual change
 	function cleanup_reformat($change) {
-		if (!array_key_exists('add_lines', $change) || !array_key_exists('remove_lines', $change))
+		if (!array_key_exists('add_lines', $change) && !array_key_exists('remove_lines', $change))
 			return $change;
 		
-		//print_r($change);
-		
+		if (array_key_exists('remove_lines', $change))
 		foreach($change['remove_lines'] as $key => $removed) {
 			$removed = cleanup_line_reformat($removed);
-			//print "REMOVED: '".htmlspecialchars($removed)."'<br>\n";
 			$found = empty($removed);
-			if (!$found) foreach($change['add_lines'] as $key2 => $added) {
-				$added = cleanup_line_reformat($added);
-				if (empty($added)) {
-					unset($change['add_lines'][$key2]);
-					continue;
-				}
-				if ($removed == $added) {
-					unset($change['add_lines'][$key2]);
-					$found = true;
-					break;
-				}
-			}
-			//print "Found $found<br>\n";
-			if ($found) unset($change['remove_lines'][$key]);
-		}
-		//print_r($change);
-		return $change;
-
-		/*
-		foreach($detail['text']['add_lines'] as $txt) {
-			//print "BEFORE: ".htmlspecialchars($txt)."<br>\n";
-			$txt = cleanup_reformat($txt);
-			//print "TXT: '".htmlspecialchars($txt)."'<br>\n";
-			if (!empty($txt)) $added[] = $txt;
-		}
-		}
-		//print "ADDED:<br>\n";
-		//print_r($added);
-		//print "<br>\n";
-		foreach ($details as $detail) {
-			if (array_key_exists('remove_lines', $detail['text']))
-			foreach($detail['text']['remove_lines'] as $txt) {
-				$txt = cleanup_reformat($txt);
-				//print "REMOVED: '".htmlspecialchars($txt)."'<br>\n";
-				$found = empty($txt);
-				foreach($added as $key => $addtxt) {
-					if ($txt == $addtxt) {
-						unset($added[$key]);
+			if (!$found && array_key_exists('add_lines', $change)) {
+				foreach($change['add_lines'] as $key2 => $added) {
+					$added = cleanup_line_reformat($added);
+					if (empty($added)) {
+						unset($change['add_lines'][$key2]);
+						continue;
+					}
+					if ($removed == $added) {
+						unset($change['add_lines'][$key2]);
 						$found = true;
 						break;
 					}
 				}
-				//print "Found $found<br>\n";
-				if (!$found) return false;
 			}
+			if ($found) unset($change['remove_lines'][$key]);
 		}
-		//print "REMAINING:<br>\n";
-		//print_r($added);
-		if (count($added) == 0) return true;*/
+		
+		// Clean empty added lines
+		if (array_key_exists('add_lines', $change))
+		foreach($change['add_lines'] as $key2 => $added) {
+			$added = cleanup_line_reformat($added);
+			if (empty($added))
+				unset($change['add_lines'][$key2]);
+		}
+		return $change;
 	}
 	
 	$brojac = 0;
@@ -283,9 +264,15 @@ function show_log($log, $skip_empty = true) {
 				if (array_key_exists('add_lines', $sdiff)) $promijenjenih_linija += count($sdiff['add_lines']);
 				if (array_key_exists('remove_lines', $sdiff)) $promijenjenih_linija += count($sdiff['remove_lines']);
 				if (array_key_exists('change', $sdiff)) $promijenjenih_linija += count($sdiff['change']);
-				//print "PL $promijenjenih_linija RL $reformatiranih_linija<br>\n";
+				//print "Vrijeme $vrijeme PL $promijenjenih_linija RL $reformatiranih_linija<br>\n";
+				//if ($promijenjenih_linija == 9 && $reformatiranih_linija == 12) print_r($sdiff);
 				
-				if ($promijenjenih_linija == 0 && $reformatiranih_linija > 0) {
+				// No event?
+				if ($reformatiranih_linija == 0) {
+					continue;
+				}
+				
+				if ($promijenjenih_linija == 0 && $reformatiranih_linija > $paste_limit_linija) {
 					if ($mod['path'] != "")
 						print_mod($mod);
 					
@@ -297,6 +284,18 @@ function show_log($log, $skip_empty = true) {
 					continue; // Da se ne bi započeo $mod
 				}
 				
+				if (array_key_exists('remove_lines', $sdiff) && $promijenjenih_linija > 0 && $promijenjenih_linija == count($sdiff['remove_lines'])) {
+					if ($mod['path'] != "")
+						print_mod($mod);
+					
+					$detalji = array(array( 'time' => $stavka['time'], 'text' => $sdiff ));
+					$klasa = "log-del-lines";
+					$lijevo = $vrijeme . " brisanje u datoteci " . $stavka['path'] . " ($promijenjenih_linija linija)";
+					$id_detalji = "del-lines-$rbr";
+					print_field($klasa, $lijevo, $id_detalji, $detalji);
+					continue; // Da se ne bi započeo $mod
+				}
+				
 				if ($promijenjenih_linija > $paste_limit_linija) {
 					if ($mod['path'] != "")
 						print_mod($mod);
@@ -304,6 +303,7 @@ function show_log($log, $skip_empty = true) {
 					$detalji = array(array( 'time' => $stavka['time'], 'text' => $sdiff ));
 					$klasa = "log-paste";
 					$lijevo = $vrijeme . " paste u datoteci " . $stavka['path'] . " ($promijenjenih_linija linija)";
+					
 					$id_detalji = "paste-$rbr";
 					print_field($klasa, $lijevo, $id_detalji, $detalji);
 					continue; // Da se ne bi započeo $mod

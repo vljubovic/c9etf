@@ -1,5 +1,14 @@
 <?php
 
+// =========================================
+// USERSTATS.PHP
+// C9@ETF project (c) 2015-2018
+// 
+// Process SVN logs and update .stats files
+// =========================================
+
+
+
 # Run as root
 
 require(dirname(__FILE__) . "/../lib/config.php");
@@ -231,7 +240,7 @@ function update_stats($username) {
 	}
 
 	// Uzimamo log sa SVNa
-	$svn_log = svn_log($svn_path, SVN_REVISION_HEAD, $stats['last_update_rev']);
+	$svn_log = svn_log($svn_path, SVN_REVISION_HEAD, $stats['last_update_rev'], 0, SVN_DISCOVER_CHANGED_PATHS);
 	if (!$svn_log || empty($svn_log)) return;
 	foreach($svn_log as &$entry)
 		$entry['unixtime'] = strtotime($entry['date']);
@@ -500,6 +509,8 @@ function update_stats($username) {
 			$previous = "";
 			foreach(array_reverse($subpaths) as $subpath) {
 				if ($previous != "") {
+					if (!array_key_exists("entries", $stats[$subpath]) || empty($stats[$subpath]['entries']))
+						$stats[$subpath]['entries'] = array();
 					if (!in_array($previous, $stats[$subpath]['entries']))
 						array_push($stats[$subpath]['entries'], $previous);
 				}
