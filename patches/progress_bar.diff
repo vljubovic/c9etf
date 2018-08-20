@@ -6,12 +6,12 @@ diff -Naur c9upstream/plugins/node_modules/architect-build/build_support/mini_re
  
  var loadScriptWithTag = function(path, id, callback) {
 +    console.log("Loading: "+path);
-+    var progress = document.getElementById('etf.progress');
++    var progress = (typeof document !== 'undefined') && document.getElementById('etf.progress');
 +    if (progress) progress.max = progress.max + 1;
 +
-     if (typeof importScripts == "function") {
-         nextModule = { name: id, deps: null };
-         if (path[0] == "/")
+     if (path.substr(0, 20) === "static/~/amd/static/") path = "static/~/amd/" + path.substr(20);
+     if (path.substr(0, 24) === "static/~/amd/plugins/etf") path = "static/plugins/etf" + path.substr(24);
+     if (self.location.href.substr(0,5) === "blob:") {
 @@ -405,14 +409,18 @@
          s.crossOrigin = true;
      

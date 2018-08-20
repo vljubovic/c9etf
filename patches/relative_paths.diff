@@ -303,3 +303,20 @@ diff -Naur c9upstream/settings/standalone.js c9fork/settings/standalone.js
      };
  
      config.extendOptions = {
+--- c9fork/plugins/node_modules/architect-build/build_support/mini_require.js.orig      2018-08-20 12:12:19.700000000 +0200
++++ c9fork/plugins/node_modules/architect-build/build_support/mini_require.js   2018-08-20 12:12:41.912000000 +0200
+@@ -433,6 +433,14 @@
+ }
+ 
+ var loadScriptWithTag = function(path, id, callback) {
++    if (path.substr(0, 20) === "static/~/amd/static/") path = "static/~/amd/" + path.substr(20);
++    if (path.substr(0, 24) === "static/~/amd/plugins/etf") path = "static/plugins/etf" + path.substr(24);
++    if (self.location.href.substr(0,5) === "blob:") {
++        // Need absolute path
++        if (path.substr(0, 21) === "static/~/amd/plugins/") path = "/static/plugins/" + path.substr(21);
++        if (path.substr(0, 17) === "static/~/amd/lib/") path = "/static/plugins/node_modules/" + path.substr(17);
++    }
++    
+     if (typeof importScripts == "function") {
+         nextModule = { name: id, deps: null };
+         if (path[0] == "/")

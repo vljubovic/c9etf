@@ -1,12 +1,12 @@
-diff -Naur c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js c9fork/plugins/node_modules/architect-build/build_support/mini_require.js
---- c9upstream/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:56:36.376844480 +0200
-+++ c9fork/plugins/node_modules/architect-build/build_support/mini_require.js	2017-04-10 10:59:46.244805181 +0200
-@@ -420,11 +420,8 @@
+diff -Naur c9fork/plugins/node_modules/architect-build/build_support/mini_require.js.orig c9fork/plugins/node_modules/architect-build/build_support/mini_require.js
+--- c9fork/plugins/node_modules/architect-build/build_support/mini_require.js.orig      2018-08-20 12:27:03.980000000 +0200
++++ c9fork/plugins/node_modules/architect-build/build_support/mini_require.js   2018-08-20 12:27:08.020000000 +0200
+@@ -474,11 +474,8 @@
      s.onerror = function(e) {
          console.log("Error: "+path);
          if (progress) progress.max = progress.max - 1;
 -        processLoadQueue({
--            message: "Error loading script " + id  + ":" + path,
+-            message: "Error loading script " + id + ":" + path,
 -            id: id,
 -            path: path
 -        });
