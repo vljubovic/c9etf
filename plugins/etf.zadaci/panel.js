@@ -52,10 +52,10 @@ define(function(require, module, exports) {
 	    var luma = (0.2126 * rgb[0]) + (0.7152 * rgb[1]) + (0.0722 * rgb[2]);
 	    if (luma>=165) {
 		  replaceColor = "black"; 
-		  togglerImg = "/static/plugins/c9.ide.theme.flat/images/tree_close_arrow_small_dark_flat_light.png";
+		  togglerImg = "/static/plugins/c9.ide.theme.flat/images/tree_close_arrow_small_dark_flat_light@1x.png";
 	    } else {
 		  replaceColor = "white";
-		  togglerImg = "/static/plugins/c9.ide.layout.classic/images/tree_close_arrow_small.png";
+		  togglerImg = "/static/plugins/c9.ide.layout.classic/images/tree_close_arrow_small@1x.png";
 	    }
 	    css = css.replace(/MYCOLOR/g, replaceColor);
 	    css = css.replace(/TOGGLERIMG/g, togglerImg);
