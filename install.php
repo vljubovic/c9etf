@@ -150,6 +150,10 @@ echo `echo "\033[31mInstalling Cloud9 IDE\033[0m"`;
 `ln -s $conf_base_path/c9fork/plugins/c9.nodeapi/events.js $conf_base_path/web/static/lib/events.js`;
 `ln -s $conf_base_path/c9fork/node_modules/architect $conf_base_path/web/static/lib/architect`;
 `ln -s $conf_base_path/c9fork/plugins $conf_base_path/web/static/plugins`;
+`ln -s $conf_base_path/c9fork/node_modules/treehugger $conf_base_path/web/static/plugins/treehugger`;
+`ln -s $conf_base_path/c9fork/node_modules/tern $conf_base_path/web/static/plugins/tern`;
+`ln -s $conf_base_path/c9fork/node_modules/c9 $conf_base_path/web/static/plugins/c9`;
+`ln -s $conf_base_path/c9fork/node_modules/c9/assert.js $conf_base_path/web/static/plugins/assert.js`;
 
 // Install Buildservice
 echo "\n";

@@ -13,9 +13,10 @@ nodejs
 nginx
 php-fpm 
 php-cli
+php-ldap
+php-mbstring
 inotify-tools
 subversion
-php-ldap
 git
 apache2-utils
 
