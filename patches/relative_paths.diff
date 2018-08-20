@@ -191,9 +191,9 @@ diff -Naur c9upstream/plugins/c9.vfs.standalone/standalone.js c9fork/plugins/c9.
      });
      
      api.get("/test/all.json", function(req, res, next) {
-diff -Naur c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs
---- c9upstream/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:19:24.619925176 +0200
-+++ c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs	2017-04-09 19:34:58.608000754 +0200
+diff -Naur c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs.orig c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs
+--- c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs.orig     2018-08-20 11:36:09.652000000 +0200
++++ c9fork/plugins/c9.vfs.standalone/views/standalone.html.ejs  2018-08-20 11:37:11.948000000 +0200
 @@ -24,16 +24,16 @@
      <% include ../../c9.ide.server/views/load-screen.ejs %>
  
