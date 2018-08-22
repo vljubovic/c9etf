@@ -34,7 +34,7 @@
                             "config": {
                                 "runner": "C",
                                 "command": "hello.c",
-                                "debug": true,
+                                "debug": false,
                                 "name": ""
                             }
                         }
