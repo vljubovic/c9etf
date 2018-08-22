@@ -5,7 +5,7 @@ require("lib/config.php");
 
 // UPDATING Cloud9 INSTANCE IN c9upstream DIR
 
-`rm -fr $conf_home_path/.c9old`;
+`rm -fr $conf_home_path/$conf_c9_user/.c9old`;
 `rm -fr $conf_base_path/c9upstream`;
 
 
@@ -17,7 +17,7 @@ echo `echo "\033[31mDownloading Cloud9 IDE\033[0m"`;
 echo "\n";
 echo `echo "\033[31mInstalling Cloud9 IDE\033[0m"`;
 `chown -R $conf_c9_user:$conf_c9_group $conf_base_path/c9upstream`;
-`mv $conf_home_path/.c9 $conf_home_path/.c9old`;
+`mv $conf_home_path/$conf_c9_user/.c9 $conf_home_path/$conf_c9_user/.c9old`;
 `su $conf_c9_user -c $conf_base_path/c9upstream/scripts/install-sdk.sh`;
 `chmod -R 755 $conf_base_path/c9upstream`; // ???? this is needed... but why?
 
