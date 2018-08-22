@@ -101,7 +101,10 @@
         "@foregroundColor": "#FFFFFF",
         "@keepOutput": false,
         "@nosavequestion": false,
-        "@selectionColor": "#225477"
+        "@selectionColor": "#225477",
+        "nosavequestion": {
+            "json()": true
+        }
     },
     "preview": {
         "@default": "preview.browser",
