@@ -70,7 +70,7 @@
     "general": {
         "@animateui": true,
         "@automerge": false,
-        "@autosave": true,
+        "@autosave": "afterDelay",
         "@confirmmerge": true,
         "@preview-navigate": false,
         "@preview-tree": false,

@@ -56,6 +56,10 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_command.diff
 echo "\ndisable_show_home_in_favorites.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_show_home_in_favorites.diff`;
 
+// Remove "Enable Auto-Save" from preferences but leave enabled
+echo "\nautosave_default.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_keys_plugin.diff`;
+
 // Additional C/C++ snippets by cyclone
 echo "\nc_cpp_snippets.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/c_cpp_snippets.diff`;
@@ -131,7 +135,6 @@ echo "\nlogout_url.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/logout_url.diff`;
 
 // Patches that failed to port:
-// - Remove "Enable Auto-Save" from preferences but leave enabled (was in plugins/c9.ide.save/autosave.js)
 // - parse_program_output.diff is currently considered obsolete, but it's the only way to detect if program run too long
 // - gdb prevent infinite recursion, e.g. with evaluating C++ string object on stack 
 // - gdb evaluate C++ vector object on stack

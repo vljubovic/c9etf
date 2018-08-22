@@ -1,0 +1,24 @@
+diff -Naur c9fork/plugins/c9.ide.save/autosave.js.orig c9fork/plugins/c9.ide.save/autosave.js
+--- c9fork/plugins/c9.ide.save/autosave.js.orig 2018-08-20 12:26:33.220000000 +0200
++++ c9fork/plugins/c9.ide.save/autosave.js      2018-08-20 12:24:50.788000000 +0200
+@@ -30,7 +30,7 @@
+         var saveWhenIdle;
+         
+         function load() {
+-            prefs.add({
++            /*prefs.add({
+                 "File": {
+                     position: 150,
+                     "Save": {
+@@ -48,9 +48,9 @@
+                         }
+                     }
+                 }
+-            }, plugin);
++            }, plugin);*/
+             
+-            settings.setDefaults("user/general", [["autosave", false]]);
++            settings.setDefaults("user/general", [["autosave", "afterDelay"]]);
+             settings.on("read", onSettingChange, plugin);
+             settings.on("user/general", onSettingChange, plugin);
+             save.on("beforeWarn", function(e) {
