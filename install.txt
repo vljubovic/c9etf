@@ -31,7 +31,8 @@ valgrind
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
 We strongly suggest that ntp is installed and configured so that time is accurate,
-or atleast that clocks on all nodes are synchronized.
+or at least that clocks on all nodes are synchronized.
+
 
 
 OPERATING SYSTEM CONFIGURATION
@@ -55,6 +56,12 @@ In production environments we suggest to have another look at php configuration,
 especially to increase the amount of available memory. Make sure to apply all
 changes to nginx configuration in the file nginx.skeleton.conf in
 /usr/local/webide.
+
+On Ubuntu 18.04 LTS, for performance reasons we suggest to disable accounts-daemon
+service (not useful on a headless server):
+
+ $ sudo systemctl disable accounts-daemon.service
+
 
 
 C9 INSTALLATION
@@ -96,14 +103,17 @@ http://yourhost/admin.php (login as user "admin")
 
 UPDATING CLOUD9
 
-To update just Cloud9 from upstream, you can use update-cloud9 script:
+To update your Cloud9 IDE from upstream, you can use update-cloud9 script. First
+update the C9@ETF so that you receive latest versions of patches
 
+ $ cd /usr/local/webide
+ $ sudo git pull
  $ sudo php update-cloud9.php
- 
+
 This installs Cloud9 into a folder named c9upstream and applies all the patches.
 Please look closely if all patches are applied correctly, otherwise system may
 not work. If everything looks good, temporarily replace your old install with
-new one (make sure all users are logged out otherwise they might complain ;) :
+new one (make sure all users are logged out otherwise they might complain ;)
 
  $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9old
  $ sudo mv /usr/local/webide/c9upstream /usr/local/webide/c9fork
