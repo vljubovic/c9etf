@@ -1,75 +1,52 @@
-diff -Naur c9upstream/plugins/node_modules/vfs-local/localfs.js c9fork/plugins/node_modules/vfs-local/localfs.js
---- c9upstream/plugins/node_modules/vfs-local/localfs.js	2017-04-09 19:19:24.487924972 +0200
-+++ c9fork/plugins/node_modules/vfs-local/localfs.js	2017-04-10 11:14:31.524959132 +0200
-@@ -1737,7 +1737,7 @@
-         if (options.getStatus) {
-             options = options.getStatus;
-             var sessionId = options.id;
--            var args = ["-u2", "-L", tmuxName];
-+            var args = ["-u2", "-L", tmuxName, "-S", options.socketPath];
-             
-             var paneFormat = {
-                 "#S"                        : "session",
-@@ -1828,7 +1828,7 @@
-             // logToFile("Kill: " + options.session);
-             
-             _execFile(TMUX, 
--                ["-L", tmuxName, "-C", "kill-session", "-t", options.session], 
-+                ["-L", tmuxName, "-S", options.socketPath, "-C", "kill-session", "-t", options.session], 
-                 options,
-                 function(err){
-                     if (!options.command)
-                         return callback(err, {});
-@@ -1842,7 +1842,7 @@
-                 return callback(new Error("Missing session name"));
-             
-             (function findSession(retries){
--                _execFile(TMUX, ["-u2", "-L", tmuxName, "list-sessions"], options, function(err, stdout) {
-+                _execFile(TMUX, ["-u2", "-L", tmuxName, "-S", options.socketPath, "list-sessions"], options, function(err, stdout) {
-                     if (err) stdout = ""; // This happens when the tmux server has not been started yet
+diff -Naur c9upstream/plugins/c9.ide.run/run.js.orig c9upstream/plugins/c9.ide.run/run.js
+--- c9upstream/plugins/c9.ide.run/run.js.orig      2018-08-20 12:18:34.544000000 +0200
++++ c9upstream/plugins/c9.ide.run/run.js   2018-08-22 10:41:42.748000000 +0200
+@@ -352,6 +352,9 @@
                  
-                     var re = new RegExp("^" + escapeRegExp(options.session) + ":", "m");
-@@ -1872,7 +1872,9 @@
-             if (attach) {
-                 // logToFile("Attach: " + options.session);
+                 cwd = insertVariables(cwd, options);
+                 console.log(cmd);
++                
++                var username = c9.home.substr(c9.home.lastIndexOf("/")+1);
++                
+                 // Execute run.sh
+                 proc.tmux(cmd, {
+                     session: procName,
+@@ -363,7 +366,8 @@
+                     rows: 5,
+                     cwd: cwd,
+                     validatePath: true,
+-                    testing: testing
++                    testing: testing,
++                    tmuxName: username
+                 }, function(err, pty, processId) {
+                     if (err)
+                         return callback(err);
+@@ -627,10 +631,15 @@
                  
--                args = ["-u2", "-L", tmuxName, "attach", "-t", options.session];
-+                args = ["-u2", "-L", tmuxName];
-+                if (options.socketPath) args.push("-S", options.socketPath);
-+                args.push("attach", "-t", options.session);
-                 if (options.detachOthers) {
-                     // Work around https://github.com/chjj/pty.js/issues/68
-                     if (/v0\.([123456789]\..*|10\.(0|1|2[0-7]))/.test(process.version))
-@@ -1884,7 +1886,9 @@
-             else {
-                 // logToFile("New: " + options.session);
+                 checking = [cb];
                  
--                args = ["-u2", "-L", tmuxName, "new", "-s", options.session];
-+                args = ["-u2", "-L", tmuxName];
-+                if (options.socketPath) args.push("-S", options.socketPath);
-+                args.push("new", "-s", options.session);
-                 
-                 if (options.terminal) {
-                     args.push("export ISOUTPUTPANE=0;"
-@@ -2205,6 +2209,10 @@
-             var session    = sessions[name] || {};
-             sessions[name] = session;
-             if (!session.wait) session.wait = [];
-+
-+            if (options.socketPath) {
-+                args.push("-S", options.socketPath);
-+            }
-             
-             if (options.idle) {
-                 options.command = "echo '\033[2J\033[1;1H\033[01;34m[Idle]\033[0m'";
-diff -Naur c9upstream/plugins/c9.ide.terminal/tmux_connection.js c9fork/plugins/c9.ide.terminal/tmux_connection.js
---- c9upstream/plugins/c9.ide.terminal/tmux_connection.js	2017-04-09 19:19:24.607925158 +0200
-+++ c9fork/plugins/c9.ide.terminal/tmux_connection.js	2017-04-10 12:13:54.470276526 +0200
-@@ -128,13 +128,15 @@
++                var username = base.replace("/workspace/", "");
++                username = username.replace("/workspace", "");
++                username = username.substr(username.lastIndexOf("/")+1);
++                
+                 // Execute run.sh
+                 proc.tmux("", {
+                     session: procName,
+-                    fetchpid: true
++                    fetchpid: true,
++                    tmuxName: username
+                 }, function(err, pty, newPid) {
+                     var callbacks = checking || [];
+                     checking = false;
+diff -Naur c9fork/plugins/c9.ide.terminal/tmux_connection.js.orig c9fork/plugins/c9.ide.terminal/tmux_connection.js
+--- c9fork/plugins/c9.ide.terminal/tmux_connection.js.orig      2018-08-20 12:05:24.732000000 +0200
++++ c9fork/plugins/c9.ide.terminal/tmux_connection.js   2018-08-20 12:04:58.652000000 +0200
+@@ -128,13 +128,16 @@
          var cwd = session.cwd || "";
          if (!/^~(\/|$)/.test(cwd))
              cwd = session.root + cwd;
 +        
++        var username = c9.home.substr(c9.home.lastIndexOf("/")+1);
          var command = "";
          var options = {
              cwd: cwd,
@@ -78,38 +55,21 @@ diff -Naur c9upstream/plugins/c9.ide.terminal/tmux_connection.js c9fork/plugins/
              name: "xterm-color",
 -            base: installPath && installPath.replace(/^~/, c9.home || "~")
 +            base: installPath && installPath.replace(/^~/, c9.home || "~"),
-+            socketPath: session.root + "/.tmux"
++            tmuxName: username
          };
          
          // Output Mode
-@@ -310,6 +310,7 @@
+@@ -305,9 +308,13 @@
+         },
+         kill: function(session) {
+             console.warn("KILLING SESSION:", session.id);
++            var username = session.root.replace("/workspace/", "");
++            username = username.replace("/workspace", "");
++            username = username.substr(username.lastIndexOf("/")+1);
              
              if (session.id) {
                  proc.tmux("", {
-+                    socketPath: session.root + "/.tmux",
++                    tmuxName: username,
                      session: session.id,
                      kill: true
                  }, function(err) {
-diff -Naur c9upstream/plugins/c9.ide.run/run.js c9fork/plugins/c9.ide.run/run.js
---- c9upstream/plugins/c9.ide.run/run.js	2017-04-09 19:19:24.599925145 +0200
-+++ c9fork/plugins/c9.ide.run/run.js	2017-04-11 09:14:31.868613488 +0200
-@@ -371,7 +371,8 @@
-                     rows: 5,
-                     cwd: cwd,
-                     validatePath: true,
--                    testing: testing
-+                    testing: testing,
-+                    socketPath: base + "/.tmux"
-                 }, function(err, pty, processId) {
-                     if (err)
-                         return callback(err);
-@@ -634,7 +635,8 @@
-                 // Execute run.sh
-                 proc.tmux("", {
-                     session: procName,
--                    fetchpid: true
-+                    fetchpid: true,
-+                    socketPath: base + "/.tmux"
-                 }, function(err, pty, newPid) {
-                     var callbacks = checking || [];
-                     checking = false;
