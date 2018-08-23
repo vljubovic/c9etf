@@ -272,7 +272,7 @@ function show_log($log, $skip_empty = true) {
 					continue;
 				}
 				
-				if ($promijenjenih_linija == 0 && $reformatiranih_linija > $paste_limit_linija) {
+				if ($promijenjenih_linija == 0 && $reformatiranih_linija > $paste_limit_linija && ($stavka['time'] - $mod['end'] > $vrijeme_limit || $reformatiranih_linija > $paste_limit_linija)) {
 					if ($mod['path'] != "")
 						print_mod($mod);
 					
@@ -284,7 +284,7 @@ function show_log($log, $skip_empty = true) {
 					continue; // Da se ne bi započeo $mod
 				}
 				
-				if (array_key_exists('remove_lines', $sdiff) && $promijenjenih_linija > 0 && $promijenjenih_linija == count($sdiff['remove_lines'])) {
+				if (array_key_exists('remove_lines', $sdiff) && $promijenjenih_linija > 0 && $promijenjenih_linija == count($sdiff['remove_lines']) && ($stavka['time'] - $mod['end'] > $vrijeme_limit || $promijenjenih_linija > $paste_limit_linija)) {
 					if ($mod['path'] != "")
 						print_mod($mod);
 					
