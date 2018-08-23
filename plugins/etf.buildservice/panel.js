@@ -1,4 +1,9 @@
-// Verzija 03. 04. 2018. 18:36
+/* etf.buildservice plugin for Cloud9 - 23. 08. 2018.
+ * 
+ * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
+ * 
+ * Unit test suport using buildservice.
+ */
 
 define(function(require, exports, module) {
     main.consumes = [
@@ -165,7 +170,7 @@ define(function(require, exports, module) {
 		return false;
 	}
         
-	// Funkcije za uključenje/isključenje dugmeta "Testiraj"
+	// Functions to disable/enable "Test" button
 	function disableButton() {
 		testirajBtn.disabled = true;
 		//testirajBtn.caption = "Nije moguće testiranje";
@@ -176,7 +181,7 @@ define(function(require, exports, module) {
 		//testirajBtn.caption = "Testiraj";
 	}
 
-	// Ova funkcija će biti pozvana na show() eventu da prikaže trenutno stanje
+	// This function will be called on show() event to display current state
 	function ucitajPodatke(){
 		disableButton();
 		path = findTabToRun() || "";
@@ -221,7 +226,7 @@ define(function(require, exports, module) {
 		});
 	}
 	
-	// Funkcija čita podatke iz .at_result fajla datog kao parametar i prikazuje
+	// Function reads data from .at_result file given as parameter and displays it
 	function populate(file) {
 		testResults = {};
 
@@ -279,7 +284,7 @@ define(function(require, exports, module) {
 		});
 	}
 	
-	// Ova funkcija se pokreće svakih 0.5 sekundi da provjerimo da li ima rezultata testiranja
+	// This function runs every 0.5 seconds to check if there are testing results
 	function provjeriTest() {
 		console.log("provjeriTest()");
 		// Da li je već kreiran .at_result fajl?
@@ -375,7 +380,7 @@ define(function(require, exports, module) {
 		});
 	}
 
-	// Funkcija koja se pokreće klikom na dugme Testiraj
+	// Function invoked by clicking on Test button
 	function pokreniTestiranje() {
 		console.log("pokrećem testiranje");
 		atresult_path = project_path + "/.at_result";
@@ -456,7 +461,7 @@ define(function(require, exports, module) {
             tree.select(tree.provider.getNodeAtIndex(0));
         }
         
-        // Akcija za klik na rezultat testa, generiše ispis
+        // Invoked on click to test result, generates formatted output
         function execCommand(noanim, nohide) {
             var nodes = tree.selection.getSelectedNodes();
             // var cursor = tree.selection.getCursor();

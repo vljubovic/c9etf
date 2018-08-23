@@ -1,4 +1,11 @@
-// Verzija 18. 11. 2016.a
+/* etf.zadaci plugin for Cloud9 - 23. 08. 2018.
+ * 
+ * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
+ * 
+ * This plugin supports the "assignment" feature of C9@ETF webide. It adds a left side panel
+ * with tree containing subjects, and assignments. Users can use this tree instead of the
+ * usual file tree as a simpler alternative.
+ */
 
 define(function(require, module, exports) {
     main.consumes = ["Panel", "ui", "panels", "dialog.error", "dialog.info", "tabManager", "fs"];
@@ -40,12 +47,12 @@ define(function(require, module, exports) {
 	    
 	    // Get contrasting color
 	    var defaultView = (e.html.ownerDocument || document).defaultView;
-	    var color = defaultView.getComputedStyle(e.html, null).getPropertyValue("background-color")
+	    var color = defaultView.getComputedStyle(e.html, null).getPropertyValue("background-color"); // This doesn't seem to work anymore...
 	    var rgb;
 	    if (typeof color === 'string' && color == "rgba(0, 0, 0, 0)")
 		rgb = [0,0,0,0];
 	    else if (typeof color === 'string') 
-		rgb = hexToRGBArray(color)
+		rgb = hexToRGBArray(color); // Dies with color 0,0,0,0 !!
 		else rgb = color;
 	    var luma = (0.2126 * rgb[0]) + (0.7152 * rgb[1]) + (0.0722 * rgb[2]);
 	    if (luma>=165) {
@@ -265,6 +272,7 @@ define(function(require, module, exports) {
 			if (tttabs[i].path != fullpath)
 				tttabs[i].close();
 		}
+		// TODO: Also remove all breakpoints from debugger
 		window.console.log("etf.zadaci: does folder exist?");
 		
 		// If a folder with given name already exists, we just open it in a new tab
