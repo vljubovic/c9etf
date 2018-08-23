@@ -58,7 +58,7 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_show_home_in
 
 // Remove "Enable Auto-Save" from preferences but leave enabled
 echo "\nautosave_default.diff\n";
-echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/nautosave_default.diff`;
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/autosave_default.diff`;
 
 // Additional C/C++ snippets by cyclone
 echo "\nc_cpp_snippets.diff\n";
