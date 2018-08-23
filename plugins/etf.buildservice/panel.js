@@ -1,9 +1,4 @@
-/* etf.buildservice plugin for Cloud9 - 30. 03. 2017. 15:37
- * 
- * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
- * 
- * Unit test suport using buildservice.
- */
+// Verzija 03. 04. 2018. 18:36
 
 define(function(require, exports, module) {
     main.consumes = [
@@ -25,7 +20,9 @@ define(function(require, exports, module) {
         var fs = imports.fs;
         var showError = imports["dialog.error"].show;
         var showInfo = imports["dialog.info"].show;
-        
+
+            // Import CSS
+        var css = require("text!./style.css");    
         
         var markup = require("text!./panel.xml");
         var Tree = require("ace_tree/tree");
@@ -56,6 +53,7 @@ define(function(require, exports, module) {
             autohide: true,
             where: options.where || "right"
         });
+        // var emit = plugin.getEmitter();
         
         var winCommands, testirajBtn, tree, ldSearch;
         var lastSearch, project_path, bsInstance, provjeraTimeouts, testSpecification, testResults, testAtResult;
@@ -64,11 +62,11 @@ define(function(require, exports, module) {
 	provjeraTimeouts={};
         
         function load(){
-            
             panels.on("afterAnimate", function(){
                 if (panels.isActive("buildservice.panel"))
                     tree && tree.resize();
-            });
+            });  
+           
         }
         
         var drawn = false;
@@ -78,12 +76,14 @@ define(function(require, exports, module) {
             
             // Create UI elements
             ui.insertMarkup(options.aml, markup, plugin);
-            
-            // Import CSS
-            ui.insertCss(require("text!./style.css"), plugin);
-            
+	    
+            ui.insertCss(css, options.staticPrefix, plugin);
+             
             var treeParent = plugin.getElement("buildserviceList");
+            //txtFilter = plugin.getElement("txtFilter");
 	    testirajBtn = new ui.button({ 
+		id       : "testirajBtn",
+		class    : "testirajBtn",
                     caption: "Testiraj", 
                     height: 24,
                     skin: "c9-toolbarbutton-glossy",
@@ -132,17 +132,14 @@ define(function(require, exports, module) {
             }
     
             apf.addEventListener("movefocus", onblur);
-    
-            // Focus the input field
-            setTimeout(function(){
-                //txtFilter.focus();
-            }, 10);
-            
+
             setTimeout(function(){
                 // Assign the dataprovider
                 tree.setDataProvider(ldSearch);
                 tree.selection.$wrapAround = true;
                 var val = settings.get("state/commandPanel/@value");
+                /*if (val)
+                    txtFilter.ace.setValue(val);*/
             }, 200);
         }
         
@@ -168,7 +165,7 @@ define(function(require, exports, module) {
 		return false;
 	}
         
-	// Functions to disable/enable "Test" button
+	// Funkcije za uključenje/isključenje dugmeta "Testiraj"
 	function disableButton() {
 		testirajBtn.disabled = true;
 		//testirajBtn.caption = "Nije moguće testiranje";
@@ -179,12 +176,13 @@ define(function(require, exports, module) {
 		//testirajBtn.caption = "Testiraj";
 	}
 
-	// This function will be called on show() event to display current state
+	// Ova funkcija će biti pozvana na show() eventu da prikaže trenutno stanje
 	function ucitajPodatke(){
 		disableButton();
 		path = findTabToRun() || "";
 		if (!path || path.trim() == "") {
-			ldSearch.keyword = "Nije izabran projekat";
+			//ldSearch.keyword = "Nije izabran projekat";
+			ldSearch.addORItem({label : "", desc : "Nije izabran projekat"});
 			return;
 		}
 		project_path = path.substring(0,path.lastIndexOf("/"));
@@ -204,7 +202,8 @@ define(function(require, exports, module) {
 					} else if (project_path in bsInstance && bsInstance[project_path] != "") {
 						provjeriTest();
 					} else {
-						ldSearch.keyword = "Ovaj projekat nikada<br>\nnije testiran";
+						//ldSearch.keyword = "Ovaj projekat nikada<br>\nnije testiran";
+						ldSearch.addORItem({label : "", desc : "Ovaj projekat nikada<br>\nnije testiran"});
 					}
 					ldSearch.updateData(false);
 				});
@@ -215,18 +214,23 @@ define(function(require, exports, module) {
 					testSpecification = JSON.parse(content);
 				});
 			} else {
-				ldSearch.keyword = "Nisu definisani testovi<br>\n za ovaj projekat";
+				//ldSearch.keyword = "Nisu definisani testovi<br>\n za ovaj projekat";
+				ldSearch.addORItem({label : "", desc : "Nisu definisani testovi<br>\n za ovaj projekat"});
 				ldSearch.updateData(false);
 			}
 		});
 	}
 	
-	// Function reads data from .at_result file given as parameter and displays it
+	// Funkcija čita podatke iz .at_result fajla datog kao parametar i prikazuje
 	function populate(file) {
 		testResults = {};
 
 		fs.readFile(file, function(err, content) {
-			if (err) { ldSearch.keyword = "Neuspjelo čitanje datoteke<br>\nsa rezultatima testiranja"; return console.error(err); }
+			if (err) { 
+				//ldSearch.keyword = "Neuspjelo čitanje datoteke<br>\nsa rezultatima testiranja"; 
+				ldSearch.addORItem({label : "", desc : "Neuspjelo čitanje datoteke<br>\nsa rezultatima testiranja"});
+				return console.error(err); 
+			}
 			rezultati = JSON.parse(content);
 			console.log(rezultati);
 			
@@ -275,7 +279,7 @@ define(function(require, exports, module) {
 		});
 	}
 	
-	// This function runs every 0.5 seconds to check if there are testing results
+	// Ova funkcija se pokreće svakih 0.5 sekundi da provjerimo da li ima rezultata testiranja
 	function provjeriTest() {
 		console.log("provjeriTest()");
 		// Da li je već kreiran .at_result fajl?
@@ -312,11 +316,13 @@ define(function(require, exports, module) {
 						// result.status ima isti format kao inače rezultati testova
 						totalTests = testSpecification.test_specifications.length;
 						var status = result.status;
+						ldSearch.clearItems();
 						
 						if ('status' in status && status.status == 1) {
-							ldSearch.keyword = "Program čeka na testiranje.";
+							var msg = "Program čeka na testiranje.";
 							if ('queue_items' in status)
-								ldSearch.keyword += "<br>" + (status.queue_items+1) + " drugih zahtjeva je ispred";
+								msg += "<br>" + (status.queue_items+1) + " drugih zahtjeva je ispred";
+							ldSearch.addORItem({label : "", desc : msg});
 							ldSearch.updateData(false);
 							provjeraTimeouts[project_path] = setTimeout(provjeriTest, 500);
 							return;
@@ -332,8 +338,9 @@ define(function(require, exports, module) {
 						// Utvrđujemo da li se program uopšte nije uspio kompajlirati
 						if ('compile_result' in status && 'status' in status.compile_result) {
 							if (status.compile_result.status == 2) {
-								ldSearch.keyword = "Testiranje u toku.<br>Program se ne može kompajlirati";
-								ldSearch.keyword += "<br><br>Da saznate zašto, kliknite na<br>dugme Run.";
+								var msg = "Testiranje u toku.<br>Program se ne može kompajlirati";
+								msg += "<br><br>Da saznate zašto, kliknite na<br>dugme Run.";
+								ldSearch.addORItem({label : "", desc : msg});
 								ldSearch.updateData(false);
 								provjeraTimeouts[project_path] = setTimeout(provjeriTest, 500);
 								return;
@@ -347,11 +354,13 @@ define(function(require, exports, module) {
 						else
 							finishedTests = 0;
 						
-						ldSearch.keyword = "Testiranje u toku.<br>Završeno "+finishedTests+" od "+totalTests+" testova";
+						//ldSearch.keyword = "Testiranje u toku.<br>Završeno "+finishedTests+" od "+totalTests+" testova";
+						ldSearch.addORItem({label : "", desc : "Testiranje u toku.<br>Završeno "+finishedTests+" od "+totalTests+" testova"});
 						ldSearch.updateData(false);
 						
 						provjeraTimeouts[project_path] = setTimeout(provjeriTest, 500);
 					} else {
+						ldSearch.clearItems();
 						// Jedina mogućnost je da instanca ne postoji, odnosno da se testiranje završilo u međuvremenu
 						provjeraTimeouts[project_path] = setTimeout(provjeriTest, 500);
 					}
@@ -366,7 +375,7 @@ define(function(require, exports, module) {
 		});
 	}
 
-	// Function invoked by clicking on Test button
+	// Funkcija koja se pokreće klikom na dugme Testiraj
 	function pokreniTestiranje() {
 		console.log("pokrećem testiranje");
 		atresult_path = project_path + "/.at_result";
@@ -447,7 +456,7 @@ define(function(require, exports, module) {
             tree.select(tree.provider.getNodeAtIndex(0));
         }
         
-        // Invoked on click to test result, generates formatted output
+        // Akcija za klik na rezultat testa, generiše ispis
         function execCommand(noanim, nohide) {
             var nodes = tree.selection.getSelectedNodes();
             // var cursor = tree.selection.getCursor();
@@ -475,7 +484,7 @@ define(function(require, exports, module) {
 					
 					var form = document.createElement("form");
 					form.setAttribute("method", "post");
-					form.setAttribute("action", "http://c9.etf.unsa.ba/buildservice/render_result.php");
+					form.setAttribute("action", "https://c9.etf.unsa.ba/buildservice/render_result.php");
 
 					form.setAttribute("target", "view");
 
