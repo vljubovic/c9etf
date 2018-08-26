@@ -17,15 +17,28 @@ require(dirname(__FILE__) . "/../lib/webidelib.php");
 debug_log("starting");
 
 
+// Filenames and directories that should not be committed to svn
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".valgrind.out");
-$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", "/\.zip$/", "/autotest.txt/", "/.gdb_proxy/", 
-"/speedtest.cpp/");
-$vrijeme_kreiranja = 0; // Dodajemo ovoliko sekundi za svaki kreirani fajl. Ovo se dosta poveća...
-$vrijeme_limit = 60; // Pauzu veću od ovoliko sekundi računamo kao ovoliko sekundi
-$file_content_limit = 100000; // Ignorišemo fajlove veće od 100k
+
+// Skip calculating diff for filenames matching these regexes
+$skip_diff = array ("/^.*?runme$/", "/^core$/", "/^.*?\/core$/", "/^.*?.valgrind.out.core.*?$/", "/\.exe$/", "/\.o$/", "/\.gz$/", 
+	"/\.zip$/", "/autotest.txt/", "/.gdb_proxy/", "/speedtest.cpp/");
+
+// Skip calculating diff for files longer than this many bytes
+$file_content_limit = 100000; 
+
+// Seconds that will be added to total work time for creating a new file
+$create_time = 0;
+
+// Intervals longer than limit seconds will be counted as this many seconds in total work time
+$time_break_limit = 60;
+
+// These folders will be kept in separate stats files for perfomance (TODO: tie to defined list of courses)
 $split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016");
 
-//$svn_base = $workspace_path . "/svn";
+// Show debugging messages
+$DEBUG = true;
+
 $prefix = "";
 
 // Parameters
@@ -34,14 +47,13 @@ if ($argc == 1) {
 	die("ERROR: userstats.php expects at least one parameter\n");
 }
 $username = $argv[1];
-//$stat_path = $conf_base_path . "/stats/$username_efn.stats";
 
 
 	debug_log("read stats");
 read_stats($username);
 clean_stats();
 	debug_log("update_stats");
-update_stats($username);
+update_stats_new($username);
 	debug_log("ksort");
 ksort($stats);
 	debug_log("file_put_contents ".$conf_base_path . "/stats/$username.stats");
@@ -125,7 +137,7 @@ function write_stats($username) {
 
 // Remove unwanted stuff from stats file
 function clean_stats() {
-	global $stats, $skip_diff;
+	global $stats, $skip_diff, $DEBUG;
 	
 	$forbidden_strings = array ("M3M4");
 	
@@ -135,13 +147,12 @@ function clean_stats() {
 			$lasttime = array();
 			$totaltime = array();
 			for ($i=0; $i<count($value['events']); $i++) {
-				//if ($name == "OR/T10/Z2/main.c") print "i: $i\n";
 				$evtext = $value['events'][$i]['text'];
 				if ($evtext == "deleted" || $evtext == "created") {
 					if (!isset($lastpos['del'])) $lastpos['del']=$i;
 				} else if (isset($lastpos['del'])) {
 					if ($i-$lastpos['del'] > 100) {
-						print "Splajsujem del do offseta $i\n";
+						if ($DEBUG) print "Splicing 'del' to offset $i\n";
 						array_splice($value['events'], $lastpos['del'], $i-$lastpos['del']);
 						$i=0;
 					}
@@ -160,17 +171,16 @@ function clean_stats() {
 					foreach ($forbidden_strings as $fstr) {
 						if (strstr($txt, $fstr)) {
 							if (!isset($lastpos[$fstr])) {
-								print "Pronađen fstr $fstr u fajlu $name na offsetu $i\n";
-								print "Nije setovan\n";
+								if ($DEBUG) print "Found fstr $fstr in file $name at offset $i\nIt's not set\n";
 								$lastpos[$fstr] = $i;
 								$lasttime[$fstr] = $value['events'][$i]['time'];
-								if (isset($lastpos[$fstr])) print "Sad je setovan\n";
+								if ($DEBUG && isset($lastpos[$fstr])) print "Now it is set\n";
 								$totaltime[$fstr] = 0;
 							}
 						} else if (isset($lastpos[$fstr])) {
-							print "Splajsam do offseta $i, vrijeme bilo ".$value['total_time'];
+							if ($DEBUG) print "Splicing to offset $i, time was ".$value['total_time'];
 							$value['total_time'] = $value['total_time'] - ($value['events'][$i]['time'] - $lasttime[$fstr]);
-							print " postaje ".$value['total_time']."\n";
+							if ($DEBUG) print " now becomes ".$value['total_time']."\n";
 							
 							// Update prema gore
 							$parent = $name;
@@ -190,7 +200,7 @@ function clean_stats() {
 					foreach ($forbidden_strings as $fstr) unset($lastpos[$fstr]);
 			}
 			if (isset($lastpos['del']) && $i-$lastpos['del'] > 100) {
-				print "Splajsujem del na kraju fajla\n";
+				if ($DEBUG) print "Splicing 'del' at end of file\n";
 				array_splice($value['events'], $lastpos['del']);
 			}
 		}
@@ -203,7 +213,7 @@ function clean_stats() {
 		
 		if (!$cleanup) continue;
 		
-		print "Čistim diffove za fajl $name\n";
+		if ($DEBUG) print "Removing diffs for file $name (in \$skip_diff)\n";
 		foreach($value['events'] as &$event) {
 			if (array_key_exists('diff', $event))
 				unset($event['diff']);
@@ -216,14 +226,424 @@ function clean_stats() {
 }
 
 
-// Sortiranje svn loga po vremenu commita u rastućem redoslijedu
+// Sort svn log by entry time, ascending
 function svnsort($a, $b) {
 	if ($a['unixtime'] == $b['unixtime']) return 0;
 	return ($a['unixtime'] < $b['unixtime']) ? -1 : 1;
 }
 
+function update_stats_new($username) {
+	global $username, $conf_svn_path, $stats, $prefix, $create_time, $svn_ignore, $time_break_limit, $skip_diff, $file_content_limit, $DEBUG;
+	
+	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
+	
+	// Checking if repository is healthy and last revision number
+	try {
+		$svn_info_xml = new SimpleXMLElement(`svn info --xml $svn_path`);
+	} catch(Exception $e) {
+		print "FATAL: SVN repository for $username is broken!\n";
+		exit(1);
+	}
+	
+	$svn_last_rev = $svn_info_xml->entry['revision'][0];
+	if ($svn_last_rev < $stats['last_update_rev']-1) {
+		if ($DEBUG) print "Repository was updated in the meantime :( starting from revision 1\n";
+		$stats['last_update_rev'] = 1;
+	}
+	
+	// Retrieving log
+	try {
+		$revision = "";
+		if ($stats['last_update_rev'] > 1) $revision = "-r ".$stats['last_update_rev'].":HEAD";
+		$xml = `svn log -v --xml $revision $svn_path`;
+		$svn_log_xml = new SimpleXMLElement($xml);
+	} catch(Exception $e) {
+		print "FATAL: SVN repository for $username is broken!\n";
+		exit(1);
+	}
+	// sort by time?
+	
+	$event_time = $previous_event_time = 0;
+	$last_deletion = $last_addition = array( "time" => 0 );
+	
+	foreach($svn_log_xml->children() as $entry) {
+		$entry['unixtime'] = strtotime($entry->date);
+		$stats['last_update_rev'] = intval($entry['revision']);
+		$rev = intval($entry['revision']);
+	
+		// One log entry can affect multiple paths
+		foreach($entry->paths->children() as $path) {			
+			$filepath = $path[0];
+			if (substr($filepath, 0, strlen($prefix)+1) !== "$prefix/") {
+				continue;
+			}
+			$filepath = substr($filepath, strlen($prefix)+1);
+			$svn_file_path = $svn_path . $filepath;
+			$svn_cmd_path = svn_cmd_escape($svn_file_path);
+			
+			// Special processing for login/logout events (not counted in event time)
+			if ($filepath == ".login") {
+				$ftime = strtotime(`svn cat -r$rev $svn_cmd_path`);
+				array_push($stats['global_events'], array(
+					"time" => intval($entry['unixtime']),
+					"real_time" => $ftime,
+					"text" => "login"
+				) );
+				continue;
+			}
+			
+			if ($filepath == ".logout") {
+				$ftime = strtotime(`svn cat -r$rev $svn_cmd_path`);
+				array_push($stats['global_events'], array(
+					"time" => intval($entry['unixtime']),
+					"real_time" => $ftime,
+					"text" => "logout"
+				) );
+				continue;
+			}
+			
+			// Other events
+			
+			// Time tracking
+			$previous_event_time = $event_time;
+			$event_time = intval($entry['unixtime']);
+			
+			// Cut path into segments
+			$path_parts = explode("/", $filepath);
+			
+			// Is path in ignored files/folders list?
+			$ignored = false;
+			foreach ($path_parts as $part)
+				if(in_array($part, $svn_ignore))
+					$ignored = true;
+			if ($ignored) continue; 
+
+			// Compile/run/autotest event is attached to parent directory as well
+			$compiled = $runned = $tested = false;
+			$filename = end($path_parts);
+			if ($filename == ".gcc.out") {
+				// For some reason empty .gcc.out gets produced which doesn't correspond to compile event?
+				$content = trim(`svn cat -r$rev $svn_cmd_path`);
+				if (!empty($content)) {
+					$compiled = true;
+					if (count($path_parts) > 1) {
+						array_pop($path_parts);
+						$filepath = substr($filepath, 0, strlen($filepath) - strlen("/.gcc.out"));
+					}
+				}
+			}
+			else if ($filename == "runme" || $filename == ".runme") {
+				$runned = true;
+				if (count($path_parts) > 1) {
+					array_pop($path_parts);
+					$filepath = substr($filepath, 0, strlen($filepath) - strlen($filename) - 1);
+				}
+			}
+			else if ($filename == ".at_result") {
+				$tested = true;
+				if (count($path_parts) > 1) {
+					array_pop($path_parts);
+					$filepath = substr($filepath, 0, strlen($filepath) - strlen("/.at_result"));
+				}
+			}
+
+			// If it's a modify event, get diff
+			else if ($path['action'] == "M" || $path['action'] == "R") {
+				$diff = true;
+				foreach ($skip_diff as $cpattern)
+					if(preg_match($cpattern, $filename))
+						$diff = false;
+				if ($diff) {
+					$old_rev = $stats[$filepath]['last_revision'];
+					$diff_contents = `svn diff -r$old_rev:$rev $svn_cmd_path`;
+					$diff_result = compressed_diff($diff_contents);
+					$diff_result_old = compressed_diff_old($diff_contents);
+				}
+			}
+			
+			// Total worktime tracking
+			if ($event_time - $previous_event_time < $time_break_limit)
+				$task_time = $event_time - $previous_event_time;
+			else
+				$task_time = $time_break_limit;
+
+			// Recursively update all parent directories
+			$subpaths = array();
+			foreach($path_parts as $part) {
+				if (!empty($subpaths))
+					$part = $subpaths[count($subpaths)-1] . "/$part";
+				array_push($subpaths, $part);
+			}
+			
+			// Create all parent directories if neccessary
+			$created_path = false;
+			foreach($subpaths as $subpath) {
+				// If path wasn't known in stats, we create a new entry
+				if (!array_key_exists($subpath, $stats)) {
+					$stats[$subpath] = array(
+						"total_time" => $create_time,
+						"builds" => 0,
+						"builds_succeeded" => 0,
+						"testings" => 0,
+						"last_test_results" => "",
+						"events" => array(),
+						"last_revision" => $rev,
+						"entries" => array(),
+						"stats_version" => "2",
+					);
+					
+					// Actions related to creation of a new file entry
+					if ($subpath == $filepath) {
+					
+						// Is this a rename event?
+						$current_folder = substr($subpath, 0, strlen($subpath)-strlen($filename));
+						
+						// If a file was deleted less than 3 seconds ago, then it is
+						if ($event_time - $last_deletion['time'] < 3 && $current_folder == $last_deletion['folder'] && $filepath != $last_deletion['filepath']) {
+							$delpath = $last_deletion['filepath'];
+							array_pop($stats[$delpath]['events']); // Remove the delete event
+
+							array_push($stats[$subpath]['events'], array(
+								"time" => $event_time,
+								"text" => "rename",
+								"filename" => $filename,
+								"old_filename" => $last_deletion['filename'],
+								"old_filepath" => $last_deletion['filepath'],
+							) );
+							$last_deletion = array( "time" => 0 );
+							
+						// If filename is the same, but folder is different, then it's a move
+						} else if ($event_time - $last_deletion['time'] < 3 && $filename == $last_deletion['filename'] && $filepath != $last_deletion['filepath']) {
+							$delpath = $last_deletion['filepath'];
+							array_pop($stats[$delpath]['events']); // Remove the delete event
+
+							array_push($stats[$subpath]['events'], array(
+								"time" => $event_time,
+								"text" => "move",
+								"filename" => $filename,
+								"old_filename" => $last_deletion['filename'],
+								"old_filepath" => $last_deletion['filepath'],
+							) );
+							$last_deletion = array( "time" => 0 );
+							
+						} else {
+							// Not a rename
+							$text = "created";
+							$content = `svn cat -r$rev $svn_cmd_path`;
+							// Actually this is a folder
+							if (strstr($content, "refers to a directory"))
+								$text = "created_folder";
+
+							// Detect binary files using magic strings
+							if (substr($content,1,3) == "ELF") $content="binary";
+							
+							// Is file one of those whose content we skip?
+							$skip_content = false;
+							foreach ($skip_diff as $cpattern)
+								if(preg_match($cpattern, $filename))
+									$skip_content = true;
+							if ($skip_content) $content = "binary";
+							
+							// Files longer than file_content_limit will be truncated
+							if (strlen($content) > $file_content_limit) 
+								$content = substr($content, 0, 100000) . "...";
+
+							// Add a create event to this entry
+							array_push($stats[$subpath]['events'], array(
+								"time" => $event_time,
+								"text" => $text,
+								"filename" => $filename,
+								"content" => $content,
+							) );
+							$created_path = true;
+							
+							// If this is a create event, don't increment total work time for parent folders
+							// Otherwise time for certain popular folders could be huge
+							foreach($subpaths as $subpath2) {
+								if ($stats[$subpath2]['total_time'] > $create_time && $stats[$subpath2]['total_time'] > $task_time) {
+									$stats[$subpath2]['total_time'] -= $task_time;
+								}
+							}
+							
+							// This array is used for tracking move/rename operations
+							$last_addition = array(
+								"time" => $event_time,
+								"filepath" => $filepath,
+								"filename" => $filename,
+								"folder" => $current_folder
+							);
+						}
+						
+					} else {
+						// Add a creation event to parent folder
+						array_push($stats[$subpath]['events'], array(
+							"time" => $event_time,
+							"text" => "created",
+							"filename" => $filename
+						) );
+					}
+					$created_path = true;
+				} else {
+					// Increment time for parent folders
+					$stats[$subpath]['total_time'] += $task_time;
+				}
+			}
+			
+			// The "entries" field contains all members of a folder
+			$previous = "";
+			foreach(array_reverse($subpaths) as $subpath) {
+				if ($previous != "") {
+					// Create entries field if it doesn't exist
+					if (!array_key_exists("entries", $stats[$subpath]) || empty($stats[$subpath]['entries']))
+						$stats[$subpath]['entries'] = array();
+					if (!in_array($previous, $stats[$subpath]['entries']))
+						array_push($stats[$subpath]['entries'], $previous);
+				}
+				$previous = $subpath;
+			}
+			
+			
+			// Add a new entry to the "events" field
+			
+			// Find last event (for detecting move/rename)
+			end($stats[$filepath]['events']);
+			$lastk = key($stats[$filepath]['events']);
+			$last_event = &$stats[$filepath]['events'][$lastk];
+			$stats[$filepath]['last_revision'] = $rev;
+			
+			// Delete event
+			if ($path['action'] == "D") {
+				// If a new file was created less than 3 seconds ago, this is a rename event
+				if ($event_time - $last_addition['time'] < 3 && $this_folder == $last_addition['folder'] && $filepath != $last_addition['filepath']) {
+					// Rename
+					end($stats[$last_addition['filepath']]['events']);
+					$lastk = key($stats[$last_addition['filepath']]['events']);
+					$last_event = &$stats[$last_addition['filepath']]['events'][$lastk];
+					
+					$addpath = $last_addition['filepath'];
+					$last_event['text'] = "rename";
+					$last_event['old_filename'] = $filename;
+					$last_event['old_filepath'] = $filepath;
+					$last_addition = array( "time" => 0 );
+					
+				// If filename is the same, but folder is different, then it's a move
+				} elseif ($event_time - $last_addition['time'] < 3 && $filename == $last_addition['filename'] && $filepath != $last_addition['filepath']) {
+					// Move
+					end($stats[$last_addition['filepath']]['events']);
+					$lastk = key($stats[$last_addition['filepath']]['events']);
+					$last_event = &$stats[$last_addition['filepath']]['events'][$lastk];
+
+					$addpath = $last_addition['filepath'];
+					$last_event['text'] = "move";
+					$last_event['old_path'] = $filepath;
+					$last_addition = array( "time" => 0 );
+					
+				} else {
+					// Actual delete event
+					array_push($stats[$filepath]['events'], array(
+						"time" => $event_time,
+						"text" => "deleted"
+					) );
+					$current_folder = substr($filepath, 0, strlen($filepath) - strlen($filename));
+					$last_deletion = array(
+						"time" => $event_time,
+						"filepath" => $filepath,
+						"filename" => $filename,
+						"folder" => $current_folder,
+					);
+				}
+				
+			// Compile event
+			} else if ($compiled) {
+				$stats[$filepath]['builds']++;
+				if ($last_event['text'] == "compiled successfully" && abs($last_event['time'] - $event_time) < 3) {
+					// Just copy compiler output to previous event
+					$last_event['output'] = `svn cat -r$rev $svn_cmd_path`;
+					
+				} else {
+					// For now we don't know if compiling was successful
+					$output = `svn cat -r$rev $svn_cmd_path`;
+					array_push($stats[$filepath]['events'], array(
+						"time" => $event_time,
+						"text" => "compiled",
+						"output" => $output,
+						"rev" => $rev
+					) );
+				}
+				
+			// Successful compile
+			} else if ($runned) {
+				$stats[$filepath]['builds_succeeded']++;
+				if ($last_event['text'] == "compiled" && abs($last_event['time'] - $event_time) < 3) {
+					// If there is a compile event, we will just mark it as successful
+					$last_event['text'] = "compiled successfully";
+				
+				} else {
+					array_push($stats[$filepath]['events'], array(
+						"time" => $event_time,
+						"text" => "compiled successfully",
+						"rev" => $rev
+					) );
+				}
+				
+			// Program was tested
+			} else if ($tested) {
+				$stats[$filepath]['testings']++;
+
+				// This is .at_result file, so get number of successful tests
+				$testing_results = json_decode(`svn cat -r$rev $svn_cmd_path`, true);
+
+				// Get total number of tests from .autotest file
+				$svn_test_path = svn_cmd_escape( $svn_path . $filepath . "/.autotest" );
+				$tests = json_decode(`svn cat -r$rev $svn_test_path`, true);
+
+				$total_tests = count($tests['test_specifications']);
+				$passed_tests = 0;
+				if (is_array($testing_results) && array_key_exists("test_results", $testing_results) && is_array($testing_results['test_results'])) {
+					foreach ($testing_results['test_results'] as $test) {
+						if ($test['status'] == 1) $passed_tests++;
+					}
+				}
+				$stats[$filepath]['last_test_results'] = "$passed_tests/$total_tests";
+				
+				array_push($stats[$filepath]['events'], array(
+					"time" => $event_time,
+					"text" => "ran tests",
+					"test_results" => "$passed_tests/$total_tests"
+				) );
+				
+			// Other file change
+			} else if ($path['action'] != "A") {
+				// Old vs. new diff format
+				if (array_key_exists('stats_version', $stats[$filepath]) && $stats[$filepath]['stats_version'] == "2") {
+					array_push($stats[$filepath]['events'], array(
+						"time" => $event_time,
+						"text" => "modified",
+						"diff" => $diff_result,
+					) );
+				} else {
+					array_push($stats[$filepath]['events'], array(
+						"time" => $event_time,
+						"text" => "modified",
+						"diff" => $diff_result_old,
+					) );
+				}
+			
+			// SVN registered a create event for path that already exists in stats??
+			// Add a "created" event
+			} else if (!$created_path) {
+				array_push($stats[$filepath]['events'], array(
+					"time" => $event_time,
+					"text" => "created",
+					"filename" => $filename
+				) );
+			}
+		}
+	}
+}
+
 function update_stats($username) {
-	global $username, $conf_svn_path, $stats, $prefix, $vrijeme_kreiranja, $svn_ignore, $vrijeme_limit, $skip_diff, $file_content_limit;
+	global $username, $conf_svn_path, $stats, $prefix, $create_time, $svn_ignore, $time_break_limit, $skip_diff, $file_content_limit;
 	
 	$svn_path = "file://" . $conf_svn_path . "/" . $username . "/";
 	
@@ -246,7 +666,7 @@ function update_stats($username) {
 		$entry['unixtime'] = strtotime($entry['date']);
 	usort($svn_log, "svnsort");
 	
-	$last_time = $old_time = 0;
+	$event_time = $previous_event_time = 0;
 	$last_deletion = $last_addition = array( "time" => 0 );
 	
 	foreach($svn_log as $entry) {
@@ -299,8 +719,8 @@ function update_stats($username) {
 			// Ostali eventi
 			
 			// Praćenje vremena
-			$old_time = $last_time;
-			$last_time = $entry['unixtime'];
+			$previous_event_time = $event_time;
+			$event_time = $entry['unixtime'];
 			
 			// Sjeckamo put na dijelove
 			$path_parts = explode("/", $filepath);
@@ -352,17 +772,17 @@ function update_stats($username) {
 					$scpath = str_replace(" ", "\\ ", $svn_file_path);
 					$scpath = str_replace(")", "\\)", $scpath);
 					$scpath = str_replace("(", "\\(", $scpath);
-					$diff_contents = `svn diff $scpath@$old_rev $scpath@$rev`;
-					$diff_result = compressed_diff($diff_contents);
+					$diff_contents = `svn diff -r $scpath@$old_rev $scpath@$rev`;
+					$diff_result = compressed_diff_old($diff_contents);
 				}
 			}
 			
 			// Praćenje ukupnog vremena rada
-			if ($last_time - $old_time < $vrijeme_limit)
-				$vrijeme_zadatka = $last_time - $old_time;
+			if ($event_time - $previous_event_time < $time_break_limit)
+				$task_time = $event_time - $previous_event_time;
 			else
-				$vrijeme_zadatka = $vrijeme_limit; // ?? ispade da se više isplati raditi sporo?
-			//print "$filepath last_time $last_time old_time $old_time vrijeme_zadatka $vrijeme_zadatka\n";
+				$task_time = $time_break_limit; // ?? ispade da se više isplati raditi sporo?
+			//print "$filepath last_time $event_time old_time $previous_event_time vrijeme_zadatka $task_time\n";
 
 			// Rekurzivno ažuriramo sve nadfoldere
 			$subpaths = array();
@@ -373,12 +793,12 @@ function update_stats($username) {
 			}
 			
 			// Kreiramo sve nadfoldere ako ne postoje
-			$kreiran = false;
+			$created_path = false;
 			foreach($subpaths as $subpath) {
 				// Ako nije ranije postojao put, kreiramo ga
 				if (!array_key_exists($subpath, $stats)) {
 					$stats[$subpath] = array(
-						"total_time" => $vrijeme_kreiranja,
+						"total_time" => $create_time,
 						"builds" => 0,
 						"builds_succeeded" => 0,
 						"testings" => 0,
@@ -387,7 +807,7 @@ function update_stats($username) {
 						"last_revision" => $entry['rev'],
 						"entries" => array(),
 					);
-					//print "Kreiram novi node $subpath vrijeme $vrijeme_kreiranja\n";
+					//print "Kreiram novi node $subpath vrijeme $create_time\n";
 					
 					// Akcije vezane za kreiranje finalnog puta
 					if ($subpath == $filepath) {
@@ -468,15 +888,15 @@ function update_stats($username) {
 								"filename" => $filename,
 								"content" => $content,
 							) );
-							$kreiran = true;
+							$created_path = true;
 							
 							// Ako je u pitanju kreiranje finalnog puta, nećemo povećavati vrijeme svih nadfoldera
 							// Ovo se nažalost mora uraditi ovako jer su folderi složeni od viših ka nižim jer je to 
 							// prirodan redoslijed kreiranja (ako nisu postojali ranije)
 							foreach($subpaths as $subpath2) {
-								if ($stats[$subpath2]['total_time'] > $vrijeme_kreiranja && $stats[$subpath2]['total_time'] > $vrijeme_zadatka) {
-									$stats[$subpath2]['total_time'] -= $vrijeme_zadatka;
-									//print "Smanjujem vrijeme za $subpath2 za $vrijeme_zadatka\n";
+								if ($stats[$subpath2]['total_time'] > $create_time && $stats[$subpath2]['total_time'] > $task_time) {
+									$stats[$subpath2]['total_time'] -= $task_time;
+									//print "Smanjujem vrijeme za $subpath2 za $task_time\n";
 								}
 							}
 							
@@ -498,10 +918,10 @@ function update_stats($username) {
 							"filename" => $filename
 						) );
 					}
-					$kreiran = true;
+					$created_path = true;
 				} else {
-					$stats[$subpath]['total_time'] += $vrijeme_zadatka;
-					//print "Povećavam vrijeme za $subpath za $vrijeme_zadatka\n";
+					$stats[$subpath]['total_time'] += $task_time;
+					//print "Povećavam vrijeme za $subpath za $task_time\n";
 				}
 			}
 			
@@ -632,7 +1052,7 @@ function update_stats($username) {
 				) );
 			
 			// SVN je registrovao kreiranje za put koji već imamo u statistici - dodajemo event "created"
-			} else if (!$kreiran) {
+			} else if (!$created_path) {
 				array_push($stats[$filepath]['events'], array(
 					"time" => $entry['unixtime'],
 					"text" => "created",
@@ -643,51 +1063,121 @@ function update_stats($username) {
 	}
 }
 
-// Funkcija koja konvertuje unified diff format u nešto vrlo sažeto što je nama dovoljno
+// Function that converts unified diff format into something highly condensed that's good enough for us
 function compressed_diff($diff_text) {
 	$result = array( 'remove_lines' => array(), 'add_lines' => array() );
-	$current_line = -1;
-	$removed = 0;
+	$current_line = $added_line = $changed_line = $recently_removed = $recently_added = 0;
+	$header = true;
 	foreach(explode("\n", $diff_text) as $line) {
-		// Preskačemo zaglavlje
-		if (strlen($line) > 3 && (substr($line, 0, 3) == "+++" || substr($line, 0, 3) == "---"))
+		// Skip header lines
+		if ($header && starts_with($line, "Index: "))
 			continue;
+		if ($header && starts_with($line, "==========="))
+			continue;
+		if ($header && (starts_with($line, "--- ") || starts_with($line, "+++ ")))
+			continue;
+		$header = false;
 		
 		// Uzimamo redni broj prve linije
 		if (strlen($line) > 2 && substr($line, 0, 2) == "@@") {
-			$current_line = intval(substr($line, 4)) - 1; // sljedeći prolaz će ga uvećati za 1
-			continue;
+			if (preg_match("/@@ \-(\d+)\,\d+ \+(\d+),\d+/", $line, $matches)) {
+				$current_line = $changed_line = $matches[1];
+				$added_line = $matches[2];
+				continue;
+			}
 		}
 
-		$current_line++;
+		// Lines removed
 		if (strlen($line) > 0 && $line[0] == '-') {
-			$result['remove_lines'][$current_line] = substr($line,1);
-			// Linije izbačene iz source-a ćemo oduzeti od countera
-			$removed++;
-		} else {
-			$current_line -= $removed;
-			$removed = 0;
+			if ($recently_removed)
+				$recently_removed = 0; // We want only single-line removes
+			else
+				$recently_removed = $current_line;
+			$result['remove_lines'][$current_line++] = substr($line,1);
+			$changed_line++;
 		}
-		if (strlen($line) > 0 && $line[0] == '+')
-			$result['add_lines'][$current_line-$removed] = substr($line,1);
-	}
-	// Dodatno kompresujemo jedan čest slučaj
-	if (count($result['remove_lines']) == 1 && count($result['add_lines']) == 1) {
-		// Uzimamo broj linije
-		$lineno = array_keys($result['remove_lines'])[0];
 		
-		$result['change'] = $result['add_lines'];
-		$result['remove_lines'] = array();
-		$result['add_lines'] = array();
-	} else if (count($result['add_lines'] > 0)) {
-		// Ne interesuje nas šta je staro, samo šta je novo
-		//$result['remove_lines'] = array();
+		// Lines added
+		else if (strlen($line) > 0 && $line[0] == '+') {
+			if ($recently_added)
+				$recently_removed = 0; // ...and single-line adds after them
+			else if ($recently_removed) 
+				$recently_added = $added_line;
+			$result['add_lines'][$added_line++] = substr($line,1);
+		} 
+		
+		// Context
+		else {
+			// Single-line remove + add = change
+			if ($recently_added && $recently_removed) {
+				$result['change'][$changed_line-1] = $result['add_lines'][$recently_added];
+				//$result['before_change'][$changed_line-1] = $result['remove_lines'][$recently_removed];
+				unset($result['remove_lines'][$recently_removed]);
+				unset($result['add_lines'][$recently_added]);
+			}
+			$current_line++;
+			$added_line++;
+			$changed_line++;
+			$recently_removed = $recently_added = 0;
+		}
 	}
+	
+	// Change in last line?
+	if ($recently_added && $recently_removed)
+		$result['change'][$changed_line-1] = $result['add_lines'][$recently_added];
+	
 	// Save space
 	if (count($result['remove_lines']) == 0) unset($result['remove_lines']);
 	if (count($result['add_lines']) == 0) unset($result['add_lines']);
 	
 	return $result;
+}
+
+
+function compressed_diff_old($diff_text) {
+        $result = array( 'remove_lines' => array(), 'add_lines' => array() );
+        $current_line = -1;
+        $removed = 0;
+        foreach(explode("\n", $diff_text) as $line) {
+                // Preskačemo zaglavlje
+                if (strlen($line) > 3 && (substr($line, 0, 3) == "+++" || substr($line, 0, 3) == "---"))
+                        continue;
+                
+                // Uzimamo redni broj prve linije
+                if (strlen($line) > 2 && substr($line, 0, 2) == "@@") {
+                        $current_line = intval(substr($line, 4)) - 1; // sljedeći prolaz će ga uvećati za 1
+                        continue;
+                }
+
+                $current_line++;
+                if (strlen($line) > 0 && $line[0] == '-') {
+                        $result['remove_lines'][$current_line] = substr($line,1);
+                        // Linije izbačene iz source-a ćemo oduzeti od countera
+                        $removed++;
+                } else {
+                        $current_line -= $removed;
+                        $removed = 0;
+                }
+                if (strlen($line) > 0 && $line[0] == '+')
+                        $result['add_lines'][$current_line-$removed] = substr($line,1);
+        }
+        // Dodatno kompresujemo jedan čest slučaj
+        if (count($result['remove_lines']) == 1 && count($result['add_lines']) == 1) {
+                // Uzimamo broj linije
+                $lineno = array_keys($result['remove_lines'])[0];
+
+                $result['change'] = $result['add_lines'];
+                $result['remove_lines'] = array();
+                $result['add_lines'] = array();
+        } else if (count($result['add_lines']) > 0) {
+                // Ne interesuje nas šta je staro, samo šta je novo
+                //$result['remove_lines'] = array();
+        }
+        // Save space
+        if (count($result['remove_lines']) == 0) unset($result['remove_lines']);
+        if (count($result['add_lines']) == 0) unset($result['add_lines']);
+
+        return $result;
 }
 
 
@@ -705,5 +1195,15 @@ function debug_log($msg) {
 	$time = date("d. m. Y. H:i:s");
 	`echo $time $msg >> /tmp/userstats.log`;
 }
+
+
+// Escape file path in a way that works with svn command line
+function svn_cmd_escape($path) {
+	$path = str_replace(" ", "\\ ", $path);
+	$path = str_replace(")", "\\)", $path);
+	$path = str_replace("(", "\\(", $path);
+	return $path;
+}
+
 
 ?>
