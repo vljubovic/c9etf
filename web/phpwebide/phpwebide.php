@@ -33,6 +33,21 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 		<span id="phpwebide_deploy_button" class="tree-button" style="display: none">
 			<a href="#" onclick="showMenu(this, 'phpwebide_deploy_menu'); return false;"><i class="fa fa-bolt fa-2x"></i> Deploy</a>
 		</span>
+		<span id="phpwebide_reconstruct_button" class="tree-button">
+			<a href="#" onclick="pwi_reconstruct(); return false;"><i class="fa fa-clock-o fa-2x"></i> History</a>
+		</span>
+		<span id="phpwebide_reconstruct_options" style="display: none">
+			<input type="range" id="phpwebide_reconstruct_slider" min="0" max="100" value="0" step="1" onchange="pwi_reconstruct_slider_change(this.value);">
+			<span class="tree-button">
+				<a href="#" onclick="pwi_reconstruct_play_stop(); return false;"><i class="fa fa-play" id="phpwebide_reconstruct_play_icon"></i></a>
+			</span>
+			<label for="phpwebide_reconstruct_speed">Speed x:</label>
+			<input type="number" id="phpwebide_reconstruct_speed" name="phpwebide_reconstruct_speed" min="1" max="10" value="2" onchange="pwi_reconstruct_speed_change(this.value);">
+			
+			<input type="checkbox" id="phpwebide_reconstruct_realtime" name="phpwebide_reconstruct_realtime" onchange="pwi_reconstruct_realtime_toggle(this.value);">
+			<label for="phpwebide_reconstruct_realtime">Real-time</label>
+		</span>
+		
 		<span id="phpwebide_modified_time" style="float:right;"></span>
 	</div>
 	
@@ -95,7 +110,7 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 		</div>
 		<script type="text/javascript" src="/static/js/user_table.js"></script>
 		<?php
-		}
+	}
 	
 	?>
 	

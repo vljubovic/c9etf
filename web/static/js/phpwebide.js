@@ -1,6 +1,6 @@
 
 // PHPWEBIDE.JS - JavaScript portion of lightweight webide
-// Version: 2018/05/19 10:56
+// Version: 2018/08/26 12:05
 
 
 // ------------ GLOBALS ----------------
@@ -40,6 +40,17 @@ var pwi_was_doubleclick = 0;
 
 var pwi_tasks = [];
 
+// Options for reconstruct feature
+var pwi_reconstruct_limit = 1000; // Maximum number of records 
+// (too large number above will use a lot of memory and have slow response from web service)
+
+// Below is just global variables populated by ui ctls and web service
+var pwi_reconstruct_data = [];
+var pwi_reconstruct_play = false;
+var pwi_reconstruct_speed = 2;
+var pwi_reconstruct_path = "";
+var pwi_reconstruct_has_more = false;
+var pwi_reconstruct_realtime = false;
 
 
 // ------------ TREE FUNCTIONS ----------------
@@ -70,7 +81,7 @@ function pwi_find_node(path, tree) {
 	var children = tree.childNodes;
 	var found = false;
 	children.forEach(function(item){
-		console.log("Searching "+path+" trying '"+item.id+"' type "+item.nodeName);
+		//console.log("Searching "+path+" trying '"+item.id+"' type "+item.nodeName);
 		if (item.id == path) found = item;
 		else if (item.nodeName == "DIV") {
 			var content_str = "_content";
@@ -262,6 +273,7 @@ function pwi_toolbar_update(rev) {
 	document.getElementById('phpwebide_restore_button').style.display = "none";
 	pwi_toolbar_modified_time();
 	pwi_populate_deploy_menu();
+	document.getElementById('phpwebide_reconstruct_options').style.display = "none";
 }
 
 
@@ -662,6 +674,7 @@ function pwi_editor_initialize(editable) {
 		editor.renderer.$cursorLayer.element.style.opacity=0
 		editor.textInput.getElement().tabIndex=-1
 		editor.commands.commmandKeyBinding={}
+		editor.$blockScrolling = Infinity;
 	} else {
 		editor.getSession().on("change", pwi_schedule_save);
 	}
@@ -814,4 +827,130 @@ function pwi_clear_task(task) {
 			pwi_tasks.splice(i,1);
 	}
 	if (pwi_tasks.length == 0) document.getElementById('phpwebide_spinner').style.display = "none";
+}
+
+
+
+
+// ------------ RECONSTRUCT ----------------
+
+function pwi_reconstruct(path="", start=1) {
+	if (path == "") path = pwi_current_path;
+	pwi_add_task("pwi_reconstruct "+path);
+	
+	var xmlhttp = new XMLHttpRequest();
+	var url = "services/stats_reconstruct.php?user=" + pwi_current_user + "&filename=" + encodeURIComponent(path) + "&start=" + start + "&limit=" + pwi_reconstruct_limit;
+	
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
+				var response = JSON.parse(xmlhttp.responseText);
+				showMsg(response.message);
+				setTimeout(hideMsg,5000);
+				pwi_clear_task("pwi_reconstruct "+path);
+				return;
+			}
+			
+			pwi_reconstruct_path = path;
+			
+			var response = JSON.parse(xmlhttp.responseText);
+			pwi_reconstruct_data = response.data;
+			pwi_reconstruct_has_more = response.hasMore;
+			pwi_reconstruct_show(0);
+			
+			var slider = document.getElementById('phpwebide_reconstruct_slider');
+			slider.min = 0;
+			slider.max = pwi_reconstruct_data.length;
+			slider.value = 0;
+			
+			var speed_ctl = document.getElementById('phpwebide_reconstruct_speed').value;
+			pwi_reconstruct_speed_change(speed_ctl);
+			pwi_reconstruct_play_stop();
+			
+			document.getElementById('phpwebide_reconstruct_options').style.display = "inline";
+			document.getElementById('phpwebide_reconstruct_button').style.display = "none";
+			
+			pwi_clear_task("pwi_reconstruct "+path);
+		}
+	}
+	xmlhttp.open("GET", url, true);
+	xmlhttp.send();
+
+}
+
+
+function pwi_reconstruct_next(i) {
+	if (pwi_reconstruct_play) {
+		pwi_reconstruct_show(i);
+		if (i == pwi_reconstruct_data.length && pwi_reconstruct_has_more)
+			pwi_reconstruct( pwi_reconstruct_path, pwi_reconstruct_data[i-1].version );
+		else if (i < pwi_reconstruct_data.length) {
+			var delay = 1000 / pwi_reconstruct_speed;
+			if (pwi_reconstruct_realtime && pwi_reconstruct_data[i] && pwi_reconstruct_data[i+1])
+				delay = (pwi_reconstruct_data[i+1].timestamp - pwi_reconstruct_data[i].timestamp) * delay;
+			pwi_reconstruct_play = setTimeout(function() { 
+				pwi_reconstruct_next( parseInt(i) + 1 ); 
+			}, delay);
+		}
+		else
+			pwi_reconstruct_play_stop();
+	}
+}
+
+function pwi_reconstruct_show(i) {
+	if (i >= pwi_reconstruct_data.length) {
+		return;
+	}
+	
+	var editor = ace.edit("editor");
+	editor.setOptions({
+		highlightActiveLine: true,
+	});
+	console.log("Reconstruct i=" + i + " length=" + pwi_reconstruct_data.length)
+	console.log( pwi_reconstruct_data[i] );
+	editor.setValue( pwi_reconstruct_data[i].contents );
+	//editor.getSession().setMode("ace/mode/c_cpp"); // FIXME hardcodirano
+	
+	// Scroll and position cursor on first line
+	//editor.resize(true);
+	//editor.scrollToLine( pwi_reconstruct_data[version].line, true, true, function () {} );
+	//editor.gotoLine( pwi_reconstruct_data[version].line ); 
+	//editor.focus();
+	editor.clearSelection();
+	editor.moveCursorTo( pwi_reconstruct_data[i].firstLine, 0, false );
+	if (pwi_reconstruct_data[i].firstLine < pwi_reconstruct_data[i].lastLine)
+		editor.selection.selectTo ( pwi_reconstruct_data[i].lastLine+1, 0 );
+	editor.centerSelection();
+	
+	document.getElementById('phpwebide_modified_time').innerHTML = pwi_reconstruct_data[i].datetime;
+	
+	var slider = document.getElementById('phpwebide_reconstruct_slider');
+	slider.value = i;
+}
+
+function pwi_reconstruct_slider_change(value) {
+	if (pwi_reconstruct_play) pwi_reconstruct_play_stop();
+	pwi_reconstruct_show(value);
+}
+
+
+function pwi_reconstruct_speed_change(value) { pwi_reconstruct_speed = value; }
+function pwi_reconstruct_realtime_toggle(value) { 
+	if (value) pwi_reconstruct_realtime = true; else pwi_reconstruct_realtime = false; 
+}
+
+function pwi_reconstruct_play_stop() {
+	console.log("pwi_play_stop");
+	if (pwi_reconstruct_play) {
+		clearTimeout(pwi_reconstruct_play);
+		pwi_reconstruct_play = false;
+		document.getElementById('phpwebide_reconstruct_play_icon').className = "fa fa-play";
+	}
+	else {
+		var slider = document.getElementById('phpwebide_reconstruct_slider');
+		pwi_reconstruct_play = setTimeout(function() { 
+			pwi_reconstruct_next(slider.value); 
+		}, 1000 / pwi_reconstruct_speed);
+		document.getElementById('phpwebide_reconstruct_play_icon').className = "fa fa-pause";
+	}
 }
