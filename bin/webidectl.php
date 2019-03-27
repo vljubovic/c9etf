@@ -120,13 +120,22 @@ switch($action) {
 	
 	// Create user
 	case "add-user":
-		$password = $argv[3];
+		if ($argc < 3) 
+			print "ERROR: Wrong number of parameters.\n";
+		else {
+			$password = $argv[3];
 
-		if (array_key_exists($username, $users))
-			print "ERROR: User $username already exists\n";
-		else
-			create_user($username, $password);
-		break;
+			if (array_key_exists($username, $users))
+				print "ERROR: User $username already exists\n";
+			else {
+				create_user($username, $password);
+				if ($argc>3) {
+					$users[$username]['realname'] = $argv[4];
+					if ($argc>4) $users[$username]['email'] = $argv[5];
+					write_files();
+				}
+			}
+		}
 	
 	// Logout user
 	case "logout":
@@ -173,13 +182,17 @@ switch($action) {
 
 	// Add a user with local authentication (htpasswd)
 	case "add-local-user":
-		$password_esa = escapeshellarg($argv[3]);
-		// This is a different path from $userdata['htpasswd'] !
-		$htpasswd = $conf_base_path . "/localusers/" . $userdata['efn'];
+		if ($argc != 4) 
+			print "ERROR: Wrong number of parameters.\n";
+		else {
+			$password_esa = escapeshellarg($argv[3]);
+			// This is a different path from $userdata['htpasswd'] !
+			$htpasswd = $conf_base_path . "/localusers/" . $userdata['efn'];
 
-		exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
-		exec("chown $conf_nginx_user $htpasswd");
-		print "Created local user $username\n";
+			exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
+			exec("chown $conf_nginx_user $htpasswd");
+			print "Created local user $username\n";
+		}
 		break;
 	
 	// Regular cleanup operation every hour
@@ -288,9 +301,9 @@ switch($action) {
 			if ($users[$username]["status"] == "inactive")
 				reset_config($username);
 			else
-				print "ERROR: User logged in\n";
+				print "ERROR: User $username logged in\n";
 		} else
-			print "ERROR: User doesn't exist\n";
+			print "ERROR: User $username doesn't exist\n";
 		break;
 	
 	// Reinitialize git repo if exists
