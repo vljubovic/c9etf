@@ -25,6 +25,7 @@ if (!$logged_in) {
 	return 0;
 }
 
+session_write_close();
 
 // If user is not admin, they can only access their own files
 if (in_array($login, $conf_admin_users) && isset($_GET['user']))
@@ -33,7 +34,8 @@ else
 	$username = $login;
 
 
-$path = str_replace("/../", "/", $_GET['path']);
+$path = "";
+if (isset($_GET['path'])) $path = str_replace("/../", "/", $_GET['path']);
 while (strlen($path) > 3 && substr($path,0,3) == "../") $path = substr($path,3);
 
 
@@ -78,9 +80,10 @@ if (in_array($login, $conf_admin_users) && !in_array($login, $conf_sysadmins)) {
 	}
 }
 
-if (!isset($_REQUEST['type']) || $_REQUEST['type'] == "file")
+
+if (!isset($_REQUEST['type']) || $_REQUEST['type'] == "file") {
 	passthru("sudo $conf_base_path/bin/wsaccess $username read \"$path\"");
-else if ($_REQUEST['type'] == "git") {
+} else if ($_REQUEST['type'] == "git") {
 	$rev = escapeshellarg($_REQUEST['rev']);
 	passthru("sudo $conf_base_path/bin/wsaccess $username git-show \"$path\" $rev");
 }
@@ -88,19 +91,23 @@ else if ($_REQUEST['type'] == "svn") {
 	$svn_user_path = setup_paths($username)['svn'];
 	$rev = intval($_REQUEST['rev']);
 	$svn_file_path = "file://" . $svn_user_path . "/$path";
-	echo svn_cat($svn_file_path, $rev);
+	passthru("svn cat -r$rev file://" . $svn_user_path . "/$path");
 }
 else if ($_REQUEST['type'] == "tree") {
+//	echo "sudo $conf_base_path/bin/wsaccess $username list \"$path\"";
 	passthru("sudo $conf_base_path/bin/wsaccess $username list \"$path\"");
 }
 else if ($_REQUEST['type'] == "exists") {
 	passthru("sudo $conf_base_path/bin/wsaccess $username exists \"$path\"");
 }
 else if ($_REQUEST['type'] == "mtime") {
-	if (isset($_REQUEST['format']))
-		echo date($_REQUEST['format'], chop(`sudo $conf_base_path/bin/wsaccess $username filemtime "$path"`));
+	$mtime = `sudo $conf_base_path/bin/wsaccess $username filemtime "$path"`;
+	if (strstr($mtime, "ERROR"))
+		echo "";
+	else if (isset($_REQUEST['format']))
+		echo date($_REQUEST['format'], chop($mtime));
 	else
-		passthru("sudo $conf_base_path/bin/wsaccess $username filemtime \"$path\"");
+		echo $mtime;
 }
 else {
 	$result = array ('success' => "false", "message" => "Unknown request type");
