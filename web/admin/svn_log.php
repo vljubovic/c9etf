@@ -4,7 +4,7 @@
 function admin_svn_log($user, $path) {
 	$userdata = setup_paths($user);
 	
-	$svn_url = "file://" . $userdata['svn'] . "/" . $path;
+	$svn_url = "file://" . $userdata['svn'] . "/" . escapeshellarg($path);
 	$ws_url = $userdata['workspace'];
 	$revert_possible = !is_dir($ws_url);
 	
@@ -62,6 +62,7 @@ function admin_svn_log($user, $path) {
 		}
 		print "</ul></li>\n";
 	}
+	print "</ul>";
 }
 
 ?>
