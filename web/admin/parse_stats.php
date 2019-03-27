@@ -2,7 +2,7 @@
 
 
 function parse_stats($login, &$assignments, &$stats_parsed, &$last_access, $path_log) {
-	global $conf_base_path, $conf_stats_path;
+	global $conf_base_path, $conf_stats_path, $conf_home_path;
 	
 	$svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", "global_events", "last_update_rev", ".gcc.out");
 	
@@ -10,7 +10,7 @@ function parse_stats($login, &$assignments, &$stats_parsed, &$last_access, $path
 	$last_access[$login] = 0;
 	
 	// Read last data
-	$last_path = $conf_base_path . "/last/$login.last";
+	$last_path = $conf_home_path . "/last/$login.last";
 	if (file_exists($last_path)) $last_access[$login] = intval(file_get_contents($last_path));
 	
 	// Loading stats file
@@ -64,6 +64,9 @@ function parse_stats($login, &$assignments, &$stats_parsed, &$last_access, $path
 	// Ensure that $entries contains all entries under current path
 	if ($path_log != "" && array_key_exists($path_log, $stats)) {
 		$entries = $stats[$path_log]['entries'];
+	} else if ($path_log != "") {
+		$assignments = false;
+		return $stats_parsed;
 	} else {
 		$entries = array();
 		foreach($stats as $path => $data) {
@@ -80,7 +83,8 @@ function parse_stats($login, &$assignments, &$stats_parsed, &$last_access, $path
 		// Skip entries not under current path, if set
 		if (isset($_REQUEST['path'])) {
 			if (strlen($path) < strlen($path_log)) continue;
-			if (substr($path, 0, strlen($path_log)) != $path_log) continue;
+			if (strlen($path) == strlen($path_log) && $path != $path_log) continue;
+			if (substr($path, 0, strlen($path_log)+1) != $path_log . "/") continue;
 			// Remove path from file name
 			$file_name = substr($path, strlen($path_log)+1);
 		}
