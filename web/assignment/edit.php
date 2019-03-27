@@ -90,7 +90,7 @@ function assignment_change($course, $year, $external) {
 		}
 	}
 	
-	// Move stuff is path is changed
+	// Move stuff if path is changed
 	$new_asgn_path = $old_asgn_path;
 	if ($path != $asgn['path']) {
 		$new_asgn_path = $course_path . "/assignment_files/" . $path;
@@ -102,6 +102,22 @@ function assignment_change($course, $year, $external) {
 		unlink($old_asgn_path);
 	}
 	
+	// Change homework id
+	if ($homework_id != $asgn['homework_id']) {
+		$asgn['name'] = $name;
+		$asgn['type'] = $type;
+		$asgn['path'] = $path;
+		$asgn['homework_id'] = $homework_id;
+		$asgn['tasks'] = $tasks;
+		$asgn['hidden'] = $hidden;
+		for ($i=1; $i<=$tasks; $i++) {
+			if (file_exists($new_asgn_path . "/Z$i/.zadaca")) {
+				unlink ($new_asgn_path . "/Z$i/.zadaca");
+				assignment_create_zadaca($asgn, $homework_id);
+			}
+		}
+	}
+	
 	// Update assignment file
 	$asgn['name'] = $name;
 	$asgn['type'] = $type;
@@ -111,6 +127,9 @@ function assignment_change($course, $year, $external) {
 	$asgn['hidden'] = $hidden;
 	assignment_update($asgn);
 	
+	$course_id = "$course"."_$year";
+	if ($external) $course_id = "X$course_id";
+	admin_log("assignment changed - $asgn_id ($course_id)");
 	nicemessage("Assignment $asgn_id successfully changed");
 	print "<p><a href=\"$backlink\">Go back</a></p>\n";
 }
@@ -245,6 +264,9 @@ function assignment_edit_create_zadaca($course, $year, $external) {
 	assignment_create_zadaca($asgn, $task);
 	assignment_update($asgn);
 	
+	$course_id = "$course"."_$year";
+	if ($external) $course_id = "X$course_id";
+	admin_log("created .zadaca file - $asgn_id ($course_id)");
 	nicemessage("File .zadaca successfully created");
 	print "<p><a href=\"$backlink\">Go back</a></p>\n";
 }
@@ -342,6 +364,9 @@ function assignment_create($course, $year, $external) {
 	$assignments[] = $asgn;
 	file_put_contents($asgn_file_path, json_encode($assignments, JSON_PRETTY_PRINT));
 	
+	$course_id = "$course"."_$year";
+	if ($external) $course_id = "X$course_id";
+	admin_log("assignment created ($course_id)");
 	nicemessage("Assignment successfully created");
 	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 	print "<p><a href=\"" . assignment_edit_link($asgn['id']) . "\">Edit assignment</a></p>\n";
