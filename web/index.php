@@ -216,7 +216,8 @@ if (isset($_REQUEST['logout'])) {
         </div>
 	<p>Prijavite se sa <a href="https://zamger.etf.unsa.ba">Zamger</a> podacima,<br>
 	ili se <a href="register.php">registrujte za novi account</a>.</p>
-	<p>Novo: <a href="faq.php">Često postavljana pitanja (FAQ)</a>.</p>
+	<p>Novo: <a href="uputstva-c9.pdf">Uputstva za upotrebu</a>.</p>
+	<p><a href="faq.php">Često postavljana pitanja (FAQ)</a>.</p>
       </form>
 
     </div>
