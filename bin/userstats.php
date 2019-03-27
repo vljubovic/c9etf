@@ -34,7 +34,7 @@ $create_time = 0;
 $time_break_limit = 60;
 
 // These folders will be kept in separate stats files for perfomance (TODO: tie to defined list of courses)
-$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016");
+$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016", "OR2017", "TP2017");
 
 // Show debugging messages
 $DEBUG = true;
@@ -159,7 +159,8 @@ function clean_stats() {
 					unset($lastpos['del']);
 				}
 				
-				if (array_key_exists($i, $value['events']) && array_key_exists('diff', $value['events'][$i])) {
+				if (array_key_exists($i, $value['events']) && array_key_exists('diff', $value['events'][$i]) &&
+					is_array($value['events'][$i]['diff'])) {
 					$txt = "";
 					if (array_key_exists('add_lines', $value['events'][$i]['diff']))
 						foreach ($value['events'][$i]['diff']['add_lines'] as $line)
@@ -214,7 +215,8 @@ function clean_stats() {
 		if (!$cleanup) continue;
 		
 		if ($DEBUG) print "Removing diffs for file $name (in \$skip_diff)\n";
-		foreach($value['events'] as &$event) {
+		foreach($value['events'] as $key => &$event) {
+			if (!is_array($event)) { unset($value['events'][$key]); continue; }
 			if (array_key_exists('diff', $event))
 				unset($event['diff']);
 			if (array_key_exists('content', $event))
@@ -253,11 +255,15 @@ function update_stats_new($username) {
 	
 	// Retrieving log
 	try {
-		$revision = "";
+		$revision = "-r 0:HEAD";
 		if ($stats['last_update_rev'] > 1) $revision = "-r ".$stats['last_update_rev'].":HEAD";
 		$xml = `svn log -v --xml $revision $svn_path`;
 		$svn_log_xml = new SimpleXMLElement($xml);
 	} catch(Exception $e) {
+		// last_update_rev will be set to 2 when repository is empty...
+		if ($stats['last_update_rev'] == 2)
+			// Everything is ok, don't exit(1)
+			return;
 		print "FATAL: SVN repository for $username is broken!\n";
 		exit(1);
 	}
@@ -350,11 +356,13 @@ function update_stats_new($username) {
 			// If it's a modify event, get diff
 			else if ($path['action'] == "M" || $path['action'] == "R") {
 				$diff = true;
+				$diff_result = null;
 				foreach ($skip_diff as $cpattern)
 					if(preg_match($cpattern, $filename))
 						$diff = false;
 				if ($diff) {
 					$old_rev = $stats[$filepath]['last_revision'];
+					if (intval($old_rev) < 1) $old_rev=1;
 					$diff_contents = `svn diff -r$old_rev:$rev $svn_cmd_path`;
 					$diff_result = compressed_diff($diff_contents);
 					$diff_result_old = compressed_diff_old($diff_contents);
@@ -514,7 +522,7 @@ function update_stats_new($username) {
 			// Delete event
 			if ($path['action'] == "D") {
 				// If a new file was created less than 3 seconds ago, this is a rename event
-				if ($event_time - $last_addition['time'] < 3 && $this_folder == $last_addition['folder'] && $filepath != $last_addition['filepath']) {
+				if ($event_time - $last_addition['time'] < 3 && $current_folder == $last_addition['folder'] && $filepath != $last_addition['filepath']) {
 					// Rename
 					end($stats[$last_addition['filepath']]['events']);
 					$lastk = key($stats[$last_addition['filepath']]['events']);
@@ -556,6 +564,14 @@ function update_stats_new($username) {
 			// Compile event
 			} else if ($compiled) {
 				$stats[$filepath]['builds']++;
+				
+				// recursively update parents
+				$parent = $filepath;
+				while ($k = strrpos($parent, "/")) {
+					$parent = substr($parent, 0, $k);
+					$stats[$parent]['builds']++;
+				}
+				
 				if ($last_event['text'] == "compiled successfully" && abs($last_event['time'] - $event_time) < 3) {
 					// Just copy compiler output to previous event
 					$last_event['output'] = `svn cat -r$rev $svn_cmd_path`;
@@ -574,6 +590,14 @@ function update_stats_new($username) {
 			// Successful compile
 			} else if ($runned) {
 				$stats[$filepath]['builds_succeeded']++;
+				
+				// recursively update parents
+				$parent = $filepath;
+				while ($k = strrpos($parent, "/")) {
+					$parent = substr($parent, 0, $k);
+					$stats[$parent]['builds_succeeded']++;
+				}
+				
 				if ($last_event['text'] == "compiled" && abs($last_event['time'] - $event_time) < 3) {
 					// If there is a compile event, we will just mark it as successful
 					$last_event['text'] = "compiled successfully";
@@ -589,7 +613,14 @@ function update_stats_new($username) {
 			// Program was tested
 			} else if ($tested) {
 				$stats[$filepath]['testings']++;
-
+				
+				// recursively update parents
+				$parent = $filepath;
+				while ($k = strrpos($parent, "/")) {
+					$parent = substr($parent, 0, $k);
+					$stats[$parent]['testings']++;
+				}
+				
 				// This is .at_result file, so get number of successful tests
 				$testing_results = json_decode(`svn cat -r$rev $svn_cmd_path`, true);
 
@@ -1078,7 +1109,7 @@ function compressed_diff($diff_text) {
 			continue;
 		$header = false;
 		
-		// Uzimamo redni broj prve linije
+		// Starting line numbers for removing and adding
 		if (strlen($line) > 2 && substr($line, 0, 2) == "@@") {
 			if (preg_match("/@@ \-(\d+)\,\d+ \+(\d+),\d+/", $line, $matches)) {
 				$current_line = $changed_line = $matches[1];
