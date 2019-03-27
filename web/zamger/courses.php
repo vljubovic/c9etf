@@ -4,12 +4,13 @@ require_once(__DIR__."/config.php");
 require_once(__DIR__."/jsonlib.php");
 
 function teacher_courses($year=0) {
-	global $session_id, $conf_json_base_url;
-	$parameters[session_name()] = $session_id;
-	$parameters["sta"] = "ws/nastavnik_predmet";
-	if ($year>0) $parameters["ag"] = $year;
-	$result = json_request_retry($conf_json_base_url, $parameters, "GET");
-	return $result['data']['predmeti'];
+	global $session_id, $conf_json_base_apiv5;
+	$parameters["SESSION_ID"] = $session_id;
+	
+	$url = $conf_json_base_apiv5 . "course/teacher/" . $_SESSION['userid'];
+	if ($year>0) $url .= "/$year";
+	$result = json_request_retry($url, $parameters, "GET");
+	return $result['results'];
 }
 
 function student_courses($year=0) {
