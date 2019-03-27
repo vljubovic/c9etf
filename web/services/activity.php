@@ -16,6 +16,8 @@ if (!in_array($login, $conf_admin_users)) {
 	return 0;
 }
 
+session_write_close();
+
 // Params
 $tail_param = "-100";
 if (isset($_REQUEST['last_lines'])) {
@@ -24,6 +26,7 @@ if (isset($_REQUEST['last_lines'])) {
 }
 if (isset($_REQUEST['start_from'])) {
 	$start = intval($_REQUEST['start_from']);
+	if ($start < 0) $start=0;
 	$tail_param = "-n +$start";
 }
 
@@ -34,10 +37,9 @@ $result['its_now'] = time();
 $result['loadavg'] = `cat /proc/loadavg`;
 $lasttime = 0;
 
-if (isset($_REQUEST['get_lines']))
-	$result['lines'] = explode(" ", `wc -l $conf_syncsvn_log`)[0];
+$result['lines'] = explode(" ", `wc -l $conf_syncsvn_log`)[0];
 
-else
+if (!isset($_REQUEST['get_lines']))
 foreach(explode("\n", `tail $tail_param $conf_syncsvn_log`) as $line) { // $conf_syncsvn_log => config.php
 	$matches=array();
 	if (preg_match("/^PID: (\w+) \d+$/", $line, $matches)) {
