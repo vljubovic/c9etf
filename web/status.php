@@ -12,6 +12,8 @@ if (isset($_SESSION['login'])) {
 	return;
 }
 
+session_write_close();
+
 require_once("../lib/config.php");
 
 $users_file = $conf_base_path . "/users";

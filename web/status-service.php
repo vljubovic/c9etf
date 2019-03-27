@@ -14,12 +14,14 @@ if (!isset($_SESSION['login'])) {
 
 $login = $_SESSION['login'];
 
+session_write_close();
+
 if (isset($_REQUEST['users'])) {
 	$users_file = $conf_base_path . "/users";
 	eval(file_get_contents($users_file));
 	ksort($users);
 	foreach($users as $username => $user) {
-		$lastfile = $conf_base_path . "/last/$username.last";
+		$lastfile = $conf_home_path . "/last/$username.last";
 		if ($user["status"] === "active") {
 			print "$username\t";
 			$time = intval(file_get_contents($lastfile));
@@ -59,6 +61,8 @@ if (isset($_REQUEST['serverStatus'])) {
 		print "zabrana $conf_deny_reason";
 		return 0;
 	}
+	print "ok";
+	return 0;
 	
 	$result = background("server-stats", "server-stats");
 	$stats = explode(" ", $result);
@@ -123,6 +127,8 @@ if (file_exists($login_watch_path) || file_exists($verify_watch_path)) {
 	if (file_exists($nodeup_path)) unlink($nodeup_path);
 	return;
 }
+print "ok";
+return;
 
 //$result = `sudo $conf_base_path/bin/webidectl is-node-up $login`;
 $result = background("is-node-up $login", "is-node-up-$login");
