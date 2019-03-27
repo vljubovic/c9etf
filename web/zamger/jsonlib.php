@@ -21,7 +21,7 @@ function json_request($url, $parameters, $method = "GET")
 			'content' => $query,
 			'header' => "Content-Type: application/x-www-form-urlencoded\r\n" .
 				"Content-Length: " . strlen ( $query ) . "\r\n"
-			));
+			), 'ssl' => array("verify_peer" => false));
 		$ctx = stream_context_create($params);
 		$fp = fopen($url, 'rb', false, $ctx);
 		if (!$fp) {
