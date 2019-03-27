@@ -1,5 +1,14 @@
 <?php
 
+// =========================================
+// SYNCSVN-FANOTIFY.PHP
+// C9@ETF project (c) 2015-2018
+//
+// Commit all changed files to user repository (fanotify version)
+// =========================================
+
+
+
 # Run as username
 
 require(dirname(__FILE__) . "/../lib/config.php");
@@ -139,7 +148,21 @@ while(true) {
 			print "Reread users file\n";
 			$usersmtime = $tmpmtime;
 			$users = array();
-			eval(file_get_contents($users_file));
+			$in_user = false;
+			foreach(file($users_file) as $line) {
+				if (preg_match("/^\s+\'(.*?)\' => $/", $line, $matches) && !$in_user) {
+					$m_user = $matches[1];
+					//print "User $user\n";
+					$users[$m_user] = array();
+					$in_user = true;
+				}
+				if (preg_match("/^\s+\),$/", $line) && $in_user)
+					$in_user = false;
+				if (strpos($line, "'status' => 'inactive'") && $in_user)
+					$users[$m_user]['status'] = 'inactive';
+				if (strpos($line, "'status' => 'active'") && $in_user)
+					$users[$m_user]['status'] = 'active';
+			}
 		}
 		if (!array_key_exists($user, $users)) { 
 			print "Skipping unknown user $user (line: $f)\n"; 
@@ -157,8 +180,8 @@ while(true) {
 		$file = substr($filepath, $endpath+1);
 		
 		// Skip users who are not logged in (shouldn't really happen)
-		if ($users[$user]["status"] === "inactive" && $file != ".login") { 
-			print "Skipping inactive $user"; 
+		if ($users[$user]["status"] === "inactive" && $file != ".login" && $file != ".logout") { 
+			print "Skipping inactive $user file $file"; 
 			continue; 
 		}
 		
