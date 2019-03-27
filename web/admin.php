@@ -1,7 +1,5 @@
 <?php
 
-$rustart = getrusage();
-
 session_start();
 
 ?>
@@ -14,6 +12,7 @@ session_start();
 	<link rel="stylesheet" href="static/css/phpwebide.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 	<script src="static/js/tools.js" type="text/javascript" charset="utf-8"></script>
+	<script src="static/js/zamger_update.js" type="text/javascript" charset="utf-8"></script>
 </head>
 
 
@@ -69,10 +68,6 @@ if (isset($_POST['login'])) {
 	if ($error == "") {
 		$logged_in = true;
 		admin_log("login");
-		if ($conf_zamger) {
-			require_once("zamger/update_all.php");
-			zamger_update_all($login);
-		}
 	} else
 		admin_log("unknown user or wrong password");
 } else {
@@ -418,10 +413,13 @@ if ($logged_in) {
 		
 		$groups_path = $conf_data_path . "/$course_path/groups";
 		$groups = json_decode(file_get_contents($groups_path), true);
+		$zupd = "";
 		foreach ($groups as $group_id => $group_name) {
+			if ($group_id == "last_update") continue;
 			?>
 			<li><a class="grouplnk" href="admin.php?group=<?=$group_id?>&amp;path=<?=$course_data['abbrev']?>&amp;backlink=<?=urlencode($backlink)?>"><?=$group_name?></a></li>
 			<?php
+			$zupd .= "zamgerUpdateTasks.push('$group_id');\n";
 		}
 		?>
 			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course_data['abbrev']?>">Active users</a></li>
@@ -460,6 +458,14 @@ if ($logged_in) {
 		
 		?>
 		</div>
+		
+		<script>
+		var zamgerUpdateTasks = [];
+		<?php 
+		if ($external && $conf_zamger) print $zupd;
+		?>
+		runUpdates();
+		</script>
 		<?php
 	}
 	
@@ -482,6 +488,7 @@ if ($logged_in) {
 		
 		usort($courses, "coursecmp");
 		
+		$zupd = "";
 		foreach ($courses as $course) {
 			if (!empty($perms)) {
 				// Check permissions
@@ -493,6 +500,8 @@ if ($logged_in) {
 				}
 				if (!$found) continue;
 			}
+			
+			$zupd .= "zamgerUpdateTasks.push('$c9id');\n";
 			
 			$add = "";
 			if ($course['type'] == "external") $add = "&amp;X";
@@ -522,26 +531,21 @@ if ($logged_in) {
 		<h2>Admin news</h2>
 		<input type="button" value="Close" onclick="document.getElementById('admin_news').style.display='none';">
 		</div>
+		
+		<script>
+		var zamgerUpdateTasks = [];
+		<?php 
+		if (isset($_POST['login']) && $conf_zamger) print $zupd;
+		?>
+		runUpdates();
+		</script>
 		<?php
 	}
 	
 	
-// Script end
-function rutime($ru, $rus, $index) {
-    return ($ru["ru_$index.tv_sec"]*1000 + intval($ru["ru_$index.tv_usec"]/1000))
-     -  ($rus["ru_$index.tv_sec"]*1000 + intval($rus["ru_$index.tv_usec"]/1000));
-}
-
-$ru = getrusage();
-/*echo "This process used " . rutime($ru, $rustart, "utime") .
-    " ms for its computations\n";
-echo "It spent " . rutime($ru, $rustart, "stime") .
-    " ms in system calls\n";
-*/
-	
 	?>
 
-	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2017.</div>
+	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2019.</div>
 	</body></html>
 	<?php
 	
@@ -579,6 +583,6 @@ echo "It spent " . rutime($ru, $rustart, "stime") .
     </div>
 
   </div>
-  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2017.</div>
+  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2019.</div>
 </body>
 </html>
