@@ -3,12 +3,12 @@
 dtime=`date +%s`
 
 local=(`/usr/local/webide/bin/webidectl server-stats`)
-nfs=(`ssh 172.16.20.91 /usr/local/webide/bin/webidectl server-stats`)
-prim=(`ssh 172.16.20.21 /usr/local/webide/bin/webidectl server-stats`)
-second=(`ssh 172.16.20.22 /usr/local/webide/bin/webidectl server-stats`)
+nfs=(`tail -1 /usr/local/webide/c9nfs_stats.log`)
+prim=(`tail -1 /usr/local/webide/c9prim_stats.log`)
+second=(`tail -1 /usr/local/webide/c9sec_stats.log`)
 
-let "z = ${local[3]} + ${prim[3]} + ${second[3]}"
+let "z = ${local[3]} + ${prim[5]} + ${second[5]}"
 
 echo $dtime ${local[2]} $z >> /usr/local/webide/user_stats.log
-echo $dtime ${local[0]} ${nfs[0]} ${prim[0]} ${second[0]} >> /usr/local/webide/load_stats.log
-echo $dtime ${local[1]} ${nfs[1]} ${prim[1]} ${second[1]} >> /usr/local/webide/mem_stats.log
+echo $dtime ${local[0]} ${nfs[2]} ${prim[2]} ${second[2]} >> /usr/local/webide/load_stats.log
+echo $dtime ${local[1]} ${nfs[3]} ${prim[3]} ${second[3]} >> /usr/local/webide/mem_stats.log
