@@ -22,6 +22,8 @@ if (isset($_SESSION['login'])) {
 	json(error("ERR001", "Not logged in"));
 }
 
+session_write_close();
+
 // Check if user is admin
 if (!in_array($login, $conf_admin_users))
 	json(error("ERR007", "Insufficient privileges"));
