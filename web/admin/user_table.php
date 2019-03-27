@@ -21,6 +21,23 @@ function admin_user_table($group_id, $members, $backlink) {
 	else
 
 	ksort($assignments);
+	
+	
+	// Sort members
+	function cmp($a, $b) {
+		$aparts = explode(" ", $a);
+		$aname = $aparts[0];
+		$asurname = join(" ", array_splice($aparts, 1));
+		
+		$bparts = explode(" ", $b);
+		$bname = $bparts[0];
+		$bsurname = join(" ", array_splice($bparts, 1));
+		
+		if ($asurname == $bsurname)
+			return ($aname < $bname) ? -1 : 1;
+		return ($asurname < $bsurname) ? -1 : 1;
+	}
+	uasort($members, 'cmp');
 
 	
 	// Table display
