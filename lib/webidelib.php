@@ -46,10 +46,12 @@ function is_local($host) {
 
 // This functions should be in standard lib ;) they shorten the code significantly
 function starts_with($string, $substring) {
+	if (strlen($string) < strlen($substring)) return false;
 	return substr($string, 0, strlen($substring)) == $substring;
 }
 
 function ends_with($string, $substring) {
+	if (strlen($string) < strlen($substring)) return false;
 	return substr($string, strlen($string) - strlen($substring)) == $substring;
 }
 
