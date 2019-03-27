@@ -43,7 +43,7 @@ $skip_bfl = array(
 	// but users complain if they can't login during that time
 	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup", "clean-inodes", "storage-nightly",
 	// Implement locking manually (for performance reasons)
-	"verify-user"
+	"verify-user", "logout"
 );
 
 
@@ -106,8 +106,10 @@ switch($action) {
 			if ($users[$username]["status"] == "active") {
 				debug_log ("already logged in $username (".$users[$username]["server"]." ".$users[$username]["port"].")");
 				print $users[$username]["port"]; // Already logged in, print port
+				`date +%s > /tmp/already-$username`;
 			} else if ($users[$username]["status"] == "inactive") {
 				activate_user($username, $password, $ip_address);
+				if (file_exists("/tmp/already-$username")) unlink("/tmp/already-$username");
 			}
 		}
 		else {
@@ -128,7 +130,21 @@ switch($action) {
 	
 	// Logout user
 	case "logout":
+		$wait = intval($argv[3]);
+		if ($wait>0) {
+			sleep($wait);
+			if (file_exists("/tmp/already-$username")) {
+				$time = file_get_contents("/tmp/already-$username");
+				if ($time+$wait > time()) {
+					break;
+				}
+			}
+		}
+		bfl_lock();
+		read_files();
 		deactivate_user($username); // Force all logout operations, even if we list user as not logged in
+		bfl_unlock();
+		unlink("/tmp/already-$username");
 		break;
 
 	// Just stop node

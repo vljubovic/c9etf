@@ -4,7 +4,6 @@ session_start();
 
 require_once("../lib/config.php");
 require_once("../lib/webidelib.php");
-//require_once("config.php");
 require_once("login.php");
 
 $prijavljen = false;
@@ -50,14 +49,15 @@ if (isset($_POST['login'])) {
 	
 	$users_file = $conf_base_path . "/users";
 	eval(file_get_contents($users_file));
-	
+
+	// Check if server capacity is exceeded
 	$alreadyloggedin = false;
 	//if (array_key_exists($login, $users) && $users[$login]["status"] == "active")
 	//	$alreadyloggedin = true;
 	
 //	$alreadyloggedin = `grep $login_esa $conf_base_path/active_users`;
-
-	// Da li je prekoračen kapacitet servera?
+	// We will always check server capacity, even if user is already logged in
+	
 	if (!$alreadyloggedin) {
 		$broj = `sudo $conf_base_path/bin/webidectl list-active | wc -l`;
 		if ($broj > $conf_limit_users_web && $login != $admin_login) {
@@ -93,7 +93,6 @@ if (isset($_POST['login'])) {
 			print "Server je trenutno preopterecen. Dodjite kasnije. ($primload , $secload)";
 			return;
 		}
-
 	}
 
 	$greska = "";
@@ -122,7 +121,7 @@ if (isset($_POST['login'])) {
 		<body>
 			<h1>Već ste prijavljeni sa drugog računara</h1>
 			<p>Želite li da odjavite drugi računar kako biste mogli nastaviti?</p>
-			<input type="button" value=" Da " onclick="javascript:window.location = 'index.php?logout';">
+			<input type="button" value=" Da " onclick="javascript:window.location = 'index.php?logout&zamjena';">
 			<input type="button" value=" Ne " onclick="alert('Ne možemo nastaviti dalje dok se ne odjavite.'); window.location = 'index.php';">
 			</body>
 		</html>
@@ -177,8 +176,10 @@ if (isset($_REQUEST['logout'])) {
 		setTimeout(function(){ location.href='/'; }, 2000);
 		</script>
 		<?php
-
-		proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa &", array(), $foo));
+		if (isset($_REQUEST['zamjena']))
+			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa &", array(), $foo));
+		else
+			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa 180 &", array(), $foo));
 		return;
 	}
 }
