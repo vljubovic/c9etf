@@ -56,7 +56,7 @@ function assignment_files($course, $year, $external) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
-	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users;
+	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users, $conf_sysadmins;
 
 	require_once("../../lib/config.php"); // Webide config
 	require_once("../../lib/webidelib.php"); // Webide library
