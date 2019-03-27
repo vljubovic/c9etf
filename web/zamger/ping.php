@@ -5,6 +5,7 @@
 require_once(__DIR__."/config.php");
 require_once(__DIR__."/jsonlib.php");
 $conf_base_path = "/usr/local/webide";
+$conf_home_path = "/rhome";
 require_once($conf_base_path . "/lib/webidelib.php");
 
 session_start();
@@ -28,7 +29,7 @@ if (!isset($_SESSION['server_session'])) {
 		print "ERROR";*/
 	
 	//proc_close(proc_open("sudo $conf_base_path/bin/webidectl last-update $username_esa &", array(), $foo));
-	$lastfile = $conf_base_path . "/last/$username_efn.last";
+	$lastfile = $conf_home_path . "/last/$username_efn.last";
 	file_put_contents($lastfile, time());
 }
 
