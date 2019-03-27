@@ -58,7 +58,10 @@ function admin_permissions($login) {
 
 // Check if user has permission for admin access to a specific course
 function admin_check_permissions($course, $year, $external) {
-	global $login;
+	global $login, $conf_sysadmins;
+	
+	if (in_array($login, $conf_sysadmins)) return;
+	
 	$perms = admin_permissions($login, $year);
 	$cid = "$course" . "_$year";
 	if ($external) $cid = "X$cid";
