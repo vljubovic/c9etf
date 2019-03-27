@@ -117,7 +117,7 @@ function admin_user_table($group_id, $members, $backlink) {
 		if (!user_td)
 			return;
 			
-		// Update date/time field
+		// Update date/time filed
 		user_td = user_td.nextSibling;
 		if (user_td.tagName != "TD") user_td = user_td.nextSibling;
 		user_td.innerHTML = activityItem.datum;
@@ -167,10 +167,10 @@ function admin_user_table($group_id, $members, $backlink) {
 		if (file == ".runme" || file == ".gcc.out") {
 			console.log("BUILD "+username+" "+path);
 			if (!last_build.hasOwnProperty(username) || timenow - last_build[username] > 5) {
-				if (!global_stats[username][path].hasOwnProperty('builds_succeeded'))
-					global_stats[username][path]['builds_succeeded'] = 1;
+				if (!global_stats[username][path].hasOwnProperty('builds'))
+					global_stats[username][path]['builds'] = 1;
 				else
-					global_stats[username][path]['builds_succeeded']++;
+					global_stats[username][path]['builds']++;
 				render_cell(username, path, td);
 			}
 			last_build[username] = timenow;
