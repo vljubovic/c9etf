@@ -86,70 +86,39 @@ function ws_from_path() {
 
 // List of courses
 function ws_courses() {
-	global $conf_data_path, $conf_current_year, $conf_zamger;
+	global $conf_data_path, $conf_current_year, $conf_zamger, $login;
 
-// Forsiram svima OR i ASP
-//	if (isset($_SESSION['login']) && $_SESSION['login'] == "test") {
-		$result = ok("");
-		$result['data'][] = array(
-			"id" => 1,
-			"year" => 12,
-			"type" => "external",
-			"name" => "Osnove računarstva",
-			"abbrev" => "OR"
-		);
-		$result['data'][] = array(
-			"id" => 2,
-			"year" => 12,
-			"type" => "external",
-			"name" => "Tehnike programiranja",
-			"abbrev" => "TP"
-		);
-		$result['data'][] = array(
-			"id" => 42,
-			"year" => 12,
-			"type" => "external",
-			"name" => "Algoritmi i strukture podataka",
-			"abbrev" => "ASP"
-		);
-		json($result);
-//	}
+	$year = $conf_current_year;
+	if (isset($_REQUEST['year']))
+		$year = intval($_REQUEST['year']);
 
 	// Read files
+	$result = ok("");
+	$user_courses_path = $conf_data_path . "/user_courses/$login.json";
+	if (!file_exists($user_courses_path))
+		json($result);
+	$user_courses = json_decode(file_get_contents($user_courses_path), true);
+	if (!is_array($user_courses)) $user_courses = array();
+	
 	$courses_path = $conf_data_path . "/courses.json";
 	$courses = array();
 	if (file_exists($courses_path))
 		$courses = json_decode(file_get_contents($courses_path), true);
 	
-	$result = ok("");
-	if ($conf_zamger) {
-		// Check zamger to see which courses is student enrolled in (FIXME)
-		require_once("../zamger/courses.php");
-		$zamger_courses = student_courses($conf_current_year);
-		for ($i=0; $i<count($courses); $i++) {
-			$found = false;
-			foreach ($zamger_courses as $tmpcourse) {
-				$course = array();
-				$course['id'] = $tmpcourse['id'];
-				$course['name'] = $tmpcourse['naziv'];
-				$course['year'] = $conf_current_year;
-				$course['type'] = "external";
-				$course['abbrev'] = $tmpcourse['kratki_naziv'];
-				$result['data'][] = $course;
-			}
-		}
-	} else {
-		foreach($courses as &$course) {
-			$course['year'] = $conf_current_year;
-		}
-		$result['data'] = $courses;
+	foreach($courses as $course) {
+		$course['year'] = $year;
+		$course_id = $course['id'] . "_" . $year;
+		if (array_key_exists('type', $course) && $course['type'] == "external")
+			$course_id = "X" . $course_id;
+		if (in_array($course_id, $user_courses['student']))
+			$result['data'][] = $course;
 	}
 	json($result);
 }
 
 
 function ws_assignments() {
-	global $conf_data_path, $login;
+	global $conf_data_path, $login, $conf_admin_users;
 
 	$course = intval($_REQUEST['course']);
 	$year = intval($_REQUEST['year']);
@@ -183,8 +152,7 @@ function ws_assignments() {
 		return strnatcmp($a['name'], $b['name']); 
 	}
 	foreach($assignments as $key => $value) {
-		if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
-		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users)) 
+		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users) && $login != "test") 
 			unset($assignments[$key]);
 	}
 	usort($assignments, "cmp");
@@ -337,7 +305,7 @@ function ws_deploy() {
 	$file = basename($_REQUEST['file']);
 		
 	if (empty($file))
-		json(error("ERR006", "File not found"));
+		json(error("ERR006", "File not found $file"));
 	
 	if ($external) {
 		$course_path = $conf_data_path . "/X$course" . "_$year";
@@ -380,7 +348,7 @@ function ws_deploy() {
 	if (!file_exists($found_file_path))
 		$found_file_path = $course_path . "/files/$file";
 	if (!file_exists($found_file_path))
-		json(error("ERR006", "File not found"));
+		json(error("ERR006", "File not found X $found_file_path"));
 		
 	$destination_path = $course_data['abbrev'] . "/" . $asgn['path'] . "/Z$task/$file";
 	
@@ -485,6 +453,8 @@ if (isset($_SESSION['login'])) {
 } else {
 	json(error("ERR001", "Not logged in"));
 }
+
+session_write_close();
 
 
 // Actions
