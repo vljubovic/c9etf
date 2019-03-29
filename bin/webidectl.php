@@ -848,6 +848,10 @@ switch($action) {
 			print "UWB $user_ws_backup\n";
 			if (file_exists($user_ws_backup)) {
 				$backup_size = $total_usage_stats[$rand_user]['ws.old'];
+				if ($backup_size === false) {
+					$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+					$backup_size = $total_usage_stats[$rand_user]['ws.old'];
+				}
 				print "Size $backup_size\n";
 				if ($backup_size > $min_backup_for_erase) {
 					`rm -fr $user_ws_backup`;
@@ -862,6 +866,10 @@ switch($action) {
 			if (file_exists($user_svn_backup)) {
 				$backup_size = $total_usage_stats[$rand_user]['svn.old'];
 				print "Size $backup_size\n";
+				if ($backup_size === false) {
+					$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+					$backup_size = $total_usage_stats[$rand_user]['svn.old'];
+				}
 				if ($backup_size > $min_backup_for_erase) {
 					`rm -fr $user_svn_backup`;
 					$stats = server_stats();
