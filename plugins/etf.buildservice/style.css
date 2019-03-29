@@ -1,5 +1,5 @@
 .testirajBtn {
-    background:url(/static/plugins/etf.buildservice/images/ok.png) no-repeat;
+    background:url(images/ok.png) no-repeat;
 }
 
 .searchresults.ace_tree{
@@ -22,10 +22,10 @@
 }
 
 .testok {
-    background:url(/static/plugins/etf.buildservice/images/ok.png) no-repeat;
+    background:url(images/ok.png) no-repeat;
 }
 .testnotok {
-    background:url(/static/plugins/etf.buildservice/images/nevalja.png) no-repeat;
+    background:url(images/nevalja.png) no-repeat;
 }
 
 .searchresults .item:not(.selected):hover,
@@ -90,7 +90,9 @@
 }
 
 .searchresults .item .caption{
-    display: block;
+    /*display: block;*/
+    float: left;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: red;
 }

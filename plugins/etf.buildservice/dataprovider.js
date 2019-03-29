@@ -28,53 +28,16 @@ define(function(require, exports, module) {
         var cache;
         
         this.addORItem = function(item) {
-           /* if (typeof this.myitems !== 'undefined') {
-                this.myitems = [];
-            }
-            this.myitems.push(item);*/
             this.visibleItems.push(item);
         }
         
         this.clearItems = function() {
-           /* if (typeof this.myitems !== 'undefined') {
-                this.myitems = [];
-            }
-            this.myitems.push(item);*/
             this.visibleItems.length = 0;
         }
         
         
         this.updateData = function(subset) {
             this.visibleItems = subset || this.visibleItems;
-            /*this.visibleItems = subset || Object.keys(this.commands.commands);
-            
-            cache = {};
-            
-            var tab = this.tabManager.focussedTab;
-            var editor = tab && tab.editor; 
-            
-            function sort(a, b) {
-                var commands = this.commands.commands;
-                var ca = commands[a];
-                var cb = commands[b];
-                
-                if (!cache[a])
-                    cache[a] = !ca.isAvailable || ca.isAvailable(editor, {});
-                if (!cache[b])
-                    cache[b] = !cb.isAvailable || cb.isAvailable(editor, {});
-                
-                if (cache[a] && !cache[b])
-                    return -1;
-                if (cache[b] && !cache[a])
-                    return 1;
-                
-                var namea = (ca.group || "General") + a;
-                var nameb = (cb.group || "General") + b;
-                
-                return (namea > nameb ? 1 : -1);
-            }
-            
-            this.visibleItems.sort(sort.bind(this));*/
             
             // @TODO Deal with selection
             this._signal("change");
@@ -112,15 +75,11 @@ define(function(require, exports, module) {
     
         this.renderRow = function(row, html, config) {
             var key = this.visibleItems[row];
-            //var command = this.commands.commands[key];
-            //var name = command.displayName || key;
             var isSelected = this.isSelected(row);
             
             // disabled available check since it breaks most editor commands
-            var available = true; // cache[key];
+            var available = true;
             var keys = '';
-            //var keys = (command.bindKey || 0)[this.commands.platform] || "";
-            //if (apf.isMac) keys = apf.hotkeys.toMacNotation(keys);
 	    
 	    var subclass = '';
 	    keys = '<img src="/static/plugins/etf.buildservice/images/nevalja.png">';
@@ -135,12 +94,8 @@ define(function(require, exports, module) {
                 + "' style='height:" + this.innerRowHeight + "px'>"
                 + "<span class='keys' style='float:right'>" + keys + "</span>"
                 + "<span class='caption'>"
-                //+ this.replaceStrong((command.group || "General") + ": " + name)
                 + key.label
                 + "</span><span class='path'>"
-                //+ (command.hint 
-                  //  ? this.replaceStrong(command.hint)
-                    //: "No Description")
                     + key.desc
                 + "</span></div>");
         };
