@@ -1,6 +1,6 @@
 
 // USER_TABLE.JS - JavaScript functions for dynamic loading of user per-assignment stats table
-// Version: 2018/18/08 11:40
+// Version: 2018/14/10 19:40
 
 
 var show_others_regex = /^(T|Z|ZSR)\d+$/;
@@ -35,8 +35,14 @@ function userTableLoad(user, path) {
 			var result = JSON.parse(xmlhttp.responseText);
 			var tbl = document.getElementById('user-stats-table');
 			
-			// Add columns if neccessary
-			userTableMaybeAddColumn(result.data.assignments);
+			if (result.data.assignments !== false) {
+				var reconstructButton = document.getElementById('phpwebide_reconstruct_button');
+				if (reconstructButton && result.data.assignments.length == 0)
+					reconstructButton.style.display = "inline";
+				
+				// Add columns if neccessary
+				userTableMaybeAddColumn(result.data.assignments);
+			}
 			
 			// Add row for user
 			userTableUpdateRow(result.data, user);
