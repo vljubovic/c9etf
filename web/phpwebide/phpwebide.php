@@ -33,7 +33,7 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 		<span id="phpwebide_deploy_button" class="tree-button" style="display: none">
 			<a href="#" onclick="showMenu(this, 'phpwebide_deploy_menu'); return false;"><i class="fa fa-bolt fa-2x"></i> Deploy</a>
 		</span>
-		<span id="phpwebide_reconstruct_button" class="tree-button">
+		<span id="phpwebide_reconstruct_button" class="tree-button" style="display: none">
 			<a href="#" onclick="pwi_reconstruct(); return false;"><i class="fa fa-clock-o fa-2x"></i> History</a>
 		</span>
 		<span id="phpwebide_reconstruct_options" style="display: none">
