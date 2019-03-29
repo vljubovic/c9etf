@@ -1166,10 +1166,17 @@ function activate_user($username, $password, $ip_address) {
 				debug_log("Workspace in use for $username");
 				return; 
 			}
+			
+			bfl_unlock();
+			
 			if ($is_svn_node)
 				$cmd = "$conf_base_path/bin/webidectl sync-local " . $userdata['esa'];
 			else
 				$cmd = "ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-local " . $userdata['esa'] . "\"";
+			
+			bfl_lock();
+			read_files();
+			
 			$result = `$cmd`;
 			if (strstr($result, "ERROR: in use")) {
 				print "ERROR: in use\n"; 
@@ -1449,6 +1456,7 @@ function deactivate_user($username, $skip_svn = false) {
 		// Users file is updated only now, to prevent user from logging back in during other procedures
 		// (BFL should prevent it but alas...)
 		write_files();
+		bfl_unlock();
 		
 		// Sync locally changed files to remote
 		if (array_key_exists("volatile-remote", $users[$username])) {
