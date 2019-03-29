@@ -1,4 +1,4 @@
-/* etf.zamger plugin for Cloud9 - 23. 10. 2016. 09:24
+/* etf.zamger plugin for Cloud9 - 7. 10. 2018. 18:36
  * 
  * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
  * 
@@ -41,7 +41,7 @@ define(function(require, module, exports) {
             commands.addCommand({
                 name: "saljizadacu",
                 group: "Zamger",
-                "hint"  : "pošalji zadaću na zamger",
+                "hint"  : "pošalji zadatak na zamger",
                 exec: function(editor, args) {
                     saljiZadacu();
                 }
@@ -82,7 +82,7 @@ define(function(require, module, exports) {
                 id: "btnZamger",
                 skin: "c9-toolbarbutton-glossy",
                 command: "saljizadacu",
-                caption: "Pošalji zadaću",
+                caption: "Pošalji zadatak",
                 disabled: true,
                 class: "zamgerbtn running",
                 icon: "mccloud.png",
