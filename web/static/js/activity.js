@@ -76,7 +76,7 @@ function renderResults() {
 		pfile = global_activity[key]['path'] + global_activity[key]['file'];
 		pfile = pfile.substr(1);
 		
-		link = "admin.php?user="+key+"&amp;path="+pfile;
+		link = "admin.php?user="+key+"&amp;path="+encodeURIComponent(pfile);
 		
 		obj.innerHTML += "<div style=\"color:"+color+"\">" + key + " - " +
 			global_activity[key]['datum'] + " - <a href=\"" + link + "\">" + pfile + "</a></div>";
