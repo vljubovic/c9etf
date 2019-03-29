@@ -1,4 +1,4 @@
-/* etf.zadaci plugin for Cloud9 - 23. 08. 2018.
+/* etf.zadaci plugin for Cloud9 - 21. 1. 2019. 12:10
  * 
  * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
  * 
@@ -120,9 +120,13 @@ define(function(require, module, exports) {
 							year: courses[i].year,
 							abbrev: courses[i].abbrev,
 							course_type: courses[i].type,
-							clickable: false
+							clickable: false,
+							language: "C++"
 						};
 						if (courses[i].type == "external") item.external = true;
+						else item.external = false;
+						if (courses[i].hasOwnProperty("language"))
+							item.language = courses[i].language;
 						treeRoot.items.push(item);
 					}
 					console.log("Ucitani predmeti");
@@ -140,6 +144,9 @@ define(function(require, module, exports) {
 							clickable: false
 						};
 						if (courses[i].type == "external") item.external = true;
+						else if (!courses[i].hasOwnProperty("external")) item.external = false;
+						if (courses[i].hasOwnProperty("language"))
+							item.language = courses[i].language;
 						loadTasks(item);
 					}
 				} else {
@@ -165,7 +172,8 @@ define(function(require, module, exports) {
 		var ci=-1;
 		for (i=0; i<treeRoot.items.length; i++) {
 			if (treeRoot.items[i].id == course.id &&
-				treeRoot.items[i].year == course.year)
+				treeRoot.items[i].year == course.year &&
+				treeRoot.items[i].external == course.external)
 				ci=i;
 		}
 		if (ci == -1) {
@@ -241,6 +249,7 @@ define(function(require, module, exports) {
 		var year = node.parent.parent.year;
 		var course_abbrev = node.parent.parent.abbrev;
 		var course_external = node.parent.parent.external;
+		var language = node.parent.parent.language;
 		var asgn_id = node.parent.id;
 		var asgn_name = node.parent.label;
 		var asgn_path = node.parent.path;
@@ -248,13 +257,17 @@ define(function(require, module, exports) {
 		var task_name = node.label;
 		var path = "/" + course_abbrev + "/" + asgn_path + "/Z" + task_id;
 		var filename;
-		if (course_abbrev == "OR")
+		if (language == "C")
 			filename = "main.c";
+		else if (language == "C++")
+			filename = "main.cpp";
+		else if (language == "Java")
+			filename = "Main.java";
 		else
 			filename = "main.cpp"; // FIXME
 		var fullpath = path + "/" + filename;
 		var title = asgn_name + ", " + task_name;
-		console.log("PATH "+fullpath);
+		console.log("PATH "+fullpath + " language "+language);
 		
 		var urlpart = "course="+course+"&year="+year;
 		if (course_external)
@@ -363,6 +376,7 @@ define(function(require, module, exports) {
 								console.log("etf.zadaci: PANELS PANELS TREE:");
 								console.log(panels.panels);
 								console.log(panels.panels.tree);
+								console.log(panels.tree);
 								panels.panels.tree.expandAndSelect( fullpathz );
 							});
 					} else {
@@ -378,6 +392,7 @@ define(function(require, module, exports) {
 									console.log("etf.zadaci: PANELS PANELS TREE:");
 									console.log(panels.panels);
 									console.log(panels.panels.tree);
+									console.log(panels.tree);
 									panels.panels.tree.expandAndSelect( fullpathz );
 								});
 						});

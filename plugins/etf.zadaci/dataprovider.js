@@ -25,14 +25,14 @@ define(function(require, exports, module) {
             this._signal("change");
         };
 
-               
+
         this.getEmptyMessage = function(){
             if (!this.keyword)
                 return "Učitavam spisak zadataka,<br> molimo sačekajte par sekundi...";
             else
                 return "Došlo je do greške prilikom<br>\n učitavanja spiska zadataka:<br>\n " + this.keyword + "<br>\nProbajte logout pa login.";
         };
-        
+
     }).call(TreeData.prototype);
     
     return TreeData;
