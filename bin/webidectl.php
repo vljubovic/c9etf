@@ -2,7 +2,7 @@
 
 // =========================================
 // WEBIDECTL.PHP
-// C9@ETF project (c) 2015-2018
+// C9@ETF project (c) 2015-2019
 //
 // Master control script
 // =========================================
@@ -1579,7 +1579,9 @@ function verify_user($username) {
 			write_nginx_config();
 			bfl_unlock();
 		}
-		
+	}
+	
+	if ($is_control_node) {
 		// Update time of last access
 		$lastfile = $conf_home_path . "/last/$username.last";
 		file_put_contents($lastfile, time());
