@@ -136,6 +136,7 @@ switch($action) {
 				}
 			}
 		}
+		break;
 	
 	// Logout user
 	case "logout":
