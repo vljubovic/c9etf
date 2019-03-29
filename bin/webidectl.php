@@ -2068,6 +2068,7 @@ function clear_server() {
 	exec("killall tmux");
 	exec("killall inotifywait");
 	exec("killall gdb");
+	exec("ps aux | grep tmux | cut -c 10-15 | xargs kill"); // apparently we need this...
 
 	// Again write files, to nuke someone who managed to login
 	write_files();
