@@ -42,7 +42,7 @@ if (array_key_exists('realname', $users[$username])) $result['data']['realname']
 $result['data']['status'] = $users[$username]['status'];
 
 $result['data']['last'] = 0;
-$last_file = $conf_base_path . "/last/$username.last";
+$last_file = $conf_home_path . "/last/$username.last";
 if (file_exists($last_file)) $result['data']['last'] = file_get_contents($last_file);
 
 print json_encode($result);
