@@ -144,11 +144,12 @@ while(true) {
 		
 		// Skip user if not logged in
 		$tmpmtime = filemtime($users_file);
-		if ($usersmtime < $tmpmtime) {
+		if ($usersmtime < $tmpmtime || $count_active == 0) { 
 			print "Reread users file\n";
 			$usersmtime = $tmpmtime;
 			$users = array();
 			$in_user = false;
+			$count_active = 0;
 			foreach(file($users_file) as $line) {
 				if (preg_match("/^\s+\'(.*?)\' => $/", $line, $matches) && !$in_user) {
 					$m_user = $matches[1];
@@ -160,8 +161,10 @@ while(true) {
 					$in_user = false;
 				if (strpos($line, "'status' => 'inactive'") && $in_user)
 					$users[$m_user]['status'] = 'inactive';
-				if (strpos($line, "'status' => 'active'") && $in_user)
+				if (strpos($line, "'status' => 'active'") && $in_user) {
 					$users[$m_user]['status'] = 'active';
+					$count_active++;
+				}
 			}
 		}
 		if (!array_key_exists($user, $users)) { 
