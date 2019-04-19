@@ -455,9 +455,15 @@ switch($action) {
 			run_on($svn_node_addr, "$conf_base_path/bin/webidectl user-reset-svn " . $userdata['esa']);
 		else {
 			print "Update stats\n";
-			exec("$conf_base_path/bin/userstats " . $userdata['esa']);
-			print "Reinstall svn\n";
-			user_reinstall_svn($username);		
+			$output = array();
+			exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
+			$output = join("\n", $output);
+			if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
+				print "Userstats failed for $username!\n";
+			} else {
+				print "Reinstall svn\n";
+				user_reinstall_svn($username);
+			}
 		}
 		break;
 	
@@ -510,9 +516,15 @@ switch($action) {
 				print " - resetting svn\n";
 				print "Update stats\n";
 				bfl_lock();
-				exec("$conf_base_path/bin/userstats " . escapeshellarg($username));
-				print "Reinstall svn\n";
-				user_reinstall_svn($username);
+				$output = array();
+				exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
+				$output = join("\n", $output);
+				if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
+					print "Userstats failed for $username!\n";
+				} else {
+					print "Reinstall svn\n";
+					user_reinstall_svn($username);
+				}
 			
 				// Inode statistics update (TODO)
 				
@@ -790,9 +802,15 @@ switch($action) {
 				print " - resetting svn\n";
 				print "Update stats\n";
 				bfl_lock();
-				print exec("$conf_base_path/bin/userstats " . escapeshellarg($username));
-				print "\nReinstall svn\n";
-				user_reinstall_svn($username);
+				$output = array();
+				print exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
+				$output = join("\n", $output);
+				if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
+					print "Userstats failed for $username!\n";
+				} else {
+					print "Reinstall svn\n";
+					user_reinstall_svn($username);
+				}
 				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
 			
 				// Inode statistics update (TODO)
