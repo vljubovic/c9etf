@@ -1160,7 +1160,7 @@ function activate_user($username, $password, $ip_address) {
 		chmod($userdata['htpasswd'], 0644);
 		
 		// Try to sync local folder against remote (if volatile-remote)
-		if (array_key_exists("volatile-remote", $users[$username])) {
+		if (array_key_exists("volatile-remote", $users[$username]) && $users[$username]['status'] != "active") {
 			if (file_exists($userdata['home'] . "/.in_use")) { 
 				print "ERROR: in use\n"; 
 				debug_log("Workspace in use for $username");
