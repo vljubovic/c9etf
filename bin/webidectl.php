@@ -332,8 +332,7 @@ switch($action) {
 
 	// Restart services for a logged-in user (if neccessary)
 	case "verify-user":
-		if (array_key_exists($username, $users) && $users[$username]["status"] == "active")
-			verify_user($username);
+		verify_user($username);
 		break;
 
 	// Just start syncsvn
@@ -1527,11 +1526,22 @@ function remove_user($username) {
 }
 
 function verify_user($username) {
-	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users, $conf_home_path;
+	global $conf_base_path, $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $users, $conf_home_path, $conf_my_address;
 	
 	$userdata = setup_paths($username);
-	if (!array_key_exists('server', $users[$username])) return;
-	$server = $users[$username]['server'];
+	if ($is_control_node) {
+		if (!array_key_exists('server', $users[$username])) return;
+		$server = $users[$username]['server'];
+		
+		if ($users[$username]["status"] !== "active") {
+			print "ERROR: User $username not logged in!\n";
+			return;
+		}
+	} else {
+		if (!array_key_exists('server', $users[$username]))
+			$users[$username]['server'] = $conf_my_address;
+		$server = $users[$username]['server'];
+	}
 	
 	if (is_local($server) && $is_compute_node) {
 		// Is node server up?
@@ -1545,14 +1555,23 @@ function verify_user($username) {
 		
 		// If it is, return port
 		$port = intval($users[$username]['port']);
-		if ($nodeup) {
+
+		// If user is not logged in, this is not a control node, we will log him in and restart node
+		if ($users[$username]["status"] !== "active") {
+			print "Logged out? ";
+			$users[$username]['status'] = "active";
+			$nodeup = false;
+			$port = 0; // Files will be rewritten
+		}
+		
+		else if ($nodeup) {
 			if ($port > 2)
 				print "Node running - Found port: $port\n";
 			else
 				$nodeup = false; // Invalid port, restart
 		}
 		
-		// It isn't, restart
+		// Node server isn't up, restart
 		if (!$nodeup) {
 			if (file_exists($userdata['node_watch']))
 				unlink($userdata['node_watch']);
@@ -1562,6 +1581,9 @@ function verify_user($username) {
 			
 			// Kill related processes
 			stop_node($username, false);
+			
+			if (!$is_control_node && $users[$username]["status"] !== "active")
+				$users[$username]['status'] = "active";
 			
 			// Check to see if port is in use - sometimes race condition causes this situation
 			$log_path = "$conf_base_path/log/" . $userdata['efn'];
