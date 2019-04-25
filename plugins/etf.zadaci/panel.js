@@ -1,4 +1,4 @@
-/* etf.zadaci plugin for Cloud9 - 21. 1. 2019. 12:10
+/* etf.zadaci plugin for Cloud9 - 25. 4. 2019. 10:15
  * 
  * @author Vedran Ljubovic <vljubovic AT etf DOT unsa DOT ba>
  * 
@@ -360,12 +360,34 @@ define(function(require, module, exports) {
         
         function loadFiles(files, urlpart, path) {
 		var xmlhttp3 = new XMLHttpRequest();
-		var url2 = urlpart + "&file="+files[0];
+		var url2 = urlpart + "&file=" + files[0] + "&destinationPath=" + path;
 		var first_char = files[0].charAt(0);
 		var fullpathz = path + "/" + files[0];
 		console.log("etf.zadaci: URL: "+url2);
 		xmlhttp3.onreadystatechange = function() {
 			if (xmlhttp3.readyState == 4 && xmlhttp3.status == 200) {
+				if (xmlhttp3.response.includes("\"code\": \"ERR") || xmlhttp3.response.includes("\"code\": \"STA")) {
+					try {
+						var json = JSON.parse(xmlhttp3.responseText);
+						if (json.success == false || json.success == "false")
+							showError("Service error: " + json.message);
+						else {
+							// If success is true, service did all the work, just open the file
+							window.console.log(json.code + ": " + json.message);
+							tabs.openFile( fullpathz, true, function(err, tab) {
+								if (err) return console.error(err);
+								console.log("etf.zadaci: PANELS PANELS TREE:");
+								console.log(panels.panels);
+								console.log(panels.panels.tree);
+								console.log(panels.tree);
+								panels.panels.tree.expandAndSelect( fullpathz );
+							});
+						}
+						return;
+					} catch(e) {
+						// This is not a JSON file, continue as usual
+					}
+				}
 				window.console.log("etf.zadaci: Read file "+fullpathz);
 				fs.exists(fullpathz, function(file_exists) {
 					if (file_exists) {
@@ -380,7 +402,7 @@ define(function(require, module, exports) {
 								panels.panels.tree.expandAndSelect( fullpathz );
 							});
 					} else {
-						fs.writeFile( fullpathz, xmlhttp3.responseText, function (err, data) {
+						fs.writeFile( fullpathz, xmlhttp3.response, function (err, data) {
 							if (err) { 
 								window.console.log("etf.zadaci: Error writing file "+fullpathz);
 								return console.error(err); // De facto do nothing
@@ -411,6 +433,7 @@ define(function(require, module, exports) {
 		if (files.length>0)
 			setTimeout(function() { loadFiles(files, urlpart, path); }, 300);
 	}
+
         
 	function hexToRGBArray(color)
 	{

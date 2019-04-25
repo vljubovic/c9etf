@@ -22,7 +22,7 @@ function from_path($path, &$course_id, &$year_id, &$external, &$asgn_id, &$task_
 			} else {
 				$task_name = $path;
 			}
-		} else json(error("ERR002", "Unknown course"));
+		} else json(error("ERR004", "Unknown assignment"));
 	} else json(error("ERR002", "Unknown course"));
 	
 	// Find course
@@ -228,7 +228,7 @@ function ws_files() {
 
 
 function ws_getfile() {
-	global $conf_data_path;
+	global $login, $conf_data_path, $conf_base_path;
 
 	// Validate input variables
 	$course = intval($_REQUEST['course']);
@@ -238,6 +238,8 @@ function ws_getfile() {
 	$asgn_id = intval($_REQUEST['assignment']);
 	$task = intval($_REQUEST['task']);
 	$file = basename($_REQUEST['file']);
+	$destination_path = preg_replace('/[^A-Za-z0-9_\-\.\/]/', '_', str_replace("../", "", $_REQUEST['destinationPath'])) . "/$file";
+	if ($destination_path[0] == "/") $destination_path = substr($destination_path, 1);
 	
 	if (empty($file))
 		json(error("ERR006", "File not found"));
@@ -264,6 +266,10 @@ function ws_getfile() {
 		if ($a['id'] == $asgn_id) $asgn=$a;
 	if (empty($asgn))
 		json(error("ERR004", "Unknown assignment"));
+		
+	$task = assignment_find_task($asgn, $task_id);
+	if (!$task)
+		json(error("ERR005", "Unknown task"));
 	
 	// Look for task file
 	$found_file_path = $course_path . "/assignment_files/" . $asgn['path'] . "/Z$task/$file";
@@ -271,15 +277,55 @@ function ws_getfile() {
 		$found_file_path = $course_path . "/files/$file";
 	if (!file_exists($found_file_path))
 		json(error("ERR006", "File not found"));
+		
+	// Test if file is binary
+	$handle = fopen($found_file_path, "r");
+	$contents = fread($handle, 20);
+	fclose($handle);
+	$binary = false;
 	
-	header("Content-Type: text/plain");
+	if ($course == 1 && $year == 14 && $external == 0) {
+		for ($i=0; $i<strlen($contents); $i++) {
+			$k = ord($contents[$i]);
+			if (($k < 32 && $k != 13 && $k != 10 && $k != 9) || $k > 127)
+				$binary = true;
+		}
+	}
+	
+	if ($binary) {
+		if (empty($login)) json(error("ERR007", "Session expired, please login again"));
+	
+		$ok = ok("Copying on server sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &");
+		$ok['code'] = "STA001";
+		// Sadly downloading file from service doesn't work as apparently ws.writeFile doesn't support binary files
+		proc_close(proc_open("sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &", array(), $foo));
+		json($ok);
+
+// 		$type = `file -bi '$found_file_path'`;
+// 		header("Content-Type: $type");
+	} else
+		header("Content-Type: text/plain");
+	
 	header('Content-Disposition: attachment; filename="'.$file.'"', false);
 	header("Pragma: dummy=bogus"); 
 	header("Cache-Control: private");
-	$code = file_get_contents($found_file_path);
-	if (isset($_REQUEST['replace']))
-		$code = str_replace("===TITLE===", $_REQUEST['replace'], $code);
-	print $code;
+	
+	if ($binary) {
+		header("Content-Length: ".(string)(filesize($found_file_path)));
+		$k = readfile($found_file_path,false);
+	} else {
+		$code = file_get_contents($found_file_path);
+		if (isset($_REQUEST['replace']))
+			$code = str_replace("===TITLE===", $_REQUEST['replace'], $code);
+		if ($course == 2234 && $file == ".zadaca") {
+			if (preg_match("/\"id\": (\d+)/", $code, $matches)) {
+				$newid = $matches[1]+1;
+				$code = preg_replace("/\"id\": (\d+)/", "\"id\": $newid", $code);
+			}
+		}
+		header("Content-Length: ".(string)(strlen($code)));
+		print $code;
+	}
 	exit();
 }
 
@@ -406,18 +452,12 @@ function ws_deploy_status() {
 
 // Construct ok/error messages
 function error($code, $msg) {
-        $result = array();
-        $result['success'] = "false";
-        $result['code'] = $code;
-        $result['message'] = $msg;
+        $result = array( 'success' => "false", 'code' => $code, 'message' => $msg );
         return $result;
 }
 
 function ok($msg) {
-        $result = array();
-        $result['success'] = "true";
-        $result['message'] = $msg;
-        $result['data'] = array();
+        $result = array( 'success' => "true", 'message' => $msg, 'data' => array() );
         return $result;
 }
 
