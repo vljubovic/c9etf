@@ -176,6 +176,10 @@ echo "etf.zamger\n";
 `cp -R $conf_base_path/plugins/etf.zamger $conf_base_path/c9upstream/plugins`;
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/etf_zamger.diff`;
 
+echo "etf.help\n";
+`cp -R $conf_base_path/plugins/etf.help $conf_base_path/c9upstream/plugins`;
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/etf_help.diff`;
+
 // Disable some runners: all C and C++ runners (we provide our own) and Shell command runners
 `mkdir $conf_base_path/c9upstream/runners.disabled`;
 `mv $conf_base_path/c9upstream/plugins/c9.ide.run/runners/C\ * $conf_base_path/c9upstream/runners.disabled`;
