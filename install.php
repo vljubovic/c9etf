@@ -10,6 +10,7 @@ echo "\n";
 // Create c9 user
 `groupadd $conf_c9_group`;
 `useradd $conf_c9_user -g $conf_c9_group -d $conf_home_path/$conf_c9_user -m`;
+`chmod 770 $conf_home_path/$conf_c9_user`;
 `mkdir $conf_home_path/$conf_c9_user/workspace`;
 `chown $conf_c9_user:$conf_c9_group $conf_home_path/$conf_c9_user/workspace`;
 
