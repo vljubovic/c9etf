@@ -2581,31 +2581,4 @@ function debug_log($msg) {
 	`echo $time $msg >> $conf_base_path/log/webidectl.log`;
 }
 
-// Detect type of current node, find where is storage node
-function detect_node_type() {
-	global $conf_nodes;
-	global $is_control_node, $is_compute_node, $is_storage_node, $is_svn_node, $storage_node_addr, $svn_node_addr;
-
-	$is_control_node = $is_compute_node = $is_storage_node = $is_svn_node = false;
-	$storage_node_addr = $svn_node_addr = "";
-	foreach ($conf_nodes as $node) {
-		if (is_local($node['address'])) {
-			if (in_array("control", $node['type']))
-				$is_control_node = true;
-			if (in_array("compute", $node['type']))
-				$is_compute_node = true;
-			if (in_array("storage", $node['type']))
-				$is_storage_node = true;
-			if (in_array("svn", $node['type']))
-				$is_svn_node = true;
-		} else {
-			if (in_array("storage", $node['type']))
-				$storage_node_addr = $node['address'];
-			if (in_array("svn", $node['type']))
-				$svn_node_addr = $node['address'];
-		}
-	}
-
-}
-
 ?>
