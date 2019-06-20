@@ -9,70 +9,49 @@
 
 
 
-# Run as username
-
 require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
 
 
+// Syncsvn-fanotify configuration
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".git", ".tmux.lock", "core", ".core", ".valgrind.out.core", ".nfs", "last/");
 $file_size_limit = 100000; // 100kB
 $file_limit_delete = 100000000; // 100MB
 
 $logfile = $conf_base_path . "/log/syncsvn.log";
 $data_path = $conf_base_path . "/data";
+$fifo_file = "/tmp/svn-fanotify.fifo";
+$fatrace_pid_file = $data_path . "/.fatrace_pid";
 
+$big_paths = array("OR","TP","ASP","OR2016","TP2016","OR2015","TP2015","NA");
+
+
+// If some usernames are specified, only monitor these users
 $cli_users = array();
 if ($argc > 1) $cli_users = explode(",",$argv[1]);
 
-/*if ($argc == 1) die("ERROR: username is required\n");
-$username = $argv[1];
+
+// Is this dedicated storage node or general node?
+detect_node_type();
+if ($is_compute_node)
+	$daemon = "node";
+else
+	$daemon = "nfsd";
+
+// Read users file
+$users_file = $conf_base_path . "/users";
+$usersmtime = filemtime($users_file);
+$users = array();
+eval(file_get_contents($users_file));
 
 
-$userdata = setup_paths($username);
-$lastfile = $conf_base_path . "/bin/webidectl last-update " . $userdata['esa'];
-$fifo_file = $userdata['workspace'] . "/.svn.fifo";
-$inotify_pid_file = $userdata['workspace'] . "/.inotify_pid";
-
-if (!file_exists($userdata['workspace'])) die("ERROR: $username doesn't exist\n");*/
-
-	$fifo_file = "/tmp/svn-fanotify.fifo";
-	$fatrace_pid_file = $data_path . "/.fatrace_pid";
-	
-	$big_paths = array("OR","TP","ASP","OR2016","TP2016","OR2015","TP2015","NA");
-	
-	$users_file = $conf_base_path . "/users";
-	$usersmtime = filemtime($users_file);
-	$users = array();
-	eval(file_get_contents($users_file));
-
-// Avoid multiple instances
-/*if (file_exists($userdata['svn_watch'])) {
-	$pid = trim(file_get_contents($userdata['svn_watch']));
-	if (file_exists("/proc/$pid"))
-		die("ERROR: syncsvn already running $pid");
-}*/
-
-// REALLY avoid multiple instances :)
-/*$mypid = getmypid();
-foreach(ps_ax("localhost") as $process) {
-	if (strstr($process['cmd'], "syncsvn.php $username") && $process['pid'] != $mypid)
-		exec("kill " . $process['pid']);
-}
-
-exec("echo $mypid > " . $userdata['svn_watch']);*/
-
-
-
-// SVN cleanup - not really neccessary because of fixsvn, but not a bad precaution
-//exec("cd " . $userdata['workspace'] . "; svn add *; svn add .login; svn add .logout; svn ci -m syncsvn_starting .");
-
+// Attempt to create fifo file
 if (file_exists($fifo_file)) unlink($fifo_file);
-
 $success = posix_mkfifo($fifo_file, 0755);
 if( ! $success)
 	die('Error: Could not create a named pipe: '. posix_strerror(posix_errno()) . "\n");
 $date = date("d.m.Y");
+
 
 $known_paths = $known_files = array();
   
@@ -86,9 +65,9 @@ while(true) {
 
 	// Start fatrace and write pid to pidfile
 	chdir("/home");
-	exec(sprintf("%s >> %s 2>&1 & echo $! > %s", "/usr/local/bin/fatrace -o $fifo_file -c -C nfsd -f W -t", $conf_svn_problems_log, $fatrace_pid_file));
+	exec(sprintf("%s >> %s 2>&1 & echo $! > %s", "$conf_base_path/fatrace -o $fifo_file -c -C $daemon -f W -t", $conf_svn_problems_log, $fatrace_pid_file));
 
-	// Sometimes something is preventing inotifywait to start (e.g. bug, watches limit...)
+	// Sometimes something is preventing fatrace to start (e.g. bug, watches limit...)
 	// This will keep it restarting every 5s and commit the changes
 	usleep(500000); 
 	$pid = trim(file_get_contents($fatrace_pid_file));
@@ -96,7 +75,6 @@ while(true) {
 	if (!file_exists("/proc/$pid")) { 
 		usleep(5000000);
 		echo "Loop ...\n";
-		exec("cd " . $userdata['workspace'] . "; svn ci -m loop_cleanup .");
 		continue;
 	}
 	
@@ -133,7 +111,7 @@ while(true) {
 		if (!file_exists($filepath)) continue;
 		
 		// Not in home (shouldn't happen)
-		if (substr($filepath, 0, 6) != "/home/") continue;
+		if (!starts_with($filepath, "$conf_home_path/")) continue;
 		
 		// Get username
 		$endusr = strpos($filepath, "/", 9);
