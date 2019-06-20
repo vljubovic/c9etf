@@ -8,6 +8,10 @@
 // =========================================
 
 
+# Note: If you are using syncsvn-fanotify, it is using a patched version of fanotify
+# residing in /usr/local/bin
+
+
 
 require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
@@ -65,7 +69,7 @@ while(true) {
 
 	// Start fatrace and write pid to pidfile
 	chdir("/home");
-	exec(sprintf("%s >> %s 2>&1 & echo $! > %s", "$conf_base_path/fatrace -o $fifo_file -c -C $daemon -f W -t", $conf_svn_problems_log, $fatrace_pid_file));
+	exec(sprintf("%s >> %s 2>&1 & echo $! > %s", "/usr/local/bin/fatrace -o $fifo_file -c -C $daemon -f W -t", $conf_svn_problems_log, $fatrace_pid_file));
 
 	// Sometimes something is preventing fatrace to start (e.g. bug, watches limit...)
 	// This will keep it restarting every 5s and commit the changes

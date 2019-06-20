@@ -1839,6 +1839,7 @@ function clear_server() {
 
 // Nightly tasks to be performed on storage server
 // - update stats
+// - git commit
 // - reset svn if disk usage too large
 // - delete backup folders if neccessary
 // - generate usage statistic
