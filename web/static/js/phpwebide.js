@@ -623,17 +623,20 @@ function pwi_populate_deploy_menu() {
 				var element = document.createElement('h2');
 				element.className = "filelist filelist-file";
 				
+				var file = files[i];
+				if (typeof file === 'object') file = files[i].filename;
+				
 				// Temporary scope hack
 				(function(t,i){
 					element.onclick = function() { 
-						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, files[i], pwi_current_user); 
+						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, file, pwi_current_user); 
 						setTimeout( function() { 
 							pwi_editor_load(pwi_current_path,'file');
 						}, 3000);
 					}
 				})(t,i);
 		
-				element.innerHTML = files[i];
+				element.innerHTML = file;
 				menu.appendChild(element);
 			}
 		});
