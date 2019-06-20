@@ -46,11 +46,12 @@ if (isset($_REQUEST['serverStatus'])) {
 		print "not-logged-in";
 		return 0;
 	}
-	if (file_exists("$conf_base_path/razlog_nerada.txt"))
+	if (file_exists("$conf_base_path/razlog_nerada.txt")) {
 		$radovi = file_get_contents("$conf_base_path/razlog_nerada.txt");
-	if (preg_match("/\w/", $radovi)) {
-		print "radovi $radovi";
-		return 0;
+		if (preg_match("/\w/", $radovi)) {
+			print "radovi $radovi";
+			return 0;
+		}
 	}
 	
 	if (in_array($login, $conf_deny_users)) {
