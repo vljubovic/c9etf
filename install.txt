@@ -27,6 +27,7 @@ gdbserver - without this debugging in C/C++ programs will just give an error
 astyle - formatting C/C++/Java programs
 sqlite3 - for debugging svn problems
 valgrind
+zip - required for submitting files via buildservice
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
