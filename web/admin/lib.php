@@ -10,7 +10,7 @@ function admin_log($msg) {
 	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
 }
 
-// Check if user has permissions to access admin UI and specific course
+// Check if user has permissions to access admin UI
 function admin_session() {
 	global $login, $conf_admin_users;
 
@@ -22,16 +22,8 @@ function admin_session() {
 		if (preg_match("/[a-zA-Z0-9]/",$login)) $logged_in = true;
 	}
 
-	if (!$logged_in || !in_array($login, $conf_admin_users)) {
-		?>
-		<p style="color:red; weight: bold">Your session expired. Please log out then log in.</p>
-		<?php
-		exit(0);
-	}
-	
-	//if ($course != 0) {
-		// TODO
-	//}
+	if (!$logged_in || !in_array($login, $conf_admin_users)) return false;
+	return true;
 }
 
 // Standard HTTP headers for admin
@@ -95,6 +87,14 @@ function admin_courses_get($course, $external) {
 			return $c;
 	}
 	return false;
+}
+
+function admin_course_path($course, $year, $external) {
+	global $conf_data_path;
+	
+	$course_path_part = "$course" . "_$year";
+	if ($external) $course_path_part = "X$course_path_part";
+	return $conf_data_path . "/$course_path_part";
 }
 
 ?>
