@@ -1,0 +1,68 @@
+/* 
+ * ADMIN-ASSIGNMENT.CSS - style for editing assignments
+ * 2019/04/18 20:50
+ */
+
+/* Remove default bullets */
+ul, #tasksTree {
+  list-style-type: none;
+}
+
+/* Remove margins and padding from the parent ul */
+#tasksTree {
+  margin: 30px;
+  width: 200px;
+  border: 1px solid black;
+  background: #eee;
+  padding: 0;
+}
+
+li:hover {
+  background: #ddd;
+}
+
+/* Style the caret/arrow */
+.caret {
+  cursor: pointer; 
+  user-select: none; /* Prevent text selection */
+}
+
+/* Create the caret/arrow with a unicode, and style it */
+.caret::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 6px;
+  transform: rotate(90deg); 
+}
+
+/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+.caret-down::before {
+}
+
+/* Hide the nested list */
+.nested {
+  display: block;
+}
+
+/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+.active {
+  display: block;
+}
+
+.level1 {
+  margin-left: 0px;
+}
+
+.level2 {
+  margin-left: 30px;
+}
+.level3 {
+  margin-left: 60px;
+}
+.level4 {
+  margin-left: 90px;
+}
+.level5 {
+  margin-left: 120px;
+}
