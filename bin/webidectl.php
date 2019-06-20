@@ -77,18 +77,24 @@ switch($action) {
 	
 	// Change user data
 	case "change-user":
-		$key = $argv[3];
-		$value = $argv[4];
-		if ($value === "-")
-			unset($users[$user][$key]);
-		else
-			$users[$user][$key] = $value;
-		write_files();
-		
-		if ($is_control_node) {
-			foreach($conf_nodes as $node) {
-				if (!is_local($node['address']))
-					run_on($node['address'], "$conf_base_path/bin/webidectl change-user " . $userdata['esa'] . " " . escapeshellarg($key) . " " . escapeshellarg($value));
+		if ($argc != 5) 
+			print "ERROR: Wrong number of parameters.\n";
+		else if (!array_key_exists($username, $users))
+			print "ERROR: Unknown user $username.\n";
+		else {
+			$key = $argv[3];
+			$value = $argv[4];
+			if ($value === "-")
+				unset($users[$user][$key]);
+			else
+				$users[$user][$key] = $value;
+			write_files();
+			
+			if ($is_control_node) {
+				foreach($conf_nodes as $node) {
+					if (!is_local($node['address']))
+						run_on($node['address'], "$conf_base_path/bin/webidectl change-user " . $userdata['esa'] . " " . escapeshellarg($key) . " " . escapeshellarg($value));
+				}
 			}
 		}
 		break;
@@ -140,7 +146,9 @@ switch($action) {
 	
 	// Logout user
 	case "logout":
-		$wait = intval($argv[3]);
+		$wait = 0;
+		if ($argc >= 3)
+			$wait = intval($argv[3]);
 		if ($wait>0) {
 			sleep($wait);
 			if (file_exists("/tmp/already-$username")) {
@@ -583,7 +591,7 @@ switch($action) {
 			
 		} else
 			// Without "nice" parameter format is:
-			// [loadavg] [used_memory] [logged_in_users] [active_users] [free_disk] [free_inodes]
+			// [loadavg] [used_memory] [logged_in_users] [active_users] [free_disk] [free_inodes] [cpuidle] [blocking] [time]
 			print join(" ", $stats) . "\n";
 		break;
 	
@@ -1152,7 +1160,7 @@ exit(0);
 //    HIGH LEVEL USER LIFECYCLE
 // -------------------------------
 
-// This can be used on any node
+// These functions can be used on any node
 // If node type is control, it will run relevant commands on all other nodes
 
 function activate_user($username, $password, $ip_address) {
