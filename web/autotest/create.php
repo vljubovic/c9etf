@@ -5,59 +5,66 @@ require_once("../../lib/config.php"); // Webide config
 require_once("../../lib/webidelib.php"); // Webide library
 require_once("../login.php"); // Login
 require_once("../admin/lib.php"); // Admin library
-require_once("../assignment/lib.php"); // Assignment library
 
+require_once("../classes/Course.php");
 
 
 
 // Verify session and permissions, set headers
-admin_session();
 admin_set_headers();
+if (!admin_session()) {
+	niceerror("Your session expired. Please log out then log in.");
+	exit(0);
+}
 
+try {
+	$course = Course::fromRequest();
+} catch (Exception $e) {
+	niceerror($e->getMessage());
+	exit(0);
+}
 
-// Set vars
-assignment_global_init();
-admin_check_permissions($course, $year, $external);
+if (!$course->isAdmin($login)) {
+	niceerror("You don't have permission to access this page.");
+	exit(0);
+}
+
+$course_link = "<p><a href=\"admin.php?" . $course->urlPart() . "\">Go back to course</a></p>\n";
 
 
 // Find assignment
-$asgn_id = intval($_REQUEST['assignment']);
-$task = intval($_REQUEST['task']);
-
-$asgn = assignment_get($asgn_id);
-if ($asgn == false) {
+$root = $course->getAssignments();
+$root->getItems();
+print "<pre>";
+print_r($root);
+exit(0);
+$task = $root->findById( intval($_REQUEST['task']) );
+if ($task === false) {
 	niceerror("Assignment not found");
-	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
+	print $course_link;
 	return;
 }
-$asgn_edit_link = "../assignment/" . assignment_edit_link($asgn_id);
+$asgn_edit_link = "<p><a href=\"../assignment/edit.php?action=edit&amp;" . $course->urlPart() . "\">Edit assignment</a></p>\n";
 
 
 
-// Find course 
-$course_data = admin_courses_get($course, $external);
-
-if ($course_data === false) {
-	niceerror("Course not found");
-	print "<p><a href=\"admin.php\">Go back</a></p>\n";
-	return;
-}
-if (!array_key_exists("language", $course_data)) {
+if (!array_key_exists("language", $course->data)) {
 	niceerror("Required data not found");
-	print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
-	print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
+	print $course_link;
+	print $asgn_edit_link;
 	return;
 }
 
-// FIXME hack
-$year_name = (2004 + $conf_current_year) . "/" . (2005 + $conf_current_year);
-
+foreach(Cache::getFile("years.json") as $year)
+	if ($year['id'] == $conf_current_year)
+		$year_name = $year['name'];
+$course_data = $course->data;
 
 // Creating datastructure for .autotest file 
 $autotest = array();
 $autotest['id'] = intval(file_get_contents($conf_data_path . "/autotest_last_id.txt")) + 1;
 file_put_contents($conf_data_path . "/autotest_last_id.txt", $autotest['id']);
-$autotest['name'] = $course_data['name'] . " ($year_name), " . $asgn['name'] . ", zadatak $task";
+$autotest['name'] = $course->name . " ($year_name), " . $task->parent->name . ", " . $task->name;
 $autotest['language'] = $course_data['language'];
 $autotest['required_compiler'] = $autotest['preferred_compiler'] = $course_data['compiler'];
 $autotest['compiler_features'] = $course_data['compiler_features'];
@@ -68,24 +75,25 @@ $autotest['run'] = "false";
 $autotest['test_specifications'] = array();
 
 // Path for file
-$files_path = assignment_get_task_path($asgn, $task);
+$files_path = $task->filesPath();
 
 $destination_path = $files_path . "/.autotest";
 if (file_exists($destination_path)) {
 	niceerror("Autotest file already exists");
-	print "<p><a href=\"$backlink\">Go back</a></p>\n";
+	print $course_link;
+	print $asgn_edit_link;
 	return;
 }
 
 file_put_contents($destination_path, json_encode($autotest, JSON_PRETTY_PRINT));
 
 // Update assignments
-$asgn['task_files'][$task][] = ".autotest";
-assignment_update($asgn);
+$task->files[] = ".autotest";
+$task->update();
 
 nicemessage("Autotest file created!");
-print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
-print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
+print $course_link;
+print $asgn_edit_link;
 
 
 

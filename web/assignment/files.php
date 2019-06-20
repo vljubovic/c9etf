@@ -6,33 +6,19 @@
 
 // This function provides a list of course files with some buttons
 // Meant to be called from admin.php
-function assignment_files($course, $year, $external) {
-	global $conf_data_path, $conf_base_path;
-
-	if ($external)
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-	else
-		$course_path = $conf_data_path . "/$course" . "_$year";
-	if (!file_exists($course_path)) mkdir($course_path);
-	
-	$files_path = $course_path . "/files";
-	if (!file_exists($files_path)) mkdir($files_path);
-	
-	$files = scandir($files_path); $count = count($files);
-	for ($i=0; $i<$count; $i++) {
-		if (is_dir($files_path . "/" . $files[$i]) || $files[$i] == "..") 
-			unset($files[$i]);
-	}
+function assignment_files($course) {
+	$files = $course->getFiles();
 	
 	if (count($files)==0) print "<p>No files are defined</p>\n";
 	else print "<ul>\n";
+	
 	foreach($files as $file) {
 		?>
 		<form action="assignment/files.php" method="POST">
 		<input type="hidden" name="files_action" value="change">
-		<input type="hidden" name="course" value="<?=$course?>">
-		<input type="hidden" name="year" value="<?=$year?>">
-		<input type="hidden" name="external" value="<?=$external?>">
+		<?php
+		print $course->htmlForm();
+		?>
 		<input type="hidden" name="file" value="<?=$file?>">
 		<li><?=$file?> <input type="submit" name="action" value="View"><input type="submit" name="action" value="Delete"></li>
 		</form>
@@ -43,9 +29,9 @@ function assignment_files($course, $year, $external) {
 	?>
 	<form action="assignment/files.php" method="POST"  enctype="multipart/form-data">
 	<input type="hidden" name="files_action" value="change">
-	<input type="hidden" name="course" value="<?=$course?>">
-	<input type="hidden" name="year" value="<?=$year?>">
-	<input type="hidden" name="external" value="<?=$external?>">
+	<?php
+	print $course->htmlForm();
+	?>
 	<p>Add a file: 
 	<input type="file" name="add"> <input type="submit" name="action" value="Add"></p>
 	</form>
@@ -56,45 +42,45 @@ function assignment_files($course, $year, $external) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
-	global $conf_data_path, $course, $year, $external, $course_path, $course_link, $asgn_file_path, $assignments, $login, $conf_admin_users, $conf_sysadmins;
-
 	require_once("../../lib/config.php"); // Webide config
 	require_once("../../lib/webidelib.php"); // Webide library
 	require_once("../login.php"); // Login
 	require_once("../admin/lib.php"); // Admin library
-	require_once("lib.php"); // Assignment library
+	require_once("../classes/Course.php");
 
 	// Verify session and permissions, set headers
-	admin_session();
 	admin_set_headers();
+	if (!admin_session()) {
+		niceerror("Your session expired. Please log out then log in.");
+		exit(0);
+	}
+
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		niceerror("Unknown course.");
+		exit(0);
+	}
+	if (!$course->isAdmin($login)) {
+		niceerror("Permission denied.");
+		exit(0);
+	}
 	
-	// Set core variables
-	assignment_global_init();
-	admin_check_permissions($course, $year, $external);
+	$course_link = "../admin.php?" . $course->urlPart();
+	$asgn_edit_link = "edit.php?action=edit&amp;" . $course->urlPart();
 	
 	if (isset($_REQUEST['assignment'])) {
 		$asgn_id = intval($_REQUEST['assignment']);
-		$task = intval($_REQUEST['task']);
-		$asgn_edit_link = assignment_edit_link($asgn_id);
 		
-		$asgn = assignment_get($asgn_id);
-		if (!$asgn) {
+		$asgn = $course->getAssignments()->findById($asgn_id);
+		if ($asgn === false) {
 			niceerror("Assignment not found");
 			print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 			return;
 		}
-		
-		if ($task < 1 || $task > $asgn['tasks']) {
-			niceerror("Invalid task number");
-			print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
-			print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
-			return;
-		}
-		
-		$files_path = assignment_get_task_path($asgn, $task);
+		$files_path = $asgn->filesPath();
 	} else {
-		$files_path = $course_path . "/files";
-		if (!file_exists($files_path)) mkdir($files_path);
+		$files_path = $course->getPath() . "/files";
 	}
 	
 	
@@ -124,8 +110,7 @@ function assignment_files_change() {
 	}
 	
 	if ($_REQUEST['action'] == "View") {
-		$download_url = "ws.php?action=getFile&amp;course=$course&amp;year=$year&amp;assignment=$asgn_id&amp;task=$task&amp;file=$file_name";
-		if ($external) $download_url .= "&amp;X";
+		$download_url = "ws.php?action=getFile&amp;" . $course->urlPart() . "&amp;task_direct=" . $asgn->id . "&amp;file=$file_name";
 		print "<h1>Viewing file: $file_name - <a href=\"$download_url\">Download</a></h1>\n";
 		print "<pre>";
 		print htmlentities(file_get_contents($file_path));

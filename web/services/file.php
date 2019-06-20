@@ -8,6 +8,7 @@ require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
 require_once("../login.php");
 require_once("../admin/lib.php");
+require_once("../classes/Course.php");
 
 
 // Verify session and permissions, set headers
@@ -41,7 +42,8 @@ while (strlen($path) > 3 && substr($path,0,3) == "../") $path = substr($path,3);
 
 // Check "course" part of path for users that are just admins (but not sysadmins)
 if (in_array($login, $conf_admin_users) && !in_array($login, $conf_sysadmins)) {
-	$perms = admin_permissions($login);
+	$user = new User($login);
+	$perms = $user->permissions();
 	
 	// Tree root request
 	$tree_root = false;
@@ -50,23 +52,13 @@ if (in_array($login, $conf_admin_users) && !in_array($login, $conf_sysadmins)) {
 	
 	if (!$tree_root && !empty($perms)) {
 		$found = false;
-		foreach($perms as $course) {
-			// Convert course string into numbers
-			$external = 0;
-			if ($course[0] == "X") {
-				$external = 1;
-				$course = substr($course, 1);
-			}
+		// FIXME: Use Assignment::fromWorkspacePath
+		foreach($perms as $course_string) {
+			// Convert course string into Course
+			$course = Course::fromString($course_string);
+			$cpath = $course->abbrev;
+			if ($course->year != $conf_current_year) $cpath .= (2004 + $course->year);
 			
-			$cyear = intval(substr($course, strpos($course,"_")+1));
-			$course = intval($course); // drop year part
-			
-			// Get "abbrev" from course data to form path
-			$data = admin_courses_get($course, $external);
-			$cpath = $data['abbrev'];
-			if ($cyear != $conf_current_year) $cpath .= (2004 + $cyear);
-			
-			//print "course $course external $external cyear $cyear cpath $cpath\n";
 			if ($path == $cpath || starts_with($path, $cpath . "/") || starts_with($path, "/" . $cpath . "/")) {
 				$found = true;
 				break;
@@ -100,6 +92,27 @@ else if ($_REQUEST['type'] == "tree") {
 else if ($_REQUEST['type'] == "exists") {
 	passthru("sudo $conf_base_path/bin/wsaccess $username exists \"$path\"");
 }
+else if ($_REQUEST['type'] == "or_game") {
+	$code = $_REQUEST['code'];
+	$path = "or_game";
+	passthru("sudo $conf_base_path/bin/wsaccess $username mkdir \"$path\"");
+	$path .= "/main.c";
+
+	$descriptorspec = array(
+		0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
+		1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
+		2 => array("file", "/tmp/error-output.txt", "a") // stderr is a file to write to
+	);
+	$output = array();
+	$process = proc_open("sudo $conf_base_path/bin/wsaccess $username write \"$path\"", $descriptorspec, $pipes);
+	if (is_resource($process)) {
+		fwrite($pipes[0], $code);
+		fclose($pipes[0]);
+		$rez = stream_get_contents($pipes[1]);
+		fclose($pipes[1]);
+		proc_close($process);
+	}
+}
 else if ($_REQUEST['type'] == "mtime") {
 	$mtime = `sudo $conf_base_path/bin/wsaccess $username filemtime "$path"`;
 	if (strstr($mtime, "ERROR"))
@@ -117,7 +130,7 @@ else {
 
 if (!isset($_REQUEST['type']))
 	admin_log("file.php - file - $username - $path");
-else
+else if ($_REQUEST['type'] != "or_game")
 	admin_log("file.php - ".$_REQUEST['type']." - $username - $path");
 
 ?>

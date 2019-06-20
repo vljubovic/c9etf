@@ -3,81 +3,35 @@
 // WEBSERVICE for c9 module etf.zadaci
 
 
-// Helper function that determines all parameters from path
-function from_path($path, &$course_id, &$year_id, &$external, &$asgn_id, &$task_id) {
-	global $conf_data_path, $conf_current_year, $conf_zamger;
-	
-	// Split path
-	$startpos = strpos($path, "/");
-	if ($startpos) {
-		$course_name = substr($path, 0, $startpos);
-		$path = substr($path, $startpos+1);
-		$startpos = strpos($path, "/");
-		if ($startpos) {
-			$asgn_name = substr($path, 0, $startpos);
-			$path = substr($path, $startpos+1);
-			$startpos = strpos($path, "/");
-			if ($startpos) {
-				$task_name = substr($path, 0, $startpos);
-			} else {
-				$task_name = $path;
-			}
-		} else json(error("ERR004", "Unknown assignment"));
-	} else json(error("ERR002", "Unknown course"));
-	
-	// Find course
-	$courses_path = $conf_data_path . "/courses.json";
-	$courses = array();
-	if (file_exists($courses_path))
-		$courses = json_decode(file_get_contents($courses_path), true);
-	
-	$course_id = 0;
-	foreach($courses as $course) {
-		if ($course['abbrev'] == $course_name) {
-			$course_id = $course['id'];
-			$year_id = $conf_current_year;
-			if ($course['type'] == "external") $external=1; else $external=0;
-			break;
-		}
-	}
-	if ($course_id == 0) json(error("ERR002", "Unknown course"));
-	
-	// Find assignment
-	if ($external) {
-		$course_path = $conf_data_path . "/X" .$course_id . "_" . $year_id;
-	} else {
-		$course_path = $conf_data_path . "/" . $course_id . "_" . $year_id;
-	}
-	
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
-
-	if (empty($assignments))
-		json(error("ERR003", "No assignments for this course"));
-
-	$asgn = false;
-	foreach ($assignments as $a)
-		if ($a['path'] == $asgn_name) $asgn = $a;
-	if ($asgn == false) json(error("ERR004", "Unknown assignment"));
-	$asgn_id = $asgn['id'];
-	
-	// Find task
-	if (!preg_match("/^Z(\d)$/", $task_name, $matches))
-		json(error("ERR005", "Unknown task"));
-	$task_id = $matches[1];
-	if ($task_id < 1 || $task_id > $asgn['tasks'])
-		json(error("ERR005", "Unknown task"));
-}
-
-
 // Web service
 function ws_from_path() {
 	$path = $_REQUEST['task_path'];
-	$result = ok("");
+	
+	// Split path
+	$startpos = strpos($path, "/");
+	if (!$startpos) 
+		json(error("ERR002", "Unknown course"));
+		
+    // Remove filename
+    $endpos = strrpos($path, "/");
+    $path = substr($path, 0, $endpos);
+	
+	// Find assignment
+	$asgn = Assignment::fromWorkspacePath($path);
+	if (!$asgn)
+		json(error("ERR004", "Unknown assignment"));
+	
+	// Find course
+	$course = $asgn->getCourse();
+	
 	$a = array();
-	from_path($path, $a['course'], $a['year'], $a['external'], $a['assignment'], $a['task']);
+	$a['course'] = $course->id;
+	$a['year'] = $course->year;
+	if ($course->external) $a['external'] = 1; else $a['external'] = 0;
+	$a['assignment'] = $asgn->parent->id;
+	$a['task'] = $asgn->id;
+	
+	$result = ok("");
 	$result['data'] = $a;
 	json($result);
 }
@@ -86,73 +40,130 @@ function ws_from_path() {
 
 // List of courses
 function ws_courses() {
-	global $conf_data_path, $conf_current_year, $conf_zamger, $login;
+	global $conf_current_year, $login;
 
 	$year = $conf_current_year;
 	if (isset($_REQUEST['year']))
 		$year = intval($_REQUEST['year']);
 
-	// Read files
 	$result = ok("");
-	$user_courses_path = $conf_data_path . "/user_courses/$login.json";
-	if (!file_exists($user_courses_path))
-		json($result);
-	$user_courses = json_decode(file_get_contents($user_courses_path), true);
-	if (!is_array($user_courses)) $user_courses = array();
-	
-	$courses_path = $conf_data_path . "/courses.json";
-	$courses = array();
-	if (file_exists($courses_path))
-		$courses = json_decode(file_get_contents($courses_path), true);
-	
-	foreach($courses as $course) {
-		$course['year'] = $year;
-		$course_id = $course['id'] . "_" . $year;
-		if (array_key_exists('type', $course) && $course['type'] == "external")
-			$course_id = "X" . $course_id;
-		if (in_array($course_id, $user_courses['student']))
-			$result['data'][] = $course;
-	}
+	$result['data'] = Course::forStudent($login, $year);
 	json($result);
 }
 
 
-function ws_assignments() {
-	global $conf_data_path, $login, $conf_admin_users;
-
-	$course = intval($_REQUEST['course']);
-	$year = intval($_REQUEST['year']);
-	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
-	if (isset($_REQUEST['X'])) $external=1;
+// Helper recursive function for ws_assignments
+function assignments_process(&$assignments, $parentPath, $courseFiles) {
+	global $login, $conf_admin_users;
 	
-	if ($external) {
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-	} else {
-		$course_path = $conf_data_path . "/$course" . "_$year";
+	foreach($assignments as $key => $value) {
+		//if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
+		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users) && $login != "test") {
+			unset($assignments[$key]);
+			continue;
+		}
+		if (array_key_exists('path', $value) && !empty($value['path']))
+			$path = $assignments[$key]['path'] = $parentPath . "/" . $assignments[$key]['path'];
+		else
+			$path = $assignments[$key]['path'] = $parentPath;
+		
+		if (array_key_exists('files', $value)) {
+			foreach ($courseFiles as $cfile) {
+				$found = false;
+				$ccfile = $cfile;
+				if (is_array($cfile) && array_key_exists('filename', $cfile))
+					$ccfile = $cfile['filename'];
+				foreach ($assignments[$key]['files'] as $file) {
+					if (is_array($file) && array_key_exists('filename', $file))
+						$ffile = $file['filename'];
+					if ($ccfile == $ffile)
+						$found = true;
+				}
+				if (!$found)
+					$assignments[$key]['files'][] = $cfile;
+			}
+		}
+			
+		if (array_key_exists('items', $value))
+			assignments_process($assignments[$key]['items'], $path, $courseFiles);
 	}
-	if (!file_exists($course_path))
-		json(error("ERR002", "Unknown course"));
+}
 
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
+function ws_assignments() {
+	global $login, $conf_admin_users;
+
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
 	
+	if (!$course->isAdmin($login) && !$course->isStudent($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	$root->getItems(); // Parse legacy data
+	$assignments = $root->getData();
 	if (empty($assignments))
 		json(error("ERR003", "No assignments for this course"));
 	
 	// Sort assigments by type, then by name (natural)
 	function cmp($a, $b) { 
-		if ($a['type'] == $b['type']) return strnatcmp($a['name'], $b['name']); 
-		if ($a['type'] == "tutorial") return -1;
-		if ($b['type'] == "tutorial") return 1;
-		if ($a['type'] == "homework") return -1;
-		if ($b['type'] == "homework") return 1;
+		if (array_key_exists('type', $a) && $a['type'] == $b['type']) return strnatcmp($a['name'], $b['name']); 
+		if (array_key_exists('type', $a) && $a['type'] == "tutorial") return -1;
+		if (array_key_exists('type', $b) && $b['type'] == "tutorial") return 1;
+		if (array_key_exists('type', $a) && $a['type'] == "homework") return -1;
+		if (array_key_exists('type', $b) && $b['type'] == "homework") return 1;
 		// Other types are considered equal
-		return strnatcmp($a['name'], $b['name']); 
+		if (array_key_exists('name', $a))
+			return strnatcmp($a['name'], $b['name']); 
+		return -1;
+	}
+	assignments_process($assignments, $course->abbrev, $course->getFiles());
+	usort($assignments, "cmp");
+		
+	$result = ok("");
+	$result['data'] = $assignments;
+	json($result);
+}
+
+
+// Get assignments in Object form
+
+function ws_assignments2() {
+	global $login, $conf_admin_users;
+
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
+	
+	if (!$course->isAdmin($login) && !$course->isStudent($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	if (isset($_REQUEST['assignment'])) {
+		$assignments = $root->findById( intval($_REQUEST['assignment']) )->getItems();
+	}
+	else
+		$assignments = $root->getItems();
+	if (empty($assignments))
+		json(error("ERR003", "No assignments for this course"));
+	
+	// Sort assigments by type, then by name (natural)
+	function cmp($a, $b) {
+		if ($a->type == $b->type) return strnatcmp($a->name, $b->name); 
+		if ($a->type == "tutorial") return -1;
+		if ($b->type == "tutorial") return 1;
+		if ($a->type == "homework") return -1;
+		if ($b->type == "homework") return 1;
+		// Other types are considered equal
+		return strnatcmp($a->name, $b->name); 
 	}
 	foreach($assignments as $key => $value) {
-		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users) && $login != "test") 
+		//if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
+		if ($value->hidden == "true" && !in_array($login, $conf_admin_users) && $login != "test") 
 			unset($assignments[$key]);
 	}
 	usort($assignments, "cmp");
@@ -163,139 +174,107 @@ function ws_assignments() {
 }
 
 
-
 function ws_files() {
-	global $conf_data_path;
-
-	// Validate input variables
-	if (isset($_REQUEST['course'])) $course = intval($_REQUEST['course']);
-	if (isset($_REQUEST['year'])) $year = intval($_REQUEST['year']);
-	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
-	if (isset($_REQUEST['X'])) $external=1;
-	if (isset($_REQUEST['assignment'])) $asgn_id = intval($_REQUEST['assignment']);
-	if (isset($_REQUEST['task'])) $task = intval($_REQUEST['task']);
-	if (isset($_REQUEST['task_path'])) from_path($_REQUEST['task_path'], $course, $year, $external, $asgn_id, $task);
+	global $login;
 	
-	if ($external) {
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-	} else {
-		$course_path = $conf_data_path . "/$course" . "_$year";
-	}
-	if (!file_exists($course_path))
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
 		json(error("ERR002", "Unknown course"));
-
-	// Read files
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
+	}
 	
+	if (!$course->isAdmin($login) && !$course->isStudent($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	$assignments = $root->getData();
 	if (empty($assignments))
 		json(error("ERR003", "No assignments for this course"));
 	
-	$asgn = array();
-	foreach ($assignments as $a)
-		if ($a['id'] == $asgn_id) $asgn=$a;
-	if (empty($asgn))
-		json(error("ERR004", "Unknown assignment"));
-	
-	if ($task < 1 || $task > $asgn['tasks'])
+	$task = false;
+	if (isset($_REQUEST['task_direct']))
+		$task = $root->findById( intval($_REQUEST['task_direct']) );
+	else if (isset($_REQUEST['task']))
+		$task = $root->findById( intval($_REQUEST['task']) );
+	if ($task === false)
 		json(error("ERR005", "Unknown task"));
 	
-	// Get list of course files
-	$files_path = $course_path . "/files";
-	$files = array();
-	if (file_exists($files_path)) {
-		$files = scandir($files_path); $count = count($files);
-		for ($i=0; $i<$count; $i++) {
-			if (is_dir($files_path . "/" . $files[$i]) || $files[$i] == "..") 
-				unset($files[$i]);
-		}
-	}
-	
-	// Get a list of task files
-	if (isset($asgn['task_files'][$task])) {
-		foreach($asgn['task_files'][$task] as $file)
-			if (!in_array($file, $files))
-				$files[] = $file;
-	}
+	$files = array_unique(array_merge( $course->getFiles(), array_values($task->files) ), SORT_REGULAR);
 	
 	$result = ok("");
-	$result['data'] = array_values($files);
+	$result['data'] = $files;
 	json($result);
+}
+
+
+// Helper function that makes all the keyword replacements in a text file
+function assignment_replace($code, $course, $task) {
+	$title = $task->parent->name . ", " . $task->name;
+	$code = str_replace("===TITLE===", $title, $code);
+	$code = str_replace("===COURSE===", $course->name, $code);
+	
+	foreach(Cache::getFile("years.json") as $year)
+		if ($year['id'] == $course->year)
+			$year_name = $year['name'];
+	$code = str_replace("===YEAR===", $year_name, $code);
+	
+	if (!empty($task->author))
+		$code = str_replace("===AUTHOR===", $task->author, $code);
+
+	return $code;
 }
 
 
 
 function ws_getfile() {
-	global $login, $conf_data_path, $conf_base_path;
+	global $login, $conf_base_path;
 
 	// Validate input variables
-	$course = intval($_REQUEST['course']);
-	$year = intval($_REQUEST['year']);
-	if (isset($_REQUEST['external'])) $external = $_REQUEST['external']; else $external=0;
-	if (isset($_REQUEST['X'])) $external=1;
-	$asgn_id = intval($_REQUEST['assignment']);
-	$task = intval($_REQUEST['task']);
 	$file = basename($_REQUEST['file']);
-	$destination_path = preg_replace('/[^A-Za-z0-9_\-\.\/]/', '_', str_replace("../", "", $_REQUEST['destinationPath'])) . "/$file";
-	if ($destination_path[0] == "/") $destination_path = substr($destination_path, 1);
 	
-	if (empty($file))
-		json(error("ERR006", "File not found"));
-	
-	if ($external) {
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-	} else {
-		$course_path = $conf_data_path . "/$course" . "_$year";
-	}
-	if (!file_exists($course_path))
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
 		json(error("ERR002", "Unknown course"));
-		
-	// Find assignment
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
+	}
 	
+	if (!$course->isAdmin($login) && !$course->isStudent($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	$assignments = $root->getData();
 	if (empty($assignments))
 		json(error("ERR003", "No assignments for this course"));
 	
-	$asgn = array();
-	foreach ($assignments as $a)
-		if ($a['id'] == $asgn_id) $asgn=$a;
-	if (empty($asgn))
-		json(error("ERR004", "Unknown assignment"));
-		
-	$task = assignment_find_task($asgn, $task_id);
-	if (!$task)
+	if (!isset($_REQUEST['task_direct']))
+		json(error("ERR005", "Unknown task"));
+	$task = $root->findById( intval($_REQUEST['task_direct']) );
+	if ($task === false)
 		json(error("ERR005", "Unknown task"));
 	
 	// Look for task file
-	$found_file_path = $course_path . "/assignment_files/" . $asgn['path'] . "/Z$task/$file";
+	if (empty($file))
+		json(error("ERR006", "File not found - $file"));
+	
+	$found_file_path = $task->filesPath() . "/$file";
 	if (!file_exists($found_file_path))
-		$found_file_path = $course_path . "/files/$file";
+		$found_file_path = $course->getPath() . "/files/$file";
 	if (!file_exists($found_file_path))
-		json(error("ERR006", "File not found"));
+		json(error("ERR006", "File not found - $file"));
+	
+	$destination_path = $task->filesPath(true) . "/$file";
 		
 	// Test if file is binary
-	$handle = fopen($found_file_path, "r");
-	$contents = fread($handle, 20);
-	fclose($handle);
 	$binary = false;
-	
-	if ($course == 1 && $year == 14 && $external == 0) {
-		for ($i=0; $i<strlen($contents); $i++) {
-			$k = ord($contents[$i]);
-			if (($k < 32 && $k != 13 && $k != 10 && $k != 9) || $k > 127)
-				$binary = true;
-		}
+	foreach($task->files as $fileData) {
+		if (array_key_exists('filename', $fileData) && $fileData['filename'] == $file && $fileData['binary'])
+			$binary = true;
 	}
 	
-	if ($binary) {
+	if ($binary && !isset($_REQUEST['view'])) {
 		if (empty($login)) json(error("ERR007", "Session expired, please login again"));
-	
-		$ok = ok("Copying on server sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &");
+		
+		$ok = ok("Copying on server $destination_path");
 		$ok['code'] = "STA001";
 		// Sadly downloading file from service doesn't work as apparently ws.writeFile doesn't support binary files
 		proc_close(proc_open("sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &", array(), $foo));
@@ -315,9 +294,11 @@ function ws_getfile() {
 		$k = readfile($found_file_path,false);
 	} else {
 		$code = file_get_contents($found_file_path);
+		
 		if (isset($_REQUEST['replace']))
-			$code = str_replace("===TITLE===", $_REQUEST['replace'], $code);
-		if ($course == 2234 && $file == ".zadaca") {
+			$code = assignment_replace($code, $course, $task);
+		
+		if ($course->id == 2234 && $file == ".zadaca") {
 			if (preg_match("/\"id\": (\d+)/", $code, $matches)) {
 				$newid = $matches[1]+1;
 				$code = preg_replace("/\"id\": (\d+)/", "\"id\": $newid", $code);
@@ -331,9 +312,112 @@ function ws_getfile() {
 
 
 
+function ws_addfile() {
+	global $login, $conf_base_path;
+
+	// Validate input variables
+	$filename = basename($_FILES['add']['name']);
+	
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
+	
+	if (!$course->isAdmin($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	
+	$task = false;
+	if (isset($_REQUEST['task_direct'])) {
+		$task = $root->findById( intval($_REQUEST['task_direct']) );
+		if ($task === false)
+			json(error("ERR005", "Unknown task"));
+	}
+	
+	$file = array("filename" => $filename, "binary" => false, "show" => false);
+	if (isset($_REQUEST['binary']) && $_REQUEST['binary']) $file['binary'] = true;
+	if (isset($_REQUEST['show']) && $_REQUEST['show']) $file['show'] = true;
+	
+	$temporary = $_FILES['add']['tmp_name'];
+	if (!$task) {
+		$course->addFile($filename, $temporary);
+	} else {
+		$blah = $task->addFile($file, $temporary);
+	}
+	json(ok("filename $filename task ".$task->id." blah ".$blah));
+}
+
+
+
+function ws_generatefile() {
+	global $login, $conf_data_path;
+
+	// Validate input variables
+	$filename = basename($_REQUEST['file']);
+	
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
+	
+	if (!$course->isAdmin($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	
+	$task = false;
+	if (isset($_REQUEST['task_direct'])) {
+		$task = $root->findById( intval($_REQUEST['task_direct']) );
+	}
+	if ($task === false)
+		json(error("ERR005", "Unknown task"));
+	
+	$file = array("filename" => $filename, "binary" => false, "show" => false);
+	$temporary = tempnam("/tmp", "GEN");
+	
+	if ($filename == ".zadaca") {
+		$zadatak = intval(substr($task->name, strrpos($task->name, " ")));
+		
+		$zadaca = array("id" => $task->parent->homework_id, "zadatak" => $zadatak, "naziv" => $task->parent->name . ", " . $task->name);
+		file_put_contents($temporary, json_encode($zadaca, JSON_PRETTY_PRINT));
+	}
+	
+	if ($filename == ".autotest") {
+		foreach(Cache::getFile("years.json") as $year)
+			if ($year['id'] == $course->year)
+				$year_name = $year['name'];
+		$course_data = $course->data;
+		
+		$autotest = array();
+		$autotest['id'] = intval(file_get_contents($conf_data_path . "/autotest_last_id.txt")) + 1;
+		file_put_contents($conf_data_path . "/autotest_last_id.txt", $autotest['id']);
+		$autotest['name'] = $course->name . " ($year_name), " . $task->parent->name . ", " . $task->name;
+		$autotest['language'] = $course_data['language'];
+		$autotest['required_compiler'] = $autotest['preferred_compiler'] = $course_data['compiler'];
+		$autotest['compiler_features'] = $course_data['compiler_features'];
+		$autotest['compiler_options'] = $course_data['compiler_options'];
+		$autotest['compiler_options_debug'] = $course_data['compiler_options_debug'];
+		$autotest['compile'] = $autotest['test'] = $autotest['debug'] = $autotest['profile'] = "true";
+		$autotest['run'] = "false";
+		$autotest['test_specifications'] = array();
+		
+		file_put_contents($temporary, json_encode($autotest, JSON_PRETTY_PRINT));
+	}
+	
+	$task->addFile($file, $temporary);
+	json(ok(""));
+}
+
+
 // Function to deploy file to all users (admin only)
 function ws_deploy() {
-	global $login, $conf_admin_users, $conf_base_path, $conf_web_background, $conf_data_path;
+	global $login, $conf_admin_users, $conf_base_path, $conf_web_background;
+
+	// Validate input variables
+	$file = basename($_REQUEST['file']);
 
 	if (isset($_REQUEST['user'])) $user = escapeshellarg($_REQUEST['user']); else $user = "all-users";
 
@@ -342,63 +426,35 @@ function ws_deploy() {
 		json(error("ERR007", "Insufficient privileges"));
 	
 	// Input values & validation
-	$course = intval($_REQUEST['course']);
-	$year = intval($_REQUEST['year']);
-	if (isset($_REQUEST['external'])) $external = $_REQUEST['external'];
-	if (isset($_REQUEST['X'])) $external=1;
-	$asgn_id = intval($_REQUEST['assignment']);
-	$task = intval($_REQUEST['task']);
-	$file = basename($_REQUEST['file']);
-		
-	if (empty($file))
-		json(error("ERR006", "File not found $file"));
+	$course = Course::fromRequest();
 	
-	if ($external) {
-		$course_path = $conf_data_path . "/X$course" . "_$year";
-	} else {
-		$course_path = $conf_data_path . "/$course" . "_$year";
-	}
-	if (!file_exists($course_path))
-		json(error("ERR002", "Unknown course"));
-
-	// Find course abbreviation (for path part)
-	$courses_path = $conf_data_path . "/courses.json";
-	$courses = array();
-	if (file_exists($courses_path))
-		$courses = json_decode(file_get_contents($courses_path), true);
-	
-	$course_data = array();
-	foreach($courses as $c) {
-		if ($external && $c['type'] != "external") continue;
-		if (!$external && $c['type'] == "external") continue;
-		if ($c['id'] == $course) $course_data = $c;
-	}
-	
-	// Find assignment
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
-	
+	$root = $course->getAssignments();
+	$assignments = $root->getData();
 	if (empty($assignments))
 		json(error("ERR003", "No assignments for this course"));
 	
-	$asgn = array();
-	foreach ($assignments as $a)
-		if ($a['id'] == $asgn_id) $asgn=$a;
-	if (empty($asgn))
-		json(error("ERR004", "Unknown assignment"));
+	$task = false;
+	if (isset($_REQUEST['task_direct']))
+		$task = $root->findById( intval($_REQUEST['task_direct']) );
+	else if (isset($_REQUEST['task']))
+		$task = $root->findById( intval($_REQUEST['task']) );
+	if ($task === false)
+		json(error("ERR005", "Unknown task"));
 	
 	// Look for task file
-	$found_file_path = $course_path . "/assignment_files/" . $asgn['path'] . "/Z$task/$file";
+	if (empty($file))
+		json(error("ERR006", "File not found"));
+	
+	$found_file_path = $task->filesPath() . "/$file";
 	if (!file_exists($found_file_path))
-		$found_file_path = $course_path . "/files/$file";
+		$found_file_path = $course->getPath() . "/files/$file";
 	if (!file_exists($found_file_path))
-		json(error("ERR006", "File not found X $found_file_path"));
+		json(error("ERR006", "File not found " . $task->filesPath() . "/$file"));
 		
-	$destination_path = $course_data['abbrev'] . "/" . $asgn['path'] . "/Z$task/$file";
+	$destination_path = $task->filesPath(true) . "/$file";
 	
 	// Find suitable output filename
+	// This log is used so that admin user can get a nice progress bar
 	if (!file_exists($conf_web_background)) mkdir($conf_web_background);
 	do {
 		$log_filename = generateRandomString(10);
@@ -434,11 +490,9 @@ function ws_deploy_status() {
 	if (!file_exists($log_file))
 		json(error("ERR006", "File not found"));
 
-	// This is wrong due to zombie users
-	//$users_file = $conf_base_path . "/users";
-	//eval(file_get_contents($users_file));
-	//$total = count($users);
-	$total = `grep 1002 /etc/passwd | wc -l`;
+	$users_file = $conf_base_path . "/users";
+	eval(file_get_contents($users_file));
+	$total = count($users);
 	$count = `cat $log_file | grep -v ERROR | wc -l`;
 	
 	$result = ok("");
@@ -446,6 +500,36 @@ function ws_deploy_status() {
 	$result['data']['done'] = intval($count);
 	$result['data']['total'] = intval($total);
 	json($result);
+}
+
+
+
+// Update all assignment data on server
+function ws_update_assignments() {
+	global $login, $conf_data_path, $conf_admin_users;
+
+	// Check if user is admin
+	if (!in_array($login, $conf_admin_users))
+		json(error("ERR007", "Insufficient privileges"));
+	
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
+	
+	if (!$course->isAdmin($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$path = $conf_data_path . "/" . $course->toString() . "/assignments";
+	copy ($path, $path . ".bak");
+	
+	// This step beautifies JSON code
+	$data = json_decode($_REQUEST['data'], true);
+	$dataJson = json_encode($data, JSON_PRETTY_PRINT);
+	
+	file_put_contents($path, $dataJson);
+	json(ok(""));
 }
 
 
@@ -477,6 +561,8 @@ require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
 require_once("../login.php");
 
+require("../classes/Course.php");
+
 
 ini_set('default_charset', 'UTF-8');
 header('Content-Type: text/json; charset=UTF-8');
@@ -502,16 +588,24 @@ if ($_REQUEST['action'] == "courses")
 	ws_courses();
 else if ($_REQUEST['action'] == "assignments")
 	ws_assignments();
+else if ($_REQUEST['action'] == "assignments2")
+	ws_assignments2();
 else if ($_REQUEST['action'] == "files")
 	ws_files();
 else if ($_REQUEST['action'] == "getFile")
 	ws_getfile();
+else if ($_REQUEST['action'] == "addFile")
+	ws_addfile();
+else if ($_REQUEST['action'] == "generateFile")
+	ws_generatefile();
 else if ($_REQUEST['action'] == "deploy")
 	ws_deploy();
 else if ($_REQUEST['action'] == "deploy_status")
 	ws_deploy_status();
 else if ($_REQUEST['action'] == "from_path")
 	ws_from_path();
+else if ($_REQUEST['action'] == "updateAssignments")
+	ws_update_assignments();
 
 else
 	json(error("ERR999", "Unknown action"));

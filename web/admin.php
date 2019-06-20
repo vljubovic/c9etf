@@ -42,6 +42,8 @@ eval(file_get_contents("../users"));
 // Library
 require_once("admin/lib.php");
 
+require_once("classes/Course.php");
+
 
 // Admin modules
 require_once("admin/stats.php");
@@ -128,15 +130,19 @@ if ($logged_in) {
 		// Update usage statistics for user
 		if ($_REQUEST['action'] == "refresh-stats") {
 			$loadavg = `cat /proc/loadavg | cut -d " " -f 1`;
-			if ($loadavg > $loadavg_limit) {
+			if ($loadavg > $conf_limit_loadavg_web) {
 				print "Updating statistics is temporarily disabled due to high server load. Please try again later.";
 				return 0;
 			}
 			$user = escapeshellarg($_REQUEST['user']);
-			// We can't get progress info (TODO?)
-			$msg = "User statistics updated.";
-			admin_log("refresh stats $user");
-			proc_close(proc_open("sudo $conf_base_path/bin/userstats $user &", array(), $foo));
+			if ($user == "USERNAME") 
+				$error = "There was an error - username incorrectly forwarded";
+			else {
+				// We can't get progress info (TODO?)
+				$msg = "User statistics updated.";
+				admin_log("refresh stats $user");
+				proc_close(proc_open("sudo $conf_base_path/bin/userstats $user &", array(), $foo));
+			}
 		}
 		
 		// Update usage statistics for all users in a group
@@ -291,47 +297,39 @@ if ($logged_in) {
 	
 	// Show all users in a group
 	else if (isset($_REQUEST['group'])) {
-		$group = basename($_REQUEST['group']);
-		
-		$group_path = $conf_data_path . "/groups/$group";
-		if (file_exists($group_path))
-			$group_data = json_decode(file_get_contents($group_path), true);
-		else {
-			niceerror("Unknown group");
-			return 0;
-		}
-		
 		if ($_REQUEST['group'] == "active") {
-			$group_name = "Active users";
+			$group = new Group();
+			$group->name = "Active users";
 			foreach($users as $username => $userdata) {
 				if ($userdata['status'] == "active")
-					$members[$username] = $userdata['realname'];
+					$group->members[$username] = $userdata['realname'];
 			}
 			
 		} else {
-			$members = $group_data['members'];
-			$group_name = $group_data['name'];
+			try {
+				$group = Group::fromId($_REQUEST['group']);
+			} catch (Exception $e) {
+				niceerror($e->getMessage());
+				return 0;
+			}
 		}
 		
-		admin_log("group $group_name");
 		
-		$backlink = "";
-		if (isset($_REQUEST['backlink']))
-			$backlink = htmlentities($_REQUEST['backlink'], ENT_QUOTES);
+		admin_log("group " . $group->name);
 		
 		$add_title = "";
 		if (isset($_REQUEST['path'])) $add_title = " - " . $_REQUEST['path'];
 		?>
-		<p id="p-return"><a href="admin.php?<?=$backlink?>">Return to course page</a></p>
+		<p id="p-return"><a href="admin.php?<?=$group->course->urlPart()?>">Return to course page</a></p>
 		
-		<h1><?=$group_name.$add_title?></h1>
+		<h1><?=$group->name . $add_title?></h1>
 		<?php
 		
-		$link_here = urlencode("group=$group");
+		$link_here = urlencode("group=" . $group->id);
 		
-		if ($group > 0) {
+		if ($_REQUEST['group'] !== "active") {
 			?>
-			<p><a href="admin.php?action=refresh-stats-group&amp;group=<?=$group?>&amp;return=<?=$link_here?>">
+			<p><a href="admin.php?action=refresh-stats-group&amp;group=<?=$group->id?>&amp;return=<?=$link_here?>">
 				<i class="fa fa-refresh"></i> Update stats for group
 			</a></p>
 			<?php
@@ -339,7 +337,7 @@ if ($logged_in) {
 			print "<p>&nbsp;</p>\n";
 		}
 		
-		admin_user_table($group, $members, $link_here);
+		admin_user_table($group->id, $group->getMembers(), $link_here);
 	}
 	
 	// Currently active users
@@ -370,31 +368,16 @@ if ($logged_in) {
 	
 	// Page for a single course
 	else if (isset($_REQUEST['course'])) {
-		$course = intval($_REQUEST['course']);
-		$year = intval($_REQUEST['year']);
-		$backlink = "course=$course&year=$year";
-		
-		if (isset($_REQUEST['X'])) {
-			$external = true;
-			$course_path = "X$course"."_$year";
-			$backlink .= "&X";
-		} else {
-			$external = false;
-			$course_path = "$course"."_$year";
+		// Create Course object from $_REQUEST
+		try {
+			$course = Course::fromRequest();
+		} catch(Exception $e) {
+			niceerror($e->getMessage());
+			return 0;
 		}
 		
-		// Get course name (and possibly other info)
-		$courses = admin_courses();
-		$course_data = array();
-		foreach($courses as $c) {
-			if ($external && $c['type'] != "external") continue;
-			if (!$external && $c['type'] == "external") continue;
-			if ($c['id'] == $course) $course_data = $c;
-		}
-		
-		$perms = admin_permissions($login);
-		if (!empty($perms) && !in_array($course_path, $perms)) {
-			admin_log("course $course_path access denied");
+		if (!$course->isAdmin($login)) {
+			admin_log("course " . $course->toString() . " access denied");
 			niceerror("You are not allowed to access this course");
 			print "<p>If this is a mistake, please contact administrator</p>\n";
 			print "</body></html>\n";
@@ -404,25 +387,22 @@ if ($logged_in) {
 		// List of groups
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
-		<h1><?=$course_data['name']?></h1>
+		<h1><?=$course->name?></h1>
 
 		<div id="group-list">
 		<h2>Groups</h2>
 		<ul class="groups">
 		<?php
 		
-		$groups_path = $conf_data_path . "/$course_path/groups";
-		$groups = json_decode(file_get_contents($groups_path), true);
 		$zupd = "";
-		foreach ($groups as $group_id => $group_name) {
-			if ($group_id == "last_update") continue;
+		foreach ($course->getGroups() as $group) {
 			?>
-			<li><a class="grouplnk" href="admin.php?group=<?=$group_id?>&amp;path=<?=$course_data['abbrev']?>&amp;backlink=<?=urlencode($backlink)?>"><?=$group_name?></a></li>
+			<li><a class="grouplnk" href="admin.php?group=<?=$group->id?>&amp;path=<?=$course->abbrev?>"><?=$group->name?></a></li>
 			<?php
-			$zupd .= "zamgerUpdateTasks.push('$group_id');\n";
+			$zupd .= "zamgerUpdateTasks.push('" . $group->id . "');\n";
 		}
 		?>
-			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course_data['abbrev']?>">Active users</a></li>
+			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course->abbrev?>">Active users</a></li>
 		</ul></p>
 		</div>
 		<?php
@@ -434,7 +414,7 @@ if ($logged_in) {
 		<h2>Notices</h2>
 		<?php
 		
-		admin_notices($course, $year, $external);
+		admin_notices($course);
 		
 		
 		// Create assignments
@@ -444,7 +424,7 @@ if ($logged_in) {
 		<div id="assignments">
 		<h2>Assignments</h2>
 		<?php
-		assignment_table($course, $year, $external);
+		assignment_table($course);
 		
 		?>
 		</div>
@@ -454,7 +434,7 @@ if ($logged_in) {
 		<p>Here you can define default files that will be automatically created for all assignments on this course. You can change them for each assignment individually.</p>
 		<p>If the text ===TITLE=== exists in a file it will be replaced with activity title.</p>
 		<?php
-		assignment_files($course, $year, $external);
+		assignment_files($course);
 		
 		?>
 		</div>
@@ -462,7 +442,7 @@ if ($logged_in) {
 		<script>
 		var zamgerUpdateTasks = [];
 		<?php 
-		if ($external && $conf_zamger) print $zupd;
+		if ($course->external && $conf_zamger) print $zupd;
 		?>
 		runUpdates();
 		</script>
@@ -473,41 +453,20 @@ if ($logged_in) {
 		?><h1>Select course</h1>
 		<ul class="groups">
 		<?php
-				
-		$courses = admin_courses();
-		if (empty($courses) && !in_array($login, $conf_sysadmins)) {
-			niceerror("There are no courses defined on system.");
-			print "<p>Please contact the administrator to create some courses.</p>\n";
-			return 0;
-		}
-	
-		if (isset($_REQUEST['year'])) $year = intval($_REQUEST['year']); else $year = $conf_current_year;
-		$perms = admin_permissions($login);
 		
-		function coursecmp($a, $b) { return $a['name']>$b['name']; }
+		if (isset($_REQUEST['year'])) $year = intval($_REQUEST['year']); else $year = $conf_current_year;
+		$courses = Course::forAdmin($login, $year);
+		
+		function coursecmp($a, $b) { return $a->name > $b->name; }
 		
 		usort($courses, "coursecmp");
 		
 		$zupd = "";
 		foreach ($courses as $course) {
-			if (!empty($perms)) {
-				// Check permissions
-				$c9id = $course['id'] . "_" . $year;
-				if ($course['type'] == "external") $c9id = "X" . $c9id;
-				$found = false;
-				foreach($perms as $perm) {
-					if ($perm == $c9id) $found = true;
-				}
-				if (!$found) continue;
-			}
+			$zupd .= "zamgerUpdateTasks.push('" . $course->toString() . "');\n";
 			
-			$zupd .= "zamgerUpdateTasks.push('$c9id');\n";
-			
-			$add = "";
-			if ($course['type'] == "external") $add = "&amp;X";
-
 			?>
-			<li><a class="grouplnk" href="admin.php?course=<?=$course['id']?>&amp;year=<?=$year?><?=$add?>"><?=$course['name']?></a></li>
+			<li><a class="grouplnk" href="admin.php?<?= $course->urlPart() ?>"><?=$course->name?></a></li>
 			<?php
 		}
 		?>
@@ -529,6 +488,12 @@ if ($logged_in) {
 		
 		<div style="position:absolute; top:200px; left:600px; width: 400px; border: 1px solid black; background: #ddd; font-size: small; padding: 5px" id="admin_news">
 		<h2>Admin news</h2>
+		<p><b>16.12.</b> Admini ne bi trebali pristupati fajlovima van predmeta na kojima su u nastavnom osobolju.</p>
+		<p><b>6.11.</b> Omogućeno automatsko kreiranje .autotest i .zadaca fajlova prema specifikaciji predmeta. Kada kliknete na točkić ako ovaj fajl ne postoji imate opciju da se kreira. Dosta popravki u realtime ažuriranju grupe.</p>
+		<p><b>26.10.</b> Novi feature: Kada otvorite grupu i neki specifičan tutorijal (npr. klikom na link T2 u zaglavlju tabele), statistike broja pokretanja, testova itd. se  ažuriraju u real-time.</p>
+		<p><b>25.10.</b> Novi feature: Kopiranje zadataka od prošle godine (zajedno sa autotestovima itd.)</p>
+		<p><b>24.10.</b> Novi feature: Sakrivanje zadataka. Klikom na točkić pored imena zadatka sada možete vidjeti checkbox "Hidden". Ako je zadatak "Hidden" mogu ga vidjeti samo korisnici u klasi administratora, a ostali ne.</p>
+		<p><b>23.10.</b> Novi feature: Activity balls. Kada uđete na grupu možete vidjeti zelene kuglice koje signaliziraju da u tom trenutku student nešto tipka. Kuglice nestaju u roku od 10ak sekundi.</p>
 		<input type="button" value="Close" onclick="document.getElementById('admin_news').style.display='none';">
 		</div>
 		
@@ -542,7 +507,7 @@ if ($logged_in) {
 		<?php
 	}
 	
-	
+		
 	?>
 
 	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2019.</div>

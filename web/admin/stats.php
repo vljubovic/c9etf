@@ -193,9 +193,21 @@ function admin_bsstats() {
 function admin_exam_stats() {
 	global $conf_base_path;
 	
-	$current_exam = "OR/Ispit13";
+	$current_exam = "OR/Ispit6";
 	$exam_students = array(
-	"hahmatovic1", "salic3", "aavdic6", "abeslagic1", "nbisevac1", "ebosnjakov1", "abuljina1", "dcikic1", "acoko2", "lcoloman1", "edeljo1", "iduracak1", "nduvnjak1", "adelmo2", "afajic1", "mfisic1", "agobeljic1", "bhadzic2", "nhanic2", "aharbas1", "eherenda1", "ridrizovic1", "eimamovic2", "lkafedzic1", "skehic1", "aklepic1", "dlukovic1", "emehic3", "amehmedovi1", "fmesic1", "hmezit1", "amilisic2", "mmujezinov1", "amusic5", "mmusinovic2", "anedzibovi1", "anocajevic1", "jpetrovic1", "mplakalovi1", "apuljiz1", "arizvo2", "ksarajlic1", "msirco1", "islagalo1", "asuljagic1", "ksuljic1", "ssabic2", "nsahovic1", "asikalo2", "nsljivo1", "msosic1", "ltalic1", "statar1", "augljesa2", "avujcic1", "nvelic3", "izdralovic1"
+//	"saksamovic1", "nbadzak1", "lbecirevic1", "abecirovic3", "vbeglerovi2", "lbegovic2", "acicvara1", "icajo1", "vcelan1", "hcorbo2", "mdokic1", "efejzic1", "kforto1", "fhajdarpas1", "rhandzic1", "aharba2", "bhasanagic1", "nhastor1", "hhodzic2", "ehondo1", "thorozovic1", "eicanovic1", "djugo1", "tkadric1", "mkamali1", "akevric2", "hkovacevic1", "skozic2", "skujrakovi1", "ekurtovic3", "amahmutovi5", "fmaric1", "tmarkesic1", "amehmedovi1", "tmemic1", "smerzic1", "emujanovic3", "lmujic1", "mmurtic2", "tosmanagic1", "spljakic1", "apolutan2", "lsmajlovic1", "rtahic1", "rtomas1", "atopalovic2", "ivrce1", "azahirovic1", "azunic1", "jcaluk1"
+//"aalagic2", "bbiberovic1", "hbijedic1", "dbriski1", "ebrljak1", "ecocalic1", "fdemir1", "adizdarevi1", "nduvnjak1", "edzaferovi1", "kdokic1", "ngafic1", "vhasic1", "khatibovic1", "hhadzic3", "bhuseinovi1", "zjavdan1", "mkapo2", "bkarovic1", "ikovac1", "emerdic2", "bniksic1", "nomanovic2", "mparic2", "erazanica2", "fselimovic1", "esmailagic1", "istanic1", "ssuljevic1", "ktafro1", "avelic3"
+
+//"saksamovic1", "aalagic2", "fbazdar1", "abegic2", "lbuturovic1", "abuza2", "aceman1", "fdemir1", "kdokic1", "afazlagic1", "hhadzic3", "ahalilovi15", "rhandzic1", "thasic1", "lhodzic2",  "ahrnjic3", "bhuseinovi1", "ikovac1", "mkapo2", "bkarovic1", "akarzic1", "akojasevic1", "lkovac1", "skujrakovi1", "klazovic1", "nmerdovic1", "anikolic1", "knurikic1", "nomanovic2", "tosmanagic1", "apandur1", "spljakic1", "apolutan2", "nrovcanin1", "msalihovic3", "fselimovic1", "esmailagic1", "ssuljevic1", "bsuljic1",  "tsahovic1", "rtomas1", "stopalovic1"
+
+
+//"nbadzak1", "bbiberovic1", "dbokan1", "dbriski1", "mcorbo1", "ncenanovic1", "ngafic1", "bhasanagic1", "vhasic1", "zjavdan1", "skahvedzic1", "akevric2", "kkozlica1", "skorac1", "akovacevic4", "ekudic1", "tmehulic1", "dmelunovic1", "mmuhovic2", "anikolic1", "bniksic1", "apajevic1", "apasic2", "tpervan1", "aprljaca1", "epruzan1", "erazanica2", "istanic1", "msubasic2", "esuljkic1", "nsuvalija1", "mucanbarli1", "avelic3", "ivrce1", "azunic1"
+"aagic1", "halagic1", "aalic7", "ebrljak1", "ecocalic1", "jcaluk1", "vcelan1", "ndizdarevi1", "nduvnjak1", "edzaferovi1", "neskerica1", 
+"mgojak1", "khadzic2", "mhanjalic1", "aharba2", "hhamzic1", "dhasimbego1", "iisabegovi1", "iicanovic1", "ikarabeg1", "mkaravdic1", 
+"nkoldzo1", "tkrivosija1", "ekurtovic3", "amajdanac1", "mmujkanovi1", "anesimi1", "dpivac1", "dpopovic1", "erudalija1", "hselimovic1", 
+"kselman1", "fsarancic1", "asiljak1", "ksljivo1", "ktafro1", "htopic1", "ezahirovic2", "azaimovic2", "szolota1" 
+
+
 	);
 
 	// Hardcoded 4 assignments
@@ -212,6 +224,10 @@ function admin_exam_stats() {
 		for ($i=1; $i<=4; $i++) {
 			$path = $current_exam . "/Z$i/.at_result";
 			$exists = exec("sudo $conf_base_path/bin/wsaccess $username exists \"$path\"");
+			if ($exists != 1) {
+				$path = str_replace("OR", "UUP", $path);
+				$exists = exec("sudo $conf_base_path/bin/wsaccess $username exists \"$path\"");
+			}
 			if ($exists == 1) {
 				$at_result = json_decode(shell_exec("sudo $conf_base_path/bin/wsaccess $username read \"$path\""), true);
 				//print_r($at_result);
