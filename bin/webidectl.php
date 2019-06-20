@@ -1023,8 +1023,10 @@ function create_user($username, $password) {
 
 	// Create user on storage node
 	if ($is_storage_node) {
-		if (!file_exists($conf_home_path . "/" . substr($userdata['efn'],0,1)))
+		if (!file_exists($conf_home_path . "/" . substr($userdata['efn'],0,1))) {
 			exec("mkdir " . $conf_home_path . "/" . substr($userdata['efn'],0,1));
+			exec("chmod 755 " . $conf_home_path . "/" . substr($userdata['efn'],0,1));
+		}
 		exec("useradd -d ". $userdata['home'] . " -g $conf_c9_group -k $conf_defaults_path/home -m " . $userdata['esa']);
 		// For some reason files copied from default home aren't owned by user :(
 		exec("chown -R " . $userdata['esa'] . ":$conf_c9_group ". $userdata['home']);
