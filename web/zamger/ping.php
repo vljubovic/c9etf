@@ -4,8 +4,7 @@
 
 require_once(__DIR__."/config.php");
 require_once(__DIR__."/jsonlib.php");
-$conf_base_path = "/usr/local/webide";
-$conf_home_path = "/rhome";
+require_once(__DIR__."/../../lib/config.php");
 require_once($conf_base_path . "/lib/webidelib.php");
 
 session_start();
