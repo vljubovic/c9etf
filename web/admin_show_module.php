@@ -40,6 +40,7 @@ if ($module == "svn")
 if ($module == "git")
 	admin_git_log($user, $path);
 if ($module == "deleted")
-	admin_deleted_files($user, $path);
+	//admin_deleted_files($user, $path);
+	print "Not implemented yet";
 
 ?>
