@@ -33,25 +33,7 @@ $mypid = getmypid();
 exec("echo $mypid > $watchfile");
 
 
-// Following webidectl commands are not locked with bfl
-$skip_bfl = array(
-	// Readonly commands (for webide files)
-	"list-active", "last", "server-stats", "is-node-up", "help", "reset-nginx", "svnrestore",
-	// Commands that happen very often and don't really need to be locked
-	"last-update", "broadcast",
-	// Commands that take a long time and are executed on a regular basis
-	// but users complain if they can't login during that time
-	"update-all-stats", "culling", "verify-all-users", "fix-svn", "kill-inactive", "git-commit", "disk-cleanup", "clean-inodes", "storage-nightly",
-	// Implement locking manually (for performance reasons)
-	"verify-user", "logout"
-);
-
-
 srand(make_seed());
-
-// BFL - Big Fucking Lock
-if (!in_array($action, $skip_bfl))
-	bfl_lock();
 
 
 $users = array();
@@ -84,11 +66,16 @@ switch($action) {
 		else {
 			$key = $argv[3];
 			$value = $argv[4];
+			
+			bfl_lock("user $username");
+			bfl_lock("users file");
+			read_files();
 			if ($value === "-")
-				unset($users[$user][$key]);
+				unset($users[$username][$key]);
 			else
-				$users[$user][$key] = $value;
+				$users[$username][$key] = $value;
 			write_files();
+			bfl_unlock("users file");
 			
 			if ($is_control_node) {
 				foreach($conf_nodes as $node) {
@@ -96,6 +83,7 @@ switch($action) {
 						run_on($node['address'], "$conf_base_path/bin/webidectl change-user " . $userdata['esa'] . " " . escapeshellarg($key) . " " . escapeshellarg($value));
 				}
 			}
+			bfl_unlock("user $username");
 		}
 		break;
 	
@@ -136,9 +124,12 @@ switch($action) {
 			else {
 				create_user($username, $password);
 				if ($argc>3) {
+					bfl_lock("users file");
+					read_files();
 					$users[$username]['realname'] = $argv[4];
 					if ($argc>4) $users[$username]['email'] = $argv[5];
 					write_files();
+					bfl_unlock("users file");
 				}
 			}
 		}
@@ -146,6 +137,10 @@ switch($action) {
 	
 	// Logout user
 	case "logout":
+		// There is no reason for logout if clear-server is currently active
+		if (file_exists($conf_base_path."/watch/webidectl.clear-server."))
+			break;
+		
 		$wait = 0;
 		if ($argc >= 3)
 			$wait = intval($argv[3]);
@@ -158,16 +153,16 @@ switch($action) {
 				}
 			}
 		}
-		bfl_lock();
 		read_files();
 		deactivate_user($username); // Force all logout operations, even if we list user as not logged in
-		bfl_unlock();
 		unlink("/tmp/already-$username");
 		break;
 
 	// Just stop node
 	case "stop-node":
+		bfl_lock("user $username");
 		stop_node($username, false);
+		bfl_unlock("user $username");
 		break;
 
 	// Move user to another server
@@ -178,15 +173,10 @@ switch($action) {
 	// Remove user from system
 	case "remove":
 		if (array_key_exists($username, $users)) {
-			if ($users[$username]["status"] == "active") {
+			if ($users[$username]["status"] == "active")
 				deactivate_user($username);
-			}
-			
 			remove_user($username);
 		}
-		if ($is_control_node)
-			write_nginx_config();
-		write_files();
 		break;
 
 	// Add a user with local authentication (htpasswd)
@@ -198,8 +188,10 @@ switch($action) {
 			// This is a different path from $userdata['htpasswd'] !
 			$htpasswd = $conf_base_path . "/localusers/" . $userdata['efn'];
 
+			bfl_lock("user $username");
 			exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
 			exec("chown $conf_nginx_user $htpasswd");
+			bfl_unlock("user $username");
 			print "Created local user $username\n";
 		}
 		break;
@@ -256,14 +248,15 @@ switch($action) {
 							run_on($node['address'], "kill " . $process['pid']);
 					}
 					if ($sleep > 0) {
-						bfl_unlock();
 						sleep($sleep);
-						bfl_lock();
+						read_files();
 					}
 				}
 			}
 			
 			if (!in_array("compute", $node['type'])) continue;
+			
+			read_files();
 			
 			foreach(ps_ax($node['address']) as $process) {
 				if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
@@ -287,13 +280,12 @@ switch($action) {
 						run_on($node['address'], "$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username));
 				}
 				if ($sleep > 0) {
-					bfl_unlock();
 					sleep($sleep);
-					bfl_lock();
+					read_files();
 				}
 			}
+			read_files();
 		}
-		bfl_unlock();
 		break;
 	
 	// Time of last activity for user
@@ -307,9 +299,11 @@ switch($action) {
 	// Reset users configuration (if broken)
 	case "reset-config":
 		if (array_key_exists($username, $users)) {
-			if ($users[$username]["status"] == "inactive")
+			if ($users[$username]["status"] == "inactive") {
+				bfl_lock("user $username");
 				reset_config($username);
-			else
+				bfl_unlock("user $username");
+			} else
 				print "ERROR: User $username logged in\n";
 		} else
 			print "ERROR: User $username doesn't exist\n";
@@ -318,9 +312,11 @@ switch($action) {
 	// Reinitialize git repo if exists
 	case "git-init":
 		if (array_key_exists($username, $users)) {
-			if ($is_storage_node)
+			if ($is_storage_node) {
+				bfl_lock("user $username");
 				git_init($username);
-			else
+				bfl_unlock("user $username");
+			} else
 				run_on($storage_node_addr, "$conf_base_path/bin/webidectl git-init " . $userdata['esa']);
 		} else
 			print "ERROR: User doesn't exist\n";
@@ -334,8 +330,11 @@ switch($action) {
 				write_files();
 			}
 		}*/
+		bfl_lock("users file");
+		read_files();
 		if ($is_control_node)
 			write_nginx_config();
+		bfl_unlock("users file");
 		break;
 
 	// Restart services for a logged-in user (if neccessary)
@@ -345,8 +344,10 @@ switch($action) {
 
 	// Just start syncsvn
 	case "syncsvn":
+		bfl_lock("user $username");
 		if ($is_svn_node)
 			syncsvn($username);
+		bfl_unlock("user $username");
 		break;
 
 	// Same for all users
@@ -376,8 +377,11 @@ switch($action) {
 	case "update-stats":
 		// Single user
 		if (array_key_exists($username, $users)) {
-			if ($is_svn_node)
+			if ($is_svn_node) {
+				bfl_lock("user $username");
 				exec("$conf_base_path/bin/userstats " . $userdata['esa']);
+				bfl_unlock("user $username");
+			}
 			else if ($is_control_node)
 				run_on($svn_node_addr, "$conf_base_path/bin/userstats " . $userdata['esa']);
 		}
@@ -389,8 +393,11 @@ switch($action) {
 			if (!array_key_exists($stats_user, $users))
 				continue; // Skip unknown user
 			$username_esa = escapeshellarg($stats_user);
-			if ($is_svn_node)
+			if ($is_svn_node) {
+				bfl_lock("user $stats_user");
 				exec("$conf_base_path/bin/userstats $username_esa");
+				bfl_unlock("user $stats_user");
+			}
 			else if ($is_control_node)
 				run_on($svn_node_addr, "$conf_base_path/bin/userstats $username_esa");
 		}
@@ -402,8 +409,11 @@ switch($action) {
 			// We can safely update stats for logged-in users
 			print "User $username\n";
 			$username_esa = escapeshellarg($username);
-			if ($is_svn_node)
+			if ($is_svn_node) {
+				bfl_lock("user $username_esa");
 				exec("$conf_base_path/bin/userstats $username_esa");
+				bfl_unlock("user $username");
+			}
 			else if ($is_control_node)
 				run_on($svn_node_addr, "$conf_base_path/bin/userstats $username_esa");
 		}
@@ -420,11 +430,13 @@ switch($action) {
 					print "Workspace not found for $username...\n";
 					continue;
 				}
+				bfl_lock("user $username");
 				if (!file_exists($workspace . "/.git")) {
 					print "Creating git for user $username...\n";
 					git_init($username);
 				}
 				run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
+				bfl_unlock("user $username");
 			}
 		else
 			run_on($storage_node_addr, "$conf_base_path/bin/webidectl git-commit");
@@ -433,9 +445,12 @@ switch($action) {
 	// (Attempt to) fix SVN conflicts for all users
 	case "fix-svn":
 		if ($is_svn_node) {
-			foreach($users as $username => $options)
+			foreach($users as $username => $options) {
+				bfl_lock("user $username");
 				fixsvn($username);
-			sleep(5);
+				bfl_unlock("user $username");
+				sleep(5);
+			}
 		}
 		break;
 	
@@ -447,8 +462,11 @@ switch($action) {
 			print "ERROR: User is online\n";
 		else if (!$is_svn_node)
 			run_on($svn_node_addr, "$conf_base_path/bin/webidectl user-reinstall-svn " . $userdata['esa']);
-		else
+		else {
+			bfl_lock("user $username");
 			user_reinstall_svn($username);
+			bfl_unlock("user $username");
+		}
 		break;
 	
 	// Update stats, delete SVN repo, call user_reinstall_svn
@@ -463,6 +481,7 @@ switch($action) {
 			run_on($svn_node_addr, "$conf_base_path/bin/webidectl user-reset-svn " . $userdata['esa']);
 		else {
 			print "Update stats\n";
+			bfl_lock("user $username");
 			$output = array();
 			exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
 			$output = join("\n", $output);
@@ -472,6 +491,7 @@ switch($action) {
 				print "Reinstall svn\n";
 				user_reinstall_svn($username);
 			}
+			bfl_unlock("user $username");
 		}
 		break;
 	
@@ -523,7 +543,7 @@ switch($action) {
 			if ($do_reinstall) {
 				print " - resetting svn\n";
 				print "Update stats\n";
-				bfl_lock();
+				bfl_lock("user $username");
 				$output = array();
 				exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
 				$output = join("\n", $output);
@@ -533,15 +553,13 @@ switch($action) {
 					print "Reinstall svn\n";
 					user_reinstall_svn($username);
 				}
+				bfl_unlock("user $username");
 			
 				// Inode statistics update (TODO)
 				
 				// Release lock for 5 seconds so users can do stuff
-				bfl_unlock();
 				sleep(5);
-				bfl_lock();
 				read_files();
-				bfl_unlock();
 			}
 		}
 		break;
@@ -559,6 +577,8 @@ switch($action) {
 		else if ($users[$partner]["status"] == "inactive")
 			print "ERROR: User $partner is not online\n";
 		else {
+			bfl_lock("user $username");
+			bfl_lock("users file");
 			if (!array_key_exists("collaborate", $users[$username]))
 				$users[$username]["collaborate"] = array($partner);
 			else if (!in_array($partner, $users[$username]["collaborate"]))
@@ -566,6 +586,8 @@ switch($action) {
 			write_files();
 			if ($is_control_node)
 				write_nginx_config();
+			bfl_unlock("users file");
+			bfl_unlock("user $username");
 		}
 		break;
 	
@@ -730,12 +752,19 @@ switch($action) {
 		if (!$is_storage_node) break;
 		sync_local($username);
 		break;
-	
+		
 	case "sync-remote":
 		if (!$is_storage_node) break;
 		sync_remote($username);
 		break;
 		
+	case "unlock":
+		if ($argc != 3) 
+			print "ERROR: insufficient arguments\n";
+		else
+			bfl_unlock($argv[2]);
+		break;
+	
 	case "help":
 		print "webidectl.php\n\nUsage:\n";
 		print "\tlogin username \t- doesn't check password!\n";
@@ -773,16 +802,13 @@ switch($action) {
 		print "\tclean-inodes \t\t\t- call user-reset-svn for all users exceeding inode or disk usage limit\n";
 		print "\tsvnrestore username path revision - restore older version of file from SVN\n";
 		
-		
 		break;
 }
 
 // Cleanup
-if (!in_array($action, $skip_bfl))
-	bfl_unlock();
 if (file_exists($watchfile)) unlink($watchfile);
-//	write_files();	
 exit(0);
+
 
 
 // -------------------------------
@@ -791,6 +817,7 @@ exit(0);
 
 // These functions can be used on any node
 // If node type is control, it will run relevant commands on all other nodes
+// They handle locking (do not lock anything before calling them)
 
 function activate_user($username, $password, $ip_address) {
 	global $conf_defaults_path, $conf_base_path, $conf_c9_group, $conf_nodes, $users;
@@ -802,8 +829,13 @@ function activate_user($username, $password, $ip_address) {
 	$password_esa = escapeshellarg($password);
 	$port = 0;
 	
+	// Prevent logging in while clear_server is running
+	bfl_lock("clear server", false);
+	
 	if ($is_control_node) {
 		if (!check_limits(server_stats(), /* $output= */ true)) return;
+		bfl_lock("user $username");
+		
 		// v1 migrate
 		if (!file_exists($userdata['home']))
 			migrate_v1_v3($username);
@@ -818,23 +850,20 @@ function activate_user($username, $password, $ip_address) {
 			if (file_exists($userdata['home'] . "/.in_use")) { 
 				print "ERROR: in use\n"; 
 				debug_log("Workspace in use for $username");
+				bfl_unlock("user $username");
 				return; 
 			}
-			
-			bfl_unlock();
 			
 			if ($is_svn_node)
 				$cmd = "$conf_base_path/bin/webidectl sync-local " . $userdata['esa'];
 			else
 				$cmd = "ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-local " . $userdata['esa'] . "\"";
 			
-			bfl_lock();
-			read_files();
-			
 			$result = `$cmd`;
 			if (strstr($result, "ERROR: in use")) {
 				print "ERROR: in use\n"; 
 				debug_log("Workspace in use for $username");
+				bfl_unlock("user $username");
 				return; 
 			}
 			debug_log("sync-local $username, result: $result");
@@ -869,12 +898,12 @@ function activate_user($username, $password, $ip_address) {
 		if ($best_node == "") {
 			print "ERROR: No viable node found.\n";
 			debug_log ("no viable node for $username");
+			bfl_unlock("user $username");
 			return;
 		}
 		
 		print "Best node $best_node value $best_value\n";
 		file_put_contents("$conf_base_path/log/" . $userdata['efn'], "\n\n=====================\nStarting webide at: ".date("d.m.Y H:i:s")."\n\n", FILE_APPEND);
-		$users[$username]['server'] = $best_node;
 
 		// Let SVN know that user logged in
 		// This must be done before syncsvn to avoid conflicts
@@ -891,8 +920,6 @@ function activate_user($username, $password, $ip_address) {
 		if (is_local($best_node)) {
 			$port = find_free_port(); 
 			print "Found port: $port\n";
-			$users[$username]['port'] = $port;
-			start_node($username);
 		} else {
 			$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
 			
@@ -900,9 +927,7 @@ function activate_user($username, $password, $ip_address) {
 			$port = intval($port);
 			while (intval($port) == 0) {
 				run_on($best_node, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
-				bfl_unlock();
 				sleep(5);
-				bfl_lock();
 				read_files();
 				$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
 			}
@@ -912,18 +937,25 @@ function activate_user($username, $password, $ip_address) {
 				$found = -1;
 				// Move to port below range
 				$local_port = $port - ($conf_port_upper - $conf_port_lower);
-				$users[$username]['port'] = $local_port;
+				$users[$username]['port'] = $local_port; // FIXME this doesnt work anymore
 				proc_close(proc_open("ssh -N -L $local_port:localhost:$port $best_node &", array(), $foo));
 			}
 		}
 		
 		// Update local user database
+		bfl_lock("users file");
+		read_files();
+		$users[$username]['server'] = $best_node;
+		$users[$username]['port'] = $port;
 		$users[$username]['status'] = "active";
 		$users[$username]['ip_address'] = $ip_address;
-		debug_log ("activate_user $username $best_node $port $ip_address");
 		
 		write_files();
 		write_nginx_config();
+		bfl_unlock("users file");
+		
+		if (is_local($best_node))
+			start_node($username);
 		
 		// Update last access time to now
 		$lastfile = $conf_home_path . "/last/$username.last";
@@ -937,21 +969,35 @@ function activate_user($username, $password, $ip_address) {
 			if ($entry == "." || $entry == "..") continue;
 			personalize($username, "$conf_defaults_path/c9/customize/$entry", $userdata['home'] . "/.c9/customize/$entry");
 		}
+		
+		bfl_unlock("user $username");
+		debug_log ("activate_user $username $best_node $port $ip_address");
 	}
 	
 	else {
-		$users[$username]['status'] = "active";
+		bfl_lock("user $username");
 		if ($is_svn_node)
 			syncsvn($username);
-			
 		if ($is_compute_node) {
 			$port = find_free_port(); 
+		}
+		
+		bfl_lock("users file");
+		read_files();
+		$users[$username]['status'] = "active";
+			
+		if ($is_compute_node) {
 			$users[$username]['server'] = $conf_my_address;
 			$users[$username]['port'] = $port;
+		}
+		write_files();
+		bfl_unlock("users file");
+		if ($is_compute_node) {
 			start_node($username);
 		}
+		bfl_unlock("user $username");
+		
 		debug_log ("activate_user $username $port $ip_address");
-		write_files();
 	}
 	
 	// Port goes to stdout
@@ -972,6 +1018,8 @@ function create_user($username, $password) {
 	$userdata = setup_paths($username);
 	if ($is_control_node)
 		debug_log("create_user $username");
+
+	bfl_lock("user $username");
 
 	// Create user on storage node
 	if ($is_storage_node) {
@@ -1023,10 +1071,15 @@ function create_user($username, $password) {
 	if ($is_storage_node)
 		run_as($username, "cd " . $userdata['home'] . "; ln -s $conf_base_path/c9fork fork");
 	
+	bfl_lock("users file");
+	read_files();
 	$users[$username] = array();
 	$users[$username]['status'] = "inactive";
 	write_files();
+	bfl_unlock("users file");
+	bfl_unlock("user $username");
 }
+
 
 // The philosophy is that deactivate can be called on user who is marked inactive, 
 // to stop whatever running services etc. for this user, except on svn node
@@ -1038,16 +1091,21 @@ function deactivate_user($username, $skip_svn = false) {
 		if ($users[$username]['status'] == "inactive") return;
 	
 	$userdata = setup_paths($username);
-	debug_log ("deactivate_user $username");
+	global $action;
+	bfl_lock("user $username");
 	
 	// If this is a simple compute node, just kill nodejs
 	if ($is_compute_node && !$is_control_node) {
 		stop_node($username, true); // $cleanup=true -- kill everything owned by user
+		
+		bfl_lock("users file");
+		read_files();
 		$users[$username]['status'] = "inactive"; 
 		unset($users[$username]['collaborate']);
 		unset($users[$username]['server']);
 		unset($users[$username]['port']);
 		write_files();
+		bfl_unlock("users file");
 	}
 		
 	else if ($is_control_node) {
@@ -1057,6 +1115,8 @@ function deactivate_user($username, $skip_svn = false) {
 		run_as($username, $script);
 
 		// Remove user from nginx - this will inform user that they are logged out
+		bfl_lock("users file");
+		read_files();
 		$server = $users[$username]['server'];
 		$users[$username]['status'] = "inactive";
 		$port = $users[$username]['port'];
@@ -1064,6 +1124,8 @@ function deactivate_user($username, $skip_svn = false) {
 		unset($users[$username]['server']);
 		unset($users[$username]['port']);
 		write_nginx_config();
+		write_files();
+		bfl_unlock("users file");
 		
 		// Stop nodejs on server where user is running
 		if (is_local($server) || empty($server))
@@ -1082,8 +1144,11 @@ function deactivate_user($username, $skip_svn = false) {
 	}
 	
 	if ($is_svn_node) {
+		bfl_lock("users file");
+		read_files();
 		$users[$username]['status'] = "inactive"; 
 		write_files();
+		bfl_unlock("users file");
 
 		// Syncsvn deactivate
 		sleep(1); // Give some time for syncsvn to sync .logout
@@ -1107,10 +1172,7 @@ function deactivate_user($username, $skip_svn = false) {
 	}
 	
 	if ($is_control_node) {
-		// Users file is updated only now, to prevent user from logging back in during other procedures
-		// (BFL should prevent it but alas...)
-		write_files();
-		bfl_unlock();
+		// REMOVED? Users file is updated only now, to prevent user from logging back in during other procedures
 		
 		// Sync locally changed files to remote
 		if (array_key_exists("volatile-remote", $users[$username])) {
@@ -1121,6 +1183,8 @@ function deactivate_user($username, $skip_svn = false) {
 			debug_log("sync-remote $username");
 		}
 	}
+	bfl_unlock("user $username");
+	debug_log ("deactivate_user $username");
 }
 
 function remove_user($username) {
@@ -1128,6 +1192,8 @@ function remove_user($username) {
 	global $is_storage_node, $is_control_node, $is_svn_node, $is_compute_node;
 	
 	$userdata = setup_paths($username);
+	
+	bfl_lock("user $username");
 	
 	if ($is_svn_node) {
 		exec("rm -fr " . $userdata['svn']);
@@ -1177,7 +1243,14 @@ function remove_user($username) {
 			run_on($node['address'], "$conf_base_path/bin/webidectl remove " . $userdata['esa']);
 	}
 
+	bfl_lock("users file");
+	read_files();
 	unset($users[$username]);
+	write_files();
+	if ($is_control_node)
+		write_nginx_config();
+	bfl_unlock("users file");
+	bfl_unlock("user $username");
 }
 
 function verify_user($username) {
@@ -1235,10 +1308,8 @@ function verify_user($username) {
 			//exec("ps ax | grep tmux | grep " . $userdata['esa'] . " | grep -v grep | cut -c 1-5 | xargs kill");
 			
 			// Kill related processes
+			bfl_lock("user $username");
 			stop_node($username, false);
-			
-			if (!$is_control_node && $users[$username]["status"] !== "active")
-				$users[$username]['status'] = "active";
 			
 			// Check to see if port is in use - sometimes race condition causes this situation
 			$log_path = "$conf_base_path/log/" . $userdata['efn'];
@@ -1246,16 +1317,29 @@ function verify_user($username) {
 			if (!empty(trim($inuse)) || $port <= 2) {
 				$port = find_free_port(); 
 				print "Starting node - Found port: $port\n";
+				
+				bfl_lock("users file");
+				read_files();
+				if (!$is_control_node && $users[$username]["status"] !== "active")
+					$users[$username]['status'] = "active";
 				$users[$username]['port'] = $port;
-				bfl_lock();
 				write_files();
 				if ($is_control_node) write_nginx_config();
-				bfl_unlock();
-			} else
+				bfl_unlock("users file");
+			} else {
 				print "Restarting existing node ($port)\n";
+				if (!$is_control_node && $users[$username]["status"] !== "active") {
+					bfl_lock("users file");
+					read_files();
+					$users[$username]['status'] = "active";
+					write_files();
+					bfl_unlock("users file");
+				}
+			}
 			
 			// Restart node
 			start_node($username);
+			bfl_unlock("user $username");
 			debug_log ("restart node user $username port $port");
 		}
 	}
@@ -1265,12 +1349,14 @@ function verify_user($username) {
 		if ($substr = strstr($output, "Found port:")) {
 			$port = intval(substr($substr, 11));
 			if (intval($port) == 0) $port = 1;
-			$users[$username]['port'] = $port;
 			debug_log ("resetting port to $port");
-			bfl_lock();
+			
+			bfl_lock("users file");
+			read_files();
+			$users[$username]['port'] = $port;
 			write_files();
 			write_nginx_config();
-			bfl_unlock();
+			bfl_unlock("users file");
 		}
 	}
 	
@@ -1293,11 +1379,13 @@ function verify_user($username) {
 		
 		// It isn't, restart
 		if (!$svnup) {
+			bfl_lock("user $username");
 			if (file_exists($userdata['svn_watch'])) 
 				unlink($userdata['svn_watch']);
 			stop_inotify($username); // New inotify will be started by syncsvn
 			print "Starting syncsvn for $username...\n";
 			syncsvn($username);
+			bfl_unlock("user $username");
 		}
 	}
 	else if ($is_control_node) {
@@ -1339,10 +1427,12 @@ function kick_user($username) {
 	
 	print "Best node is $best_node - go there!\n";
 	
+	bfl_lock("users file");
+	read_files();
 	$users[$username]['server'] = $best_node;
-	
 	write_files();
 	write_nginx_config();
+	bfl_unlock("users file");
 }
 
 
@@ -1352,6 +1442,7 @@ function kick_user($username) {
 // -------------------------------
 
 // These functions should be called only on relevant node type
+// They don't handle locking
 
 
 // Start nodejs instance for user
@@ -1597,20 +1688,20 @@ function kill_idle($minutes, $output, $sleep) {
 			if (time() - $time > $minutes*60) {
 				$server = $users[$username]['server'];
 				if ($output) print "Stopping node on $server\n";
-				if (is_local($server))
+				if (is_local($server)) {
+					bfl_lock("user $username");
 					stop_node($username, false);
-				else
+					bfl_unlock("user $username");
+				} else
 					proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username) . " &\" 2>&1 &", array(), $foo));
 				
 				if ($sleep > 0) {
-					bfl_unlock();
 					sleep($sleep);
-					bfl_lock();
+					read_files();
 				}
 			}
 		}
 	}
-	bfl_unlock();
 }
 
 
@@ -1628,14 +1719,11 @@ function kill_idle_logout($minutes, $output, $sleep) {
 			deactivate_user($username);
 			
 			if ($sleep > 0) {
-				bfl_unlock();
 				sleep($sleep);
-				bfl_lock();
 				read_files();
 			}
 		}
 	}
-	bfl_unlock();
 }
 
 // Logout all users and kill/restart all processes related to webide
@@ -1643,6 +1731,10 @@ function clear_server() {
 	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr, $is_svn_node;
 	
 	debug_log("clear server");
+	bfl_lock("clear server");
+	
+	file_put_contents("$conf_base_path/razlog_nerada.txt", "kada se završi restart servera");
+	chmod("$conf_base_path/razlog_nerada.txt", 0644);
 	
 	// SVN server must be cleared before others, to avoid generating large load (due to cleanup operations)
 	if ($is_control_node && !$is_svn_node)
@@ -1664,6 +1756,7 @@ function clear_server() {
 		exec("killall tmux");
 		exec("killall inotifywait");
 		exec("killall gdb");
+		bfl_unlock("clear server");
 		return;
 	}
 	
@@ -1672,6 +1765,8 @@ function clear_server() {
 		$were_active = array();
 		
 		// Just mark users as inactive and write files
+		bfl_lock("users file");
+		read_files();
 		foreach ($users as $username => &$options) {
 			if ($options['status'] == "active") {
 				$options['status'] = "inactive";
@@ -1679,7 +1774,7 @@ function clear_server() {
 			}
 		}
 		write_files();
-		bfl_unlock();
+		bfl_unlock("users file");
 		
 		// Now we actually log them out, slowly
 		foreach($were_active as $username) {
@@ -1703,19 +1798,14 @@ function clear_server() {
 			$time = 60 + rand(0, 1200);
 			proc_close(proc_open("$conf_base_path/bin/fixsvn " . $userdata['esa'] . " $time  2>&1 >/dev/null &", array(), $foo));
 		}
+		bfl_unlock("clear server");
 		return;
 	}
 
 	// Continue with control node actions
 	
-	// Kill webidectl processes waiting to login
-	$mypid = getmypid();
-	foreach (ps_ax("127.0.0.1") as $process) {
-		if ($process['pid'] != $mypid && strstr($process['cmd'], "webidectl") && strstr($process['cmd'], "php"))
-			exec("kill ".$process['pid']);
-	}
-	
 	// Logout all users
+	read_files();
 	foreach ($users as $username => $options) {
 		if ($options['status'] == "active")
 			deactivate_user($username, true);
@@ -1723,14 +1813,6 @@ function clear_server() {
 	
 	// Force restart, since deactivate will just reload... this kills some hanging connections
 	exec("service nginx restart");
-	
-	// Again, someone somehow reached the login page and tried to login
-	foreach (ps_ax("127.0.0.1") as $process) {
-		if ($process['pid'] != $mypid && strstr($process['cmd'], "webidectl") && strstr($process['cmd'], "php"))
-			exec("kill ".$process['pid']);
-		if (strstr($process['cmd'], "syncsvn.php"))
-			exec("kill ".$process['pid']);
-	}
 	
 	// Clear other servers
 	foreach($conf_nodes as $node) {
@@ -1746,12 +1828,10 @@ function clear_server() {
 	exec("killall inotifywait");
 	exec("killall gdb");
 	exec("ps aux | grep tmux | cut -c 10-15 | xargs kill"); // apparently we need this...
-
-	// Again write files, to nuke someone who managed to login
-	write_files();
 	
-	// Again, someone cheated the race condition
-	exec("service nginx restart");
+	sleep(60); // Wait for 60 more seconds until allowing login
+	unlink("$conf_base_path/razlog_nerada.txt");
+	bfl_unlock("clear server");
 }
 
 
@@ -1806,9 +1886,7 @@ function storage_nightly($all_stats) {
 		print run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
 		
 		// Clean inodes
-		bfl_lock();
 		read_files();
-		bfl_unlock();
 		
 		$total_usage_stats[$username]['svn'] = false;
 		$total_usage_stats[$username]['inodes'] = false;
@@ -1820,6 +1898,9 @@ function storage_nightly($all_stats) {
 			print "User $username is online! Not cleaning inodes\n";
 			continue;
 		}
+		
+		// Prevent user from logging in below this point
+		bfl_lock("user $username");
 		
 		$usersvn = setup_paths($username)['svn'];
 		$lastver = `svnversion $workspace`;
@@ -1850,7 +1931,6 @@ function storage_nightly($all_stats) {
 				$total_usage_stats[$username]['svn.old'] = $total_usage_stats[$username]['svn'];
 			print " - resetting svn\n";
 			print "Update stats\n";
-			bfl_lock();
 			$output = array();
 			print exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
 			$output = join("\n", $output);
@@ -1863,18 +1943,18 @@ function storage_nightly($all_stats) {
 			$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
 		
 			// Inode statistics update (TODO)
-			
-			// Release lock for 5 seconds so users can do stuff
-			bfl_unlock();
 		}
 		
+		bfl_unlock("user $username");
+		
+		// Prepare some per-user usage statistics
 		$user_ws_backup = setup_paths($username)['workspace'] . ".old";
 		if (file_exists($user_ws_backup))
 			$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
 		$user_svn_backup = setup_paths($username)['svn'] . ".old";
 		if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
 			$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-			
+		
 		// If free disk space is too low, wait until it cleans up
 		do {
 			$home_usage = -1; $root_usage = -1;
@@ -2153,6 +2233,9 @@ function sync_local($user) {
 		return; 
 	}
 	
+	// Prevent user from logging in below this point
+	bfl_lock("user $user");
+	
 	// If timestamp is recent then no need to sync
 	$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
 	$local_mtime = intval(file_get_contents($last_path));
@@ -2168,7 +2251,7 @@ function sync_local($user) {
 	$local_svn = substr($userdata['svn'], 0, strlen($userdata['svn']) - strlen($user));
 	exec("rsync -a $local_inuse $remote_inuse");
 	
-	if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) return; // 5 seconds allowed for syncing time
+	//if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) return; // 5 seconds allowed for syncing time
 	
 	exec("rsync -a $remote_home $local_home");
 	exec("rsync -a $remote_svn_path $local_svn");
@@ -2195,15 +2278,20 @@ function sync_local($user) {
 		exec("rsync -a $local_inuse $remote_inuse");
 	}
 	unlink($local_inuse);
+	
+	bfl_unlock("user $user");
 }
 
-// Syncronize user files from local folder to volatile-remote server
+
 function sync_remote($user) {
 	global $users, $conf_home_path;
 	
 	if (!array_key_exists("volatile-remote", $users[$user])) return;
 	
 	$userdata = setup_paths($user);
+	
+	// Prevent user from logging in below this point
+	bfl_lock("user $user");
 	
 	// Update remote timestamp
 	$local_last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
@@ -2256,37 +2344,48 @@ function sync_remote($user) {
 		exec("ssh $host \"rm $path/.in_use\"");
 	} else
 		unlink("$remote_home/.in_use");
+
+	bfl_unlock("user $user");
 }
+
+
 
 
 // --------------------
 // BIG FUCKN LOCK (BFL)
 // --------------------
 
-function bfl_lock() {
+function bfl_lock($lock = "all", $take_lock = true) {
 	global $action;
-
-	$bfl_file = "/tmp/webide.login.bfl";
+	
+	$bfl_file = "/tmp/webide.bfl";
 	$wait = 100000; // Initially wait 0.1s
 	$wait_inc = 100000; // Every time increase interval by 0.1s
 	$wait_add = $wait_inc;
 	$ultimate_limit = 100000000; // Break in after 100s
 
-	while (file_exists($bfl_file)) {
-		debug_log("$action ceka na bfl");
-		print "Čekam na bfl\n";
+	while (in_array($lock."\n", file($bfl_file))) {
+		debug_log("$action ceka na bfl $lock pid ".getmypid());
+		print "Čekam na bfl - ak\n";
 		usleep($wait);
 		$wait += $wait_add;
 		$wait_add += $wait_inc;
-		if ($wait >= $ultimate_limit) break;
+		//if ($wait >= $ultimate_limit) break;
 	}
 	
-	exec("touch $bfl_file");
+	if ($take_lock) {
+		file_put_contents($bfl_file, file_get_contents($bfl_file) . $lock . "\n");
+	}
 }
 
-function bfl_unlock() {
-	$bfl_file = "/tmp/webide.login.bfl";
-	unlink($bfl_file);
+function bfl_unlock($lock = "all") {
+	global $action;
+	
+	$bfl_file = "/tmp/webide.bfl";
+	$new_locks = "";
+	foreach(file($bfl_file) as $m_lock)
+		if ($m_lock !== $lock . "\n") $new_locks .= $m_lock;
+	file_put_contents($bfl_file, $new_locks);
 }
 
 
