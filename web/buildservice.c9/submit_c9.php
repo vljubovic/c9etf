@@ -65,6 +65,7 @@ $result = array();
 $result['success'] = "true";
 $result['message'] = "Instance created";
 $result['instance'] = $progid['id'];
+$result['url'] = $conf_push_url;
 print json_encode($result);
 
 unlink($zipfile);

@@ -25,6 +25,8 @@ define(function(require, exports, module) {
         var fs = imports.fs;
         var showError = imports["dialog.error"].show;
         var showInfo = imports["dialog.info"].show;
+        
+        var buildserviceUrl = "/buildservice/push.php";
 
             // Import CSS
         var css = require("text!./style.css");    
@@ -313,7 +315,7 @@ define(function(require, exports, module) {
 			
 			// AJAXom pozivamo web servis getProgramStatus
 			var xmlhttp = new XMLHttpRequest();
-			var url = "/buildservice/push.php?action=getProgramStatus&program="+bsInstance[project_path];
+			var url = buildserviceUrl + "?action=getProgramStatus&program="+bsInstance[project_path];
 			xmlhttp.onreadystatechange = function() {
 				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 					result = JSON.parse(xmlhttp.responseText);
@@ -412,6 +414,7 @@ define(function(require, exports, module) {
 					ldSearch.keyword = "Testiranje u toku.";
 					ldSearch.updateData([]);
 					bsInstance[project_path] = result.instance;
+					buildserviceUrl = result.url;
 					provjeraTimeouts[project_path] = setTimeout(provjeriTest, 500);
 				} else {
 					showError("Došlo je do greške: " + result.message);
