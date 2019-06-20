@@ -101,6 +101,13 @@ if (isset($_POST['login'])) {
 	if (!empty($conf_allow_users) && !in_array($login, $conf_allow_users))
 		$greska = "Pristup vašem korisniku je trenutno zabranjen $conf_deny_reason. Kontaktirajte administratora ili dodjite kasnije.";
 	
+	if (!empty($conf_allow_course)) {
+		$user_courses = false;
+		if (file_exists($conf_data_path . "/user_courses/$login.json"))
+			$user_courses = json_decode(file_get_contents($conf_data_path . "/user_courses/$login.json"), true);
+		if (!$user_courses || !is_array($user_courses['student']) || !in_array($conf_allow_course, $user_courses['student']))
+			$greska = "Pristup vašem korisniku je trenutno zabranjen $conf_deny_reason. Kontaktirajte administratora ili dodjite kasnije.";
+	}	
 
 	if ($greska == "") {
 		$greska = login($login, $pass);

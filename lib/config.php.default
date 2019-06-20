@@ -103,6 +103,9 @@ $conf_deny_users = array();
 // If this array isn't empty, only users in array are allowed
 $conf_allow_users = array();
 
+// If this string isn't empty, only users enrolled in this course are allowed
+$conf_allow_course = "";
+
 // Message that user will see as reason why they are blocked
 $conf_deny_reason = "scheduled maintenance";
 
