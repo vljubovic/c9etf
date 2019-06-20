@@ -26,7 +26,7 @@ function zamger_all_students($course, $year) {
 		return false;
 	return $result;
 }
-function zamger_group_members($group) {
+function zamger_group_members($group, $year) {
 	global $session_id, $conf_json_base_apiv5;
 	$parameters["SESSION_ID"] = $session_id;
 	$parameters["year"] = $year;
@@ -48,7 +48,7 @@ function zamger_without_group($course, $year) {
 		if ($name == "(Svi studenti)") $id_ss  = $id;
 	}
 	
-	$result = zamger_group_members($id_ss);
+	$result = zamger_group_members($id_ss, $year);
 	$all_students = $result['data']['studenti'];
 	
 	foreach ($grupe['data'] as $id => $name) {

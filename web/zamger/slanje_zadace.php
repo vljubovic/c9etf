@@ -25,7 +25,7 @@ if ($student==0 || isset($_REQUEST['username'])) {
 	} 
 	else if ($result["success"] !== "true") {
 		if ($result['code'] == "ERR001") die("GRESKA: Istekla sesija");
-		die("GRESKA: ".$result['message']);
+		die("GRESKA: ".$result['code']. " " . $result['message']);
 	}
 	$student = $result['data']['id'];
 }

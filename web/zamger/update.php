@@ -277,7 +277,7 @@ function zamger_update_group($group_id, $force) {
 	
 	// Get all students
 	require_once(__DIR__."/groups.php");
-	$group_data = zamger_group_members($group_id);
+	$group_data = zamger_group_members($group_id, $conf_current_year);
 	if ($group_data === false)
 		json(error("ERR004", "Failed to retrieve members for group $group_id"));		
 	
