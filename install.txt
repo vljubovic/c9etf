@@ -111,8 +111,11 @@ update the C9@ETF so that you receive latest versions of patches
  $ sudo php update-cloud9.php
 
 This installs Cloud9 into a folder named c9upstream and applies all the patches.
-Please look closely if all patches are applied correctly, otherwise system may
-not work. If everything looks good, temporarily replace your old install with
+Please look closely if all the patches are applied correctly, otherwise system 
+may not work. Look for messages such as "Hunk #1 FAILED" or "File not found".
+If any of these happen, please let us know so we can fix our patches.
+
+If everything looks good, you can temporarily replace your old install with the 
 new one (make sure all users are logged out otherwise they might complain ;)
 
  $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9old
@@ -123,3 +126,13 @@ its easy to revert to the old version:
 
  $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9upstream
  $ sudo mv /usr/local/webide/c9old /usr/local/webide/c9fork
+
+ 
+ 
+AUTOMATIC TESTS
+
+By default after first installation the automated testing functionality doesn't
+work. You have to configure buildservice using instructions at
+http://github.com/etf-sarajevo/buildservice
+
+Buildservice config.php is in folder /usr/local/webide/web/buildservice
