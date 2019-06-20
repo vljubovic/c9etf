@@ -1,14 +1,19 @@
 #!/bin/bash
 
+# This is still hardcoded!
+
 dtime=`date +%s`
 
-local=(`/usr/local/webide/bin/webidectl server-stats`)
+#local=(`/usr/local/webide/bin/webidectl server-stats`)
+local=(`tail -1 /usr/local/webide/server_stats.log`)
 nfs=(`tail -1 /usr/local/webide/c9nfs_stats.log`)
 prim=(`tail -1 /usr/local/webide/c9prim_stats.log`)
 second=(`tail -1 /usr/local/webide/c9sec_stats.log`)
+bstasks=(`wc -l /tmp/buildservice/queuefile`)
 
-let "z = ${local[3]} + ${prim[5]} + ${second[5]}"
+let "z = ${local[5]} + ${prim[5]} + ${second[5]}"
 
-echo $dtime ${local[2]} $z >> /usr/local/webide/user_stats.log
-echo $dtime ${local[0]} ${nfs[2]} ${prim[2]} ${second[2]} >> /usr/local/webide/load_stats.log
-echo $dtime ${local[1]} ${nfs[3]} ${prim[3]} ${second[3]} >> /usr/local/webide/mem_stats.log
+echo $dtime ${local[4]} $z >> /usr/local/webide/user_stats.log
+echo $dtime ${local[2]} ${nfs[2]} ${prim[2]} ${second[2]} >> /usr/local/webide/load_stats.log
+echo $dtime ${local[3]} ${nfs[3]} ${prim[3]} ${second[3]} >> /usr/local/webide/mem_stats.log
+echo $dtime ${local[6]} ${local[7]} $bstasks >> /usr/local/webide/other_stats.log

@@ -7,6 +7,8 @@
 function admin_stats() {
 	global $conf_base_path;
 
+	# This is still hardcoded!
+	
 	// Parameter "period"
 	if (isset($_REQUEST['period'])) {
 		$period = $_REQUEST['period'];
@@ -74,6 +76,7 @@ function admin_stats() {
 
 		chart.draw(data, options);
 		
+		
 		// Second graph - load average
 		
 		var data2 = new google.visualization.DataTable();
@@ -111,7 +114,8 @@ function admin_stats() {
 
 		chart2.draw(data2, options2);
 		
-		// Third graph - ram
+		
+		// Third graph - memory
 		
 		var data3 = new google.visualization.DataTable();
 		data3.addColumn('datetime', 'Time');
@@ -150,11 +154,47 @@ function admin_stats() {
 		var chart3 = new google.visualization.LineChart(document.getElementById('chart_mem'));
 
 		chart3.draw(data3, options3);
+		
+		
+		// Fourth graph - other
+		
+		var data4 = new google.visualization.DataTable();
+		data4.addColumn('datetime', 'Time');
+		data4.addColumn('number', 'Disk space (GiB)');
+		data4.addColumn('number', 'BuildService tasks');
+		
+		data4.addRows([
+		<?php
+		$handle = fopen($conf_base_path . "/other_stats.log", "r");
+		if ($handle) {
+			while (($logline = fgets($handle, 4096)) !== false) {
+				$ar = explode(" ", trim($logline));
+				$sec = intval($ar[0]); $disk = intval($ar[1]);
+				if (count($ar)>2) $inodes = intval($ar[2]);  // Not shown
+				if (count($ar)>3) $bstasks = intval($ar[3]); 
+				if ($sec < $sec_min) continue;
+				$disk = round(($disk / 1024) / 1024, 3);
+				print "[ new Date(" . date("Y,", $sec) . (date("n", $sec)-1) . date(",j,G,i,s", $sec) . ",0), $disk, $bstasks ],\n";
+			}
+			fclose($handle);
+		}
+		?>
+		]);
+
+		var options4 = {
+		title: 'Other stats',
+		legend: { position: 'bottom' }
+		};
+
+		var chart4 = new google.visualization.LineChart(document.getElementById('chart_other'));
+
+		chart4.draw(data4, options4);
 	}
 	</script>
 	<div id="chart_users" style="width: 900px; height: 500px"></div>
 	<div id="chart_load" style="width: 900px; height: 500px"></div>
 	<div id="chart_mem" style="width: 900px; height: 500px"></div>
+	<div id="chart_other" style="width: 900px; height: 500px"></div>
 	<?php
 }
 
@@ -194,21 +234,7 @@ function admin_exam_stats() {
 	global $conf_base_path;
 	
 	$current_exam = "OR/Ispit6";
-	$exam_students = array(
-//	"saksamovic1", "nbadzak1", "lbecirevic1", "abecirovic3", "vbeglerovi2", "lbegovic2", "acicvara1", "icajo1", "vcelan1", "hcorbo2", "mdokic1", "efejzic1", "kforto1", "fhajdarpas1", "rhandzic1", "aharba2", "bhasanagic1", "nhastor1", "hhodzic2", "ehondo1", "thorozovic1", "eicanovic1", "djugo1", "tkadric1", "mkamali1", "akevric2", "hkovacevic1", "skozic2", "skujrakovi1", "ekurtovic3", "amahmutovi5", "fmaric1", "tmarkesic1", "amehmedovi1", "tmemic1", "smerzic1", "emujanovic3", "lmujic1", "mmurtic2", "tosmanagic1", "spljakic1", "apolutan2", "lsmajlovic1", "rtahic1", "rtomas1", "atopalovic2", "ivrce1", "azahirovic1", "azunic1", "jcaluk1"
-//"aalagic2", "bbiberovic1", "hbijedic1", "dbriski1", "ebrljak1", "ecocalic1", "fdemir1", "adizdarevi1", "nduvnjak1", "edzaferovi1", "kdokic1", "ngafic1", "vhasic1", "khatibovic1", "hhadzic3", "bhuseinovi1", "zjavdan1", "mkapo2", "bkarovic1", "ikovac1", "emerdic2", "bniksic1", "nomanovic2", "mparic2", "erazanica2", "fselimovic1", "esmailagic1", "istanic1", "ssuljevic1", "ktafro1", "avelic3"
-
-//"saksamovic1", "aalagic2", "fbazdar1", "abegic2", "lbuturovic1", "abuza2", "aceman1", "fdemir1", "kdokic1", "afazlagic1", "hhadzic3", "ahalilovi15", "rhandzic1", "thasic1", "lhodzic2",  "ahrnjic3", "bhuseinovi1", "ikovac1", "mkapo2", "bkarovic1", "akarzic1", "akojasevic1", "lkovac1", "skujrakovi1", "klazovic1", "nmerdovic1", "anikolic1", "knurikic1", "nomanovic2", "tosmanagic1", "apandur1", "spljakic1", "apolutan2", "nrovcanin1", "msalihovic3", "fselimovic1", "esmailagic1", "ssuljevic1", "bsuljic1",  "tsahovic1", "rtomas1", "stopalovic1"
-
-
-//"nbadzak1", "bbiberovic1", "dbokan1", "dbriski1", "mcorbo1", "ncenanovic1", "ngafic1", "bhasanagic1", "vhasic1", "zjavdan1", "skahvedzic1", "akevric2", "kkozlica1", "skorac1", "akovacevic4", "ekudic1", "tmehulic1", "dmelunovic1", "mmuhovic2", "anikolic1", "bniksic1", "apajevic1", "apasic2", "tpervan1", "aprljaca1", "epruzan1", "erazanica2", "istanic1", "msubasic2", "esuljkic1", "nsuvalija1", "mucanbarli1", "avelic3", "ivrce1", "azunic1"
-"aagic1", "halagic1", "aalic7", "ebrljak1", "ecocalic1", "jcaluk1", "vcelan1", "ndizdarevi1", "nduvnjak1", "edzaferovi1", "neskerica1", 
-"mgojak1", "khadzic2", "mhanjalic1", "aharba2", "hhamzic1", "dhasimbego1", "iisabegovi1", "iicanovic1", "ikarabeg1", "mkaravdic1", 
-"nkoldzo1", "tkrivosija1", "ekurtovic3", "amajdanac1", "mmujkanovi1", "anesimi1", "dpivac1", "dpopovic1", "erudalija1", "hselimovic1", 
-"kselman1", "fsarancic1", "asiljak1", "ksljivo1", "ktafro1", "htopic1", "ezahirovic2", "azaimovic2", "szolota1" 
-
-
-	);
+	$exam_students = array();
 
 	// Hardcoded 4 assignments
 	?>
