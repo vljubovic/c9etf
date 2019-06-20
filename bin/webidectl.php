@@ -723,390 +723,19 @@ switch($action) {
 		else
 			$all_stats = false;
 		
-		$total = count($users);
-		$current=1;
-		$total_usage_stats = array();
-		
-		// shuffle_assoc
-		$keys = array_keys($users);
-		shuffle($keys);
-		$users_shuffled = array();
-		foreach ($keys as $key)
-			$users_shuffled[$key] = $users[$key];
-
-		// First pass - update stats, reinstall svn if neccessary
-		foreach ($users_shuffled as $username => $options) {
-			if (file_exists("/tmp/storage_nightly_skip")) break;
-			if ($username == "") continue;
-			
-			// We can safely update stats for logged-in users
-			print "$username ($current/$total) - ".date("d.m.Y H:i:s")."\n";
-			$current++;
-			$userdata = setup_paths($username);
-			$username_esa = $userdata['esa'];
-			$workspace = $userdata['workspace'];
-			if (!file_exists($workspace)) {
-				print "Workspace not found for $username...\n";
-				continue;
-			}
-			
-			// Clean core files
-			print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
-			print run_as($username, "cd $workspace; find . -name \"*core*\" -delete");
-
-			print shell_exec("$conf_base_path/bin/userstats $username_esa");
-			
-			// Git commit
-			$msg = date("d.m.Y", time() - 60*60*24);
-			if (!file_exists($workspace . "/.git")) {
-				print "Creating git for user $username...\n";
-				git_init($username);
-			}
-			print run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
-			
-			// Clean inodes
-			bfl_lock();
-			read_files();
-			bfl_unlock();
-			
-			$total_usage_stats[$username]['svn'] = false;
-			$total_usage_stats[$username]['inodes'] = false;
-			$total_usage_stats[$username]['ws.old'] = false;
-			$total_usage_stats[$username]['svn.old'] = false;
-			$total_usage_stats[$username]['old.inodes'] = false;
-			
-			if ($users[$username]["status"] == "active") {
-				print "User $username is online! Not cleaning inodes\n";
-				continue;
-			}
-			
-			$usersvn = setup_paths($username)['svn'];
-			$lastver = `svnversion $workspace`;
-			$nochange = false;
-			if ($lastver === "1" || $lastver === "1\n") {
-				$nochange = true;
-			}
-			
-			$do_reinstall = false;
-			if (!$nochange && $users[$username]["status"] != "active" && $conf_max_user_inodes > 0) {
-				$total_usage_stats[$username]['inodes'] = intval(shell_exec("find $usersvn | wc -l"));
-				if ($total_usage_stats[$username]['inodes'] > $conf_max_user_inodes) {
-					print "$username - inodes ".$total_usage_stats[$username]['inodes']." > $conf_max_user_inodes";
-					$do_reinstall = true;
-				}
-			}
-			if (!$do_reinstall && !$nochange && $users[$username]["status"] != "active" && $conf_max_user_svn_disk_usage > 0) {
-				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
-				if ($total_usage_stats[$username]['svn'] > $conf_max_user_svn_disk_usage) {
-					print "$username - svn disk usage ".$total_usage_stats[$username]['svn']." kB > $conf_max_user_svn_disk_usage kB";
-					$do_reinstall = true;
-				}
-			}
-			
-			if ($do_reinstall) {
-				$total_usage_stats[$username]['old.inodes'] = $total_usage_stats[$username]['inodes'];
-				if ($total_usage_stats[$username]['svn'])
-					$total_usage_stats[$username]['svn.old'] = $total_usage_stats[$username]['svn'];
-				print " - resetting svn\n";
-				print "Update stats\n";
-				bfl_lock();
-				$output = array();
-				print exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
-				$output = join("\n", $output);
-				if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
-					print "Userstats failed for $username!\n";
-				} else {
-					print "Reinstall svn\n";
-					user_reinstall_svn($username);
-				}
-				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
-			
-				// Inode statistics update (TODO)
-				
-				// Release lock for 5 seconds so users can do stuff
-				bfl_unlock();
-			}
-			
-			$user_ws_backup = setup_paths($username)['workspace'] . ".old";
-			if (file_exists($user_ws_backup))
-				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-			$user_svn_backup = setup_paths($username)['svn'] . ".old";
-			if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
-				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-				
-			// Check disk usage
-			do {
-				$home_usage = -1; $root_usage = -1;
-				foreach(explode("\n", shell_exec("df")) as $line) {
-					$parts = preg_split("/\s+/", $line);
-					if (count($parts) < 6) continue;
-					if ($parts[5] == "/")
-						$root_usage = $parts[3];
-					if (starts_with($parts[5], $conf_home_path))
-						$home_usage = $parts[3];
-				}
-				if ($home_usage == -1) $home_usage = $root_usage;
-				$home_usage /= 1024;
-
-				if ($home_usage >= $conf_limit_diskspace * 5) break;
-				print "Disk usage $home_usage MB < " . ($conf_limit_diskspace * 5) . "MB\n";
-				print "Waiting until disk is freed\n\n";
-				sleep(120);
-			} while (1);
-		}
-		
-		// Do we need cleanup?
-		print "\n\nCLEANUP USERS\n=============\n\n";
-		
-		// Second pass - delete backup workspace or svn if neccessary
-		$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
-		print "HU $home_usage\n";
-		$current = 1;
-
-		foreach ($users_shuffled as $rand_user => $options) {
-			if ($rand_user == "") continue;
-			if ($conf_diskspace_cleanup <= 0 || $home_usage > $conf_diskspace_cleanup) break;
-
-			print "Cleanup: $rand_user ($current/$total) - ".date("d.m.Y h:i:s")."\n";
-			$current++;
-			$user_ws_backup = setup_paths($rand_user)['workspace'] . ".old";
-			print "UWB $user_ws_backup\n";
-			if (file_exists($user_ws_backup)) {
-				$backup_size = $total_usage_stats[$rand_user]['ws.old'];
-				if ($backup_size === false) {
-					$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-					$backup_size = $total_usage_stats[$rand_user]['ws.old'];
-				}
-				print "Size $backup_size\n";
-				if ($backup_size > $min_backup_for_erase) {
-					`rm -fr $user_ws_backup`;
-					$stats = server_stats();
-					$total_usage_stats[$rand_user]['ws.old'] = 0;
-				}
-			} else
-				print "Not exists\n";
-				
-			$user_svn_backup = setup_paths($rand_user)['svn'] . ".old";
-			print "USB $user_svn_backup\n";
-			if (file_exists($user_svn_backup)) {
-				$backup_size = $total_usage_stats[$rand_user]['svn.old'];
-				print "Size $backup_size\n";
-				if ($backup_size === false) {
-					$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-					$backup_size = $total_usage_stats[$rand_user]['svn.old'];
-				}
-				if ($backup_size > $min_backup_for_erase) {
-					`rm -fr $user_svn_backup`;
-					$stats = server_stats();
-					$total_usage_stats[$rand_user]['svn.old'] = 0;
-				}
-			} else
-				print "Not exists\n";
-			
-			$home_usage = -1; $root_usage = -1;
-			foreach(explode("\n", shell_exec("df")) as $line) {
-				$parts = preg_split("/\s+/", $line);
-				if (count($parts) < 6) continue;
-				if ($parts[5] == "/")
-					$root_usage = $parts[3];
-				if (starts_with($parts[5], $conf_home_path))
-					$home_usage = $parts[3];
-			}
-			if ($home_usage == -1) $home_usage = $root_usage;
-			$home_usage /= 1024;
-		}
-		
-		// Output usage stats to a file
-		print "\n\nUSAGE STATS\n===========\n\n";
-		$fp = fopen('/usr/local/webide/log/usage_stats.txt', 'w');
-		fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\n");
-		fwrite($fp, "USER            WS      WS.OLD  SVN     SVN.OLD SVN.INODES  STATS\n");
-		$users_sorted = $users;
-		ksort($users_sorted);
-		$total_ws = $total_ws_old = $total_svn = $total_svn_old = $total_stats = 0;
-		
-		$stats_paths = array("/home/c9/stats");
-		foreach(scandir($stats_paths[0]) as $file) {
-			$path = $stats_paths[0] . "/$file";
-			if ($file != "." && $file != ".." && is_dir($path))
-				$stats_paths[] = $path;
-		}
-		
-		foreach ($users_sorted as $username => $options) {
-			if ($username == "") continue;
-			print "Usage stats: $username - ".date("d.m.Y h:i:s")."\n";
-			$user_ws = setup_paths($username)['workspace'];
-			$total_usage_stats[$username]['ws'] = intval(shell_exec("du -s $user_ws"));
-
-			$user_ws_backup = $user_ws . ".old";
-			if (!file_exists($user_ws_backup)) $total_usage_stats[$username]['ws.old'] = 0;
-			else if ($total_usage_stats[$username]['ws.old'] === false) {
-				if ($all_stats)
-					$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-				else
-					$total_usage_stats[$username]['ws.old'] = "?";
-			}
-
-			$user_svn = setup_paths($username)['svn'];
-			if ($total_usage_stats[$username]['svn'] === false || $total_usage_stats[$username]['svn'] == "?") {
-				if ($all_stats)
-					$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $user_svn"));
-				else
-					$total_usage_stats[$username]['svn'] = "?";
-			}
-			if ($total_usage_stats[$username]['inodes'] === false) $total_usage_stats[$username]['inodes'] = "?";
-
-			$user_svn_backup = $user_svn . ".old";
-			if (!file_exists($user_svn_backup)) $total_usage_stats[$username]['svn.old'] = 0;
-			else if ($total_usage_stats[$username]['svn.old'] === false) {
-				if ($all_stats)
-					$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-				else
-					$total_usage_stats[$username]['svn.old'] = "?";
-			}
-			
-			$stats_usage = 0;
-			foreach($stats_paths as $path) {
-				$stats_file = $path . "/$username.stats";
-				if (file_exists($stats_file)) $stats_usage += filesize($stats_file);
-			}
-			$stats_usage /= 1024;
-			
-			fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", $username, $total_usage_stats[$username]['ws'], $total_usage_stats[$username]['ws.old'], $total_usage_stats[$username]['svn'], $total_usage_stats[$username]['svn.old'], $total_usage_stats[$username]['inodes'], $stats_usage));
-			$total_ws += $total_usage_stats[$username]['ws'];
-			$total_ws_old += $total_usage_stats[$username]['ws.old'];
-			$total_svn += $total_usage_stats[$username]['svn'];
-			$total_svn_old += $total_usage_stats[$username]['svn.old'];
-			$total_stats += $stats_usage;
-		}
-		fwrite($fp, "\n\n");
-		fwrite($fp, sprintf("%-14s%-10d%-8d%-10d%-8d%-12d%d\n", "TOTAL", $total_ws, $total_ws_old, $total_svn, $total_svn_old, 0,  $total_stats));
-		fwrite($fp, "SUM TOTAL: " . ($total_ws+$total_ws_old+$total_svn+$total_svn_old+$total_stats) . "\n");
-		$nr_users = count($users_sorted);
-		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
-		fclose($fp);
+		storage_nightly($all_stats);
 		break;
 		
 	case "sync-local":
 		if (!$is_storage_node) break;
-		if (!array_key_exists("volatile-remote", $users[$user])) break;
-		if ($users[$user]["status"] == "active") break;
-		
-		// Check if folder is in use
-		$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
-		$remote_inuse = $remote_home . "/.in_use";
-		$local_inuse = $userdata['home'] . "/.in_use";
-		if (file_exists($local_inuse)) { 
-			print "ERROR: in use\n"; 
-			break; 
-		}
-		$is_remote_in_use = 0;
-		exec("rsync -n $remote_inuse 2>&1 >/dev/null", $output, $is_remote_in_use);
-		if ($is_remote_in_use == 0) { print "ERROR: in use\n"; break; }
-		
-		// If timestamp is recent then no need to sync
-		$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
-		$local_mtime = intval(file_get_contents($last_path));
-		$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
-		exec("rsync -a $remote_last_path /tmp/somelast");
-		$remote_mtime = intval(file_get_contents("/tmp/somelast"));
-		unlink("/tmp/somelast");
-		
-		// Start syncing
-		$remote_svn_path = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
-		if (file_exists($userdata['home'])) touch($local_inuse);
-		$local_home = substr($userdata['home'], 0, strlen($userdata['home']) - strlen($user));
-		$local_svn = substr($userdata['svn'], 0, strlen($userdata['svn']) - strlen($user));
-		exec("rsync -a $local_inuse $remote_inuse");
-		
-		if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) break; // 5 seconds allowed for syncing time
-		
-		exec("rsync -a $remote_home $local_home");
-		exec("rsync -a $remote_svn_path $local_svn");
-		
-		// Sync stats files
-		$stats_paths = array("/home/c9/stats");
-		foreach(scandir($stats_paths[0]) as $file) {
-			$path = $stats_paths[0] . "/$file";
-			if ($file != "." && $file != ".." && is_dir($path))
-				$stats_paths[] = $path;
-		}
-		
-		foreach($stats_paths as $stats_path) {
-			$stats_path .= "/$username.stats";
-			$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
-			// Stats files should never dissapear
-			if (file_exists($remote_stats_path))
-				exec("rsync -a $remote_stats_path $stats_path");
-		}
-		
-		// Local folder is now ready to use, but remote is still locked
-		if (!file_exists($local_inuse)) {
-			touch($local_inuse);
-			exec("rsync -a $local_inuse $remote_inuse");
-		}
-		unlink($local_inuse);
-		
-		break;
-		
-	case "sync-remote":
-		if (!$is_storage_node) break;
-		if (!array_key_exists("volatile-remote", $users[$user])) break;
-		
-		// Update remote timestamp
-		$local_last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
-		$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
-		exec("rsync -a $local_last_path $remote_last_path");
-		
-		// Start syncing
-		$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
-		$remote_home_trunc = substr($remote_home, 0, strlen($remote_home) - strlen($user));
-		$remote_svn = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
-		$remote_svn_trunc = substr($remote_svn, 0, strlen($remote_svn) - strlen($user));
-		
-		// Create dirs
-		if (strchr($users[$user]["volatile-remote"], ":")) {
-			$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
-			$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
-			exec("ssh $host \"mkdir $path\"");
-			exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
-			$path = substr($remote_svn, strpos($users[$user]["volatile-remote"], ":")+1);
-			exec("ssh $host \"mkdir $path\"");
-			exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
-		}
-		
-		touch($userdata['home'] . "/.in_use");
-		$local_home = $userdata['home'];
-		$local_svn = $userdata['svn'];
-		exec("rsync -a $local_home $remote_home_trunc");
-		exec("rsync -a $local_svn $remote_svn_trunc");
-		
-		$stats_paths = array("/home/c9/stats");
-		foreach(scandir($stats_paths[0]) as $file) {
-			$path = $stats_paths[0] . "/$file";
-			if ($file != "." && $file != ".." && is_dir($path))
-				$stats_paths[] = $path;
-		}
-		
-		foreach($stats_paths as $stats_path) {
-			$stats_path .= "/$username.stats";
-			$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
-			if (file_exists($stats_path))
-				exec("rsync -a $stats_path $remote_stats_path");
-		}
-		
-		// Unlock both folders
-		unlink($userdata['home'] . "/.in_use");
-		// Hack - we must assume that protocol is ssh :(
-		if (strchr($users[$user]["volatile-remote"], ":")) {
-			$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
-			$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
-			exec("ssh $host \"rm $path/.in_use\"");
-		} else
-			unlink("$remote_home/.in_use");
-
+		sync_local($username);
 		break;
 	
+	case "sync-remote":
+		if (!$is_storage_node) break;
+		sync_remote($username);
+		break;
+		
 	case "help":
 		print "webidectl.php\n\nUsage:\n";
 		print "\tlogin username \t- doesn't check password!\n";
@@ -2126,6 +1755,280 @@ function clear_server() {
 }
 
 
+// Nightly tasks to be performed on storage server
+// - update stats
+// - reset svn if disk usage too large
+// - delete backup folders if neccessary
+// - generate usage statistic
+function storage_nightly($all_stats) {
+	global $users, $conf_base_path, $conf_home_path;
+	global $conf_max_user_inodes, $conf_max_user_svn_disk_usage, $conf_limit_diskspace, $conf_diskspace_cleanup;
+
+	$total = count($users);
+	$current=1;
+	$total_usage_stats = array();
+	
+	// shuffle_assoc
+	$keys = array_keys($users);
+	shuffle($keys);
+	$users_shuffled = array();
+	foreach ($keys as $key)
+		$users_shuffled[$key] = $users[$key];
+
+	// First pass - update stats, reinstall svn if neccessary
+	foreach ($users_shuffled as $username => $options) {
+		if (file_exists("/tmp/storage_nightly_skip")) break;
+		if ($username == "") continue;
+		
+		// We can safely update stats for logged-in users
+		print "$username ($current/$total) - ".date("d.m.Y H:i:s")."\n";
+		$current++;
+		$userdata = setup_paths($username);
+		$username_esa = $userdata['esa'];
+		$workspace = $userdata['workspace'];
+		if (!file_exists($workspace)) {
+			print "Workspace not found for $username...\n";
+			continue;
+		}
+		
+		// Clean core files
+		print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
+		print run_as($username, "cd $workspace; find . -name \"*core*\" -delete");
+
+		print shell_exec("$conf_base_path/bin/userstats $username_esa");
+		
+		// Git commit
+		$msg = date("d.m.Y", time() - 60*60*24);
+		if (!file_exists($workspace . "/.git")) {
+			print "Creating git for user $username...\n";
+			git_init($username);
+		}
+		print run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
+		
+		// Clean inodes
+		bfl_lock();
+		read_files();
+		bfl_unlock();
+		
+		$total_usage_stats[$username]['svn'] = false;
+		$total_usage_stats[$username]['inodes'] = false;
+		$total_usage_stats[$username]['ws.old'] = false;
+		$total_usage_stats[$username]['svn.old'] = false;
+		$total_usage_stats[$username]['old.inodes'] = false;
+		
+		if ($users[$username]["status"] == "active") {
+			print "User $username is online! Not cleaning inodes\n";
+			continue;
+		}
+		
+		$usersvn = setup_paths($username)['svn'];
+		$lastver = `svnversion $workspace`;
+		$nochange = false;
+		if ($lastver === "1" || $lastver === "1\n") {
+			$nochange = true;
+		}
+		
+		$do_reinstall = false;
+		if (!$nochange && $users[$username]["status"] != "active" && $conf_max_user_inodes > 0) {
+			$total_usage_stats[$username]['inodes'] = intval(shell_exec("find $usersvn | wc -l"));
+			if ($total_usage_stats[$username]['inodes'] > $conf_max_user_inodes) {
+				print "$username - inodes ".$total_usage_stats[$username]['inodes']." > $conf_max_user_inodes";
+				$do_reinstall = true;
+			}
+		}
+		if (!$do_reinstall && !$nochange && $users[$username]["status"] != "active" && $conf_max_user_svn_disk_usage > 0) {
+			$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
+			if ($total_usage_stats[$username]['svn'] > $conf_max_user_svn_disk_usage) {
+				print "$username - svn disk usage ".$total_usage_stats[$username]['svn']." kB > $conf_max_user_svn_disk_usage kB";
+				$do_reinstall = true;
+			}
+		}
+		
+		if ($do_reinstall) {
+			$total_usage_stats[$username]['old.inodes'] = $total_usage_stats[$username]['inodes'];
+			if ($total_usage_stats[$username]['svn'])
+				$total_usage_stats[$username]['svn.old'] = $total_usage_stats[$username]['svn'];
+			print " - resetting svn\n";
+			print "Update stats\n";
+			bfl_lock();
+			$output = array();
+			print exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
+			$output = join("\n", $output);
+			if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
+				print "Userstats failed for $username!\n";
+			} else {
+				print "Reinstall svn\n";
+				user_reinstall_svn($username);
+			}
+			$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
+		
+			// Inode statistics update (TODO)
+			
+			// Release lock for 5 seconds so users can do stuff
+			bfl_unlock();
+		}
+		
+		$user_ws_backup = setup_paths($username)['workspace'] . ".old";
+		if (file_exists($user_ws_backup))
+			$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+		$user_svn_backup = setup_paths($username)['svn'] . ".old";
+		if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
+			$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+			
+		// If free disk space is too low, wait until it cleans up
+		do {
+			$home_usage = -1; $root_usage = -1;
+			foreach(explode("\n", shell_exec("df")) as $line) {
+				$parts = preg_split("/\s+/", $line);
+				if (count($parts) < 6) continue;
+				if ($parts[5] == "/")
+					$root_usage = $parts[3];
+				if (starts_with($parts[5], $conf_home_path))
+					$home_usage = $parts[3];
+			}
+			if ($home_usage == -1) $home_usage = $root_usage;
+			$home_usage /= 1024;
+
+			if ($home_usage >= $conf_limit_diskspace * 5) break;
+			print "Disk usage $home_usage MB < " . ($conf_limit_diskspace * 5) . "MB\n";
+			print "Waiting until disk is freed\n\n";
+			sleep(120);
+		} while (1);
+	}
+	
+	// Do we need cleanup?
+	print "\n\nCLEANUP USERS\n=============\n\n";
+	
+	// Second pass - delete backup workspace or svn if neccessary
+	$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
+	print "HU $home_usage\n";
+	$current = 1;
+
+	foreach ($users_shuffled as $rand_user => $options) {
+		if ($rand_user == "") continue;
+		if ($conf_diskspace_cleanup <= 0 || $home_usage > $conf_diskspace_cleanup) break;
+
+		print "Cleanup: $rand_user ($current/$total) - ".date("d.m.Y h:i:s")."\n";
+		$current++;
+		$user_ws_backup = setup_paths($rand_user)['workspace'] . ".old";
+		print "UWB $user_ws_backup\n";
+		if (file_exists($user_ws_backup)) {
+			$backup_size = $total_usage_stats[$rand_user]['ws.old'];
+			if ($backup_size === false) {
+				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+				$backup_size = $total_usage_stats[$rand_user]['ws.old'];
+			}
+			print "Size $backup_size\n";
+			if ($backup_size > $min_backup_for_erase) {
+				`rm -fr $user_ws_backup`;
+				$stats = server_stats();
+				$total_usage_stats[$rand_user]['ws.old'] = 0;
+			}
+		} else
+			print "Not exists\n";
+			
+		$user_svn_backup = setup_paths($rand_user)['svn'] . ".old";
+		print "USB $user_svn_backup\n";
+		if (file_exists($user_svn_backup)) {
+			$backup_size = $total_usage_stats[$rand_user]['svn.old'];
+			print "Size $backup_size\n";
+			if ($backup_size === false) {
+				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+				$backup_size = $total_usage_stats[$rand_user]['svn.old'];
+			}
+			if ($backup_size > $min_backup_for_erase) {
+				`rm -fr $user_svn_backup`;
+				$stats = server_stats();
+				$total_usage_stats[$rand_user]['svn.old'] = 0;
+			}
+		} else
+			print "Not exists\n";
+		
+		$home_usage = -1; $root_usage = -1;
+		foreach(explode("\n", shell_exec("df")) as $line) {
+			$parts = preg_split("/\s+/", $line);
+			if (count($parts) < 6) continue;
+			if ($parts[5] == "/")
+				$root_usage = $parts[3];
+			if (starts_with($parts[5], $conf_home_path))
+				$home_usage = $parts[3];
+		}
+		if ($home_usage == -1) $home_usage = $root_usage;
+		$home_usage /= 1024;
+	}
+	
+	// Output usage stats to a file
+	print "\n\nUSAGE STATS\n===========\n\n";
+	$fp = fopen("$conf_base_path/log/usage_stats.txt", 'w');
+	fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\n");
+	fwrite($fp, "USER            WS      WS.OLD  SVN     SVN.OLD SVN.INODES  STATS\n");
+	$users_sorted = $users;
+	ksort($users_sorted);
+	$total_ws = $total_ws_old = $total_svn = $total_svn_old = $total_stats = 0;
+	
+	$stats_paths = array("$conf_home_path/c9/stats");
+	foreach(scandir($stats_paths[0]) as $file) {
+		$path = $stats_paths[0] . "/$file";
+		if ($file != "." && $file != ".." && is_dir($path))
+			$stats_paths[] = $path;
+	}
+	
+	foreach ($users_sorted as $username => $options) {
+		if ($username == "") continue;
+		print "Usage stats: $username - ".date("d.m.Y h:i:s")."\n";
+		$user_ws = setup_paths($username)['workspace'];
+		$total_usage_stats[$username]['ws'] = intval(shell_exec("du -s $user_ws"));
+
+		$user_ws_backup = $user_ws . ".old";
+		if (!file_exists($user_ws_backup)) $total_usage_stats[$username]['ws.old'] = 0;
+		else if ($total_usage_stats[$username]['ws.old'] === false) {
+			if ($all_stats)
+				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
+			else
+				$total_usage_stats[$username]['ws.old'] = "?";
+		}
+
+		$user_svn = setup_paths($username)['svn'];
+		if ($total_usage_stats[$username]['svn'] === false || $total_usage_stats[$username]['svn'] == "?") {
+			if ($all_stats)
+				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $user_svn"));
+			else
+				$total_usage_stats[$username]['svn'] = "?";
+		}
+		if ($total_usage_stats[$username]['inodes'] === false) $total_usage_stats[$username]['inodes'] = "?";
+
+		$user_svn_backup = $user_svn . ".old";
+		if (!file_exists($user_svn_backup)) $total_usage_stats[$username]['svn.old'] = 0;
+		else if ($total_usage_stats[$username]['svn.old'] === false) {
+			if ($all_stats)
+				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
+			else
+				$total_usage_stats[$username]['svn.old'] = "?";
+		}
+		
+		$stats_usage = 0;
+		foreach($stats_paths as $path) {
+			$stats_file = $path . "/$username.stats";
+			if (file_exists($stats_file)) $stats_usage += filesize($stats_file);
+		}
+		$stats_usage /= 1024;
+		
+		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", $username, $total_usage_stats[$username]['ws'], $total_usage_stats[$username]['ws.old'], $total_usage_stats[$username]['svn'], $total_usage_stats[$username]['svn.old'], $total_usage_stats[$username]['inodes'], $stats_usage));
+		$total_ws += $total_usage_stats[$username]['ws'];
+		$total_ws_old += $total_usage_stats[$username]['ws.old'];
+		$total_svn += $total_usage_stats[$username]['svn'];
+		$total_svn_old += $total_usage_stats[$username]['svn.old'];
+		$total_stats += $stats_usage;
+	}
+	fwrite($fp, "\n\n");
+	fwrite($fp, sprintf("%-14s%-10d%-8d%-10d%-8d%-12d%d\n", "TOTAL", $total_ws, $total_ws_old, $total_svn, $total_svn_old, 0,  $total_stats));
+	fwrite($fp, "SUM TOTAL: " . ($total_ws+$total_ws_old+$total_svn+$total_svn_old+$total_stats) . "\n");
+	$nr_users = count($users_sorted);
+	fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
+	fclose($fp);
+}
+
+
 
 // --------------------
 //      SVN&GIT MGMT
@@ -2158,7 +2061,7 @@ function user_create_svn_workspace($username) {
 
 //  Reinstall svn for user (assumption is that there are no conflicts or locks!)
 function user_reinstall_svn($username) {
-	global $c9_user, $c9_group, $conf_base_path, $student_workspace, $student_svn;
+	global $c9_user, $c9_group, $conf_base_path, $student_workspace, $student_svn, $conf_home_path;
 	
 	global $conf_base_path;
 	
@@ -2197,7 +2100,7 @@ function user_reinstall_svn($username) {
 	sleep(1);
 	
 	// Update stats file for new revision 1/2
-	$stats_filename = "/home/c9/stats/" . $userdata['efn'] . ".stats"; // FIXME! Hardcoded path
+	$stats_filename = "$conf_home_path/c9/stats/" . $userdata['efn'] . ".stats"; // FIXME! Hardcoded path
 	$stats = file_get_contents($stats_filename);
 	$stats = preg_replace("/('last_revision' \=\> )(\d+)/m", '${1}1', $stats);
 	$stats = preg_replace("/('last_update_rev' \=\> )(\d+)/m", '${1}2', $stats);
@@ -2226,8 +2129,134 @@ function git_init($username) {
 	run_as($username, $script);
 }
 
+// Syncronize user files from volatile-remote server to local folder
+function sync_local($user) {
+	global $users, $conf_home_path;
+	
+	if (!array_key_exists("volatile-remote", $users[$user])) return;
+	if ($users[$user]["status"] == "active") return;
+	
+	$userdata = setup_paths($user);
+	
+	// Check if folder is in use
+	$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
+	$remote_inuse = $remote_home . "/.in_use";
+	$local_inuse = $userdata['home'] . "/.in_use";
+	if (file_exists($local_inuse)) { 
+		print "ERROR: in use\n"; 
+		return; 
+	}
+	$is_remote_in_use = 0;
+	exec("rsync -n $remote_inuse 2>&1 >/dev/null", $output, $is_remote_in_use);
+	if ($is_remote_in_use == 0) { 
+		print "ERROR: in use\n"; 
+		return; 
+	}
+	
+	// If timestamp is recent then no need to sync
+	$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
+	$local_mtime = intval(file_get_contents($last_path));
+	$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
+	exec("rsync -a $remote_last_path /tmp/somelast");
+	$remote_mtime = intval(file_get_contents("/tmp/somelast"));
+	unlink("/tmp/somelast");
+	
+	// Start syncing
+	$remote_svn_path = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
+	if (file_exists($userdata['home'])) touch($local_inuse);
+	$local_home = substr($userdata['home'], 0, strlen($userdata['home']) - strlen($user));
+	$local_svn = substr($userdata['svn'], 0, strlen($userdata['svn']) - strlen($user));
+	exec("rsync -a $local_inuse $remote_inuse");
+	
+	if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) return; // 5 seconds allowed for syncing time
+	
+	exec("rsync -a $remote_home $local_home");
+	exec("rsync -a $remote_svn_path $local_svn");
+	
+	// Sync stats files
+	$stats_paths = array("/home/c9/stats");
+	foreach(scandir($stats_paths[0]) as $file) {
+		$path = $stats_paths[0] . "/$file";
+		if ($file != "." && $file != ".." && is_dir($path))
+			$stats_paths[] = $path;
+	}
+	
+	foreach($stats_paths as $stats_path) {
+		$stats_path .= "/$user.stats";
+		$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
+		// Stats files should never dissapear
+		if (file_exists($remote_stats_path))
+			exec("rsync -a $remote_stats_path $stats_path");
+	}
+	
+	// Local folder is now ready to use, but remote is still locked
+	if (!file_exists($local_inuse)) {
+		touch($local_inuse);
+		exec("rsync -a $local_inuse $remote_inuse");
+	}
+	unlink($local_inuse);
+}
 
-
+// Syncronize user files from local folder to volatile-remote server
+function sync_remote($user) {
+	global $users, $conf_home_path;
+	
+	if (!array_key_exists("volatile-remote", $users[$user])) return;
+	
+	$userdata = setup_paths($user);
+	
+	// Update remote timestamp
+	$local_last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
+	$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
+	exec("rsync -a $local_last_path $remote_last_path");
+	
+	// Start syncing
+	$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
+	$remote_home_trunc = substr($remote_home, 0, strlen($remote_home) - strlen($user));
+	$remote_svn = $users[$user]["volatile-remote"] . substr($userdata['svn'], strlen($conf_home_path));
+	$remote_svn_trunc = substr($remote_svn, 0, strlen($remote_svn) - strlen($user));
+	
+	// Create dirs
+	if (strchr($users[$user]["volatile-remote"], ":")) {
+		$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
+		$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
+		exec("ssh $host \"mkdir $path\"");
+		exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
+		$path = substr($remote_svn, strpos($users[$user]["volatile-remote"], ":")+1);
+		exec("ssh $host \"mkdir $path\"");
+		exec("ssh $host \"chown " . $userdata['esa'] . " $path\"");
+	}
+	
+	touch($userdata['home'] . "/.in_use");
+	$local_home = $userdata['home'];
+	$local_svn = $userdata['svn'];
+	exec("rsync -a $local_home $remote_home_trunc");
+	exec("rsync -a $local_svn $remote_svn_trunc");
+	
+	$stats_paths = array("/home/c9/stats");
+	foreach(scandir($stats_paths[0]) as $file) {
+		$path = $stats_paths[0] . "/$file";
+		if ($file != "." && $file != ".." && is_dir($path))
+			$stats_paths[] = $path;
+	}
+	
+	foreach($stats_paths as $stats_path) {
+		$stats_path .= "/$user.stats";
+		$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
+		if (file_exists($stats_path))
+			exec("rsync -a $stats_path $remote_stats_path");
+	}
+	
+	// Unlock both folders
+	unlink($userdata['home'] . "/.in_use");
+	// Hack - we must assume that protocol is ssh :(
+	if (strchr($users[$user]["volatile-remote"], ":")) {
+		$host = substr($users[$user]["volatile-remote"], 0, strpos($users[$user]["volatile-remote"], ":"));
+		$path = substr($remote_home, strpos($users[$user]["volatile-remote"], ":")+1);
+		exec("ssh $host \"rm $path/.in_use\"");
+	} else
+		unlink("$remote_home/.in_use");
+}
 
 
 // --------------------
