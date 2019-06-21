@@ -50,10 +50,14 @@ foreach($web_readable as $path) {
 // Create a pipe file for vmstat
 `mkfifo $conf_base_path/lib/vmstat.pipe`;
 
-// 'last' dir in home
+// Create 'last' dir inside home path
 `mkdir $conf_home_path/last`;
 `chown $conf_c9_user:$conf_c9_group $conf_home_path/last`;
 `chmod 775 $conf_home_path/last`;
+
+// Move some files into their default location
+`mv $conf_base_path/web/news.default.php $conf_base_path/web/news.php`;
+`mv $conf_base_path/nginx.sample.skeleton.conf $conf_base_path/nginx.skeleton.conf`;
 
 
 
