@@ -27,6 +27,7 @@ rm $bcfile
 
 # Tasks for which all users must be logouted
 echo kada se zavrsi redovno dnevno odrzavanje \(minut-dva\) > /usr/local/webide/razlog_nerada.txt
+chmod 644 /usr/local/webide/razlog_nerada.txt
 echo Clear server
 echo Clear server >> /usr/local/webide/log/webidectl.log
 /usr/local/webide/bin/webidectl clear-server >> /usr/local/webide/log/webidectl.log
@@ -44,6 +45,7 @@ rm -fr /tmp/vgdb-pipe*
 rm -fr /tmp/tmux-*
 rm -fr /tmp/bs_download*
 echo > /usr/local/webide/razlog_nerada.txt
+chmod 644 /usr/local/webide/razlog_nerada.txt
 
 #echo 91 nightly
 #echo 91 nightly >> /usr/local/webide/log/webidectl.log
