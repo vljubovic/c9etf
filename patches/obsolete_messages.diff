@@ -1,0 +1,20 @@
+diff -Naur c9upstream/plugins/c9.ide.server/views/flat-load-screen.html c9fork/plugins/c9.ide.server/views/flat-load-screen.html
+--- c9upstream/plugins/c9.ide.server/views/flat-load-screen.html        2019-06-22 09:04:14.449679464 +0200
++++ c9fork/plugins/c9.ide.server/views/flat-load-screen.html    2019-06-23 11:24:01.566754335 +0200
+@@ -22,11 +22,11 @@
+     document.body.className = "loading " + loadingIde.className;
+ 
+     var messages = [
+-        "Share your code by sharing your workspace URL.",
+-        "Each workspace is its own Ubuntu virtual machine.",
+-        "Run 'dpkg -l' in the terminal to see all packages installed.",
+-        "Remember to run your code on port 8080, 8081, or 8082.",
+-        "Use the Collaborate panel when collaborating for optimal teamwork.",
++//         "Share your code by sharing your workspace URL.",
++//         "Each workspace is its own Ubuntu virtual machine.",
++//         "Run 'dpkg -l' in the terminal to see all packages installed.",
++//         "Remember to run your code on port 8080, 8081, or 8082.",
++//         "Use the Collaborate panel when collaborating for optimal teamwork.",
+         "It's better up here.",
+         "Happy coding!",
+         "Everything as you left it.",

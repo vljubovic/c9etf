@@ -151,6 +151,10 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/relative_paths.diff`
 echo "\nprogress_bar.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/progress_bar.diff`;
 
+// Remove some obsolete loading messages
+echo "\nobsolete_messages.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/obsolete_messages.diff`;
+
 // Retry loading a failed file instead of just die
 echo "\nretry_failed.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/retry_failed.diff`;
