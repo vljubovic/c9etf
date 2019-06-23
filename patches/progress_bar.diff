@@ -56,4 +56,15 @@ diff -Naur c9upstream/plugins/c9.ide.server/views/flat-load-screen.html c9fork/p
          </div>
          <div class="footer">
              <a href="https://docs.c9.io">Documentation</a> | 
-
+diff -Naur c9upstream/plugins/c9.ide.layout.classic/loading-flat.css c9fork/plugins/c9.ide.layout.classic/loading-flat.css 
+--- c9upstream/plugins/c9.ide.layout.classic/loading-flat.css   2019-06-22 09:00:59.302031960 +0200
++++ c9fork/plugins/c9.ide.layout.classic/loading-flat.css       2019-06-23 11:18:36.959346645 +0200
+@@ -63,7 +63,7 @@
+     height: 37px;
+     position: absolute;
+     margin: 0 auto;
+-    bottom: 10%;
++    bottom: 15%;
+     width: 100%;
+ }
+ #progress-msg {
