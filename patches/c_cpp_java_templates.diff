@@ -1,6 +1,6 @@
-diff -Naur c9upstream/plugins/c9.ide.newresource/default.templates c9fork/plugins/c9.ide.newresource/default.templates    
+diff -Naur c9upstream/plugins/c9.ide.newresource/default.templates c9fork/plugins/c9.ide.newresource/default.templates
 --- c9upstream/plugins/c9.ide.newresource/default.templates     2019-06-23 11:34:18.311623400 +0200
-+++ c9fork/plugins/c9.ide.newresource/default.templates 2019-06-24 10:10:37.256404105 +0200
++++ c9fork/plugins/c9.ide.newresource/default.templates 2019-06-24 10:41:58.976769572 +0200
 @@ -2,6 +2,32 @@
  caption Text file
  section General
@@ -8,29 +8,29 @@ diff -Naur c9upstream/plugins/c9.ide.newresource/default.templates c9fork/plugin
 +filename .c
 +caption C file
 +section General
-+#include <stdio.h>
++       #include <stdio.h>
 +
-+int main() {
-+       printf("Hello, world!\n");
-+       return 0;
-+}
++       int main() {
++               printf("Hello, world!\n");
++               return 0;
++       }
 +filename .cpp
 +caption C++ file
 +section General
-+#include <iostream>
++       #include <iostream>
 +
-+int main() {
-+       std::cout << "Hello, world!";
-+       return 0;
-+}
++       int main() {
++               std::cout << "Hello, world!";
++               return 0;
++       }
 +filename .java
 +caption Java file
 +section General
-+public class Main {
-+       public static void main(String[] args) {
-+               System.out.println("Hello, world!");
++       public class Main {
++               public static void main(String[] args) {
++                       System.out.println("Hello, world!");
++               }
 +       }
-+}
  filename .js
  caption JavaScript file
  section General
