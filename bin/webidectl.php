@@ -878,7 +878,8 @@ function activate_user($username, $password, $ip_address) {
 				$stats = server_stats();
 			else
 				$stats = server_stats($node['name']);
-			if (is_local($node['address'])) $stats[1] += 4000000;
+			if (is_local($node['address'])) $stats[1] += 7000000;
+			//if ($node['name'] == "c9prim") $stats[1] += 6000000;
 			
 			// Skip nodes without minimum level of resources
 			if (!check_limits($stats, false)) {
@@ -1950,6 +1951,10 @@ function storage_nightly($all_stats) {
 		
 		bfl_unlock("user $username");
 		
+		// We have just changed user data?
+		if (array_key_exists("volatile-remote", $options))
+			sync_remote($username);
+		
 		// Prepare some per-user usage statistics
 		$user_ws_backup = setup_paths($username)['workspace'] . ".old";
 		if (file_exists($user_ws_backup))
@@ -2183,7 +2188,7 @@ function user_reinstall_svn($username) {
 	sleep(1);
 	
 	// Update stats file for new revision 1/2
-	$stats_filename = "$conf_home_path/c9/stats/" . $userdata['efn'] . ".stats"; // FIXME! Hardcoded path
+	$stats_filename = "$conf_home_path/c9/stats/" . $userdata['efn'] . ".stats";
 	$stats = file_get_contents($stats_filename);
 	$stats = preg_replace("/('last_revision' \=\> )(\d+)/m", '${1}1', $stats);
 	$stats = preg_replace("/('last_update_rev' \=\> )(\d+)/m", '${1}2', $stats);
@@ -2377,6 +2382,7 @@ function bfl_lock($lock = "all", $take_lock = true) {
 	}
 	
 	if ($take_lock) {
+//		debug_log("$action stavlja lock $lock pid ".getmypid());
 		file_put_contents($bfl_file, file_get_contents($bfl_file) . $lock . "\n");
 	}
 }
@@ -2386,6 +2392,7 @@ function bfl_unlock($lock = "all") {
 	
 	$bfl_file = "/tmp/webide.bfl";
 	$new_locks = "";
+//	debug_log("$action unlock $lock pid ".getmypid());
 	foreach(file($bfl_file) as $m_lock)
 		if ($m_lock !== $lock . "\n") $new_locks .= $m_lock;
 	file_put_contents($bfl_file, $new_locks);
