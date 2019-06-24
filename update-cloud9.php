@@ -64,6 +64,10 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/autosave_default.dif
 echo "\nc_cpp_snippets.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/c_cpp_snippets.diff`;
 
+// Add C, C++ and Java to "New From Template" menu
+echo "\nc_cpp_java_templates.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/c_cpp_java_templates.diff`;
+
 // Source code formatting for C, C++ and Java using Astyle
 // FIXME: Currently implemented through a web service - move to c9 api
 echo "\nformatter_astyle.diff\n";
