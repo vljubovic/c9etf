@@ -1,7 +1,7 @@
 
 =========================================
 INSTALL.txt
-C9@ETF project (c) 2015-2018
+C9@ETF project (c) 2015-2019
 =========================================
 
 
@@ -27,7 +27,7 @@ gdbserver - without this debugging in C/C++ programs will just give an error
 astyle - formatting C/C++/Java programs
 sqlite3 - for debugging svn problems
 valgrind
-zip - required for submitting files via buildservice
+zip - required for automated testing (buildservice)
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
@@ -102,6 +102,27 @@ http://yourhost/admin.php (login as user "admin")
 
 
 
+POST-INSTALL CONFIGURATION
+
+- nginx
+Every time a user logs in/out of cloud9 your nginx configuration is overwritten
+by webidectl. Default nginx configuration is good enough for standalone server, 
+but if you want to change it (i.e. add letsencrypt certificate), instead of 
+editing /etc/nginx, you should now edit file 
+/usr/local/webide/nginx.skeleton.conf
+
+The best idea is to run letsencrypt and then manually copy all changes from 
+/etc/nginx/... to nginx.skeleton.conf
+
+- buildservice
+By default after first installation the automated testing functionality doesn't
+work. You have to configure buildservice using instructions at
+http://github.com/etf-sarajevo/buildservice
+
+Buildservice config.php is in folder /usr/local/webide/web/buildservice
+
+
+
 UPDATING CLOUD9
 
 To update your Cloud9 IDE from upstream, you can use update-cloud9 script. First
@@ -128,12 +149,9 @@ its easy to revert to the old version:
  $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9upstream
  $ sudo mv /usr/local/webide/c9old /usr/local/webide/c9fork
 
+Note that git will reset permissions on all modified files to your umask, so if
+you set umask to 022 as recommended, after git pull many of files will become 
+unreadable and the web interface will break. Unfortunatelly, the only solution 
+for this is to use a script such as git-cache-meta.sh 
+https://gist.github.com/andris9/1978266.
  
- 
-AUTOMATIC TESTS
-
-By default after first installation the automated testing functionality doesn't
-work. You have to configure buildservice using instructions at
-http://github.com/etf-sarajevo/buildservice
-
-Buildservice config.php is in folder /usr/local/webide/web/buildservice
