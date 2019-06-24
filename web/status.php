@@ -46,7 +46,7 @@ if ($prijavljen && empty($realname)) $realname = $login;
 <body onload="setupTimeouts();">
 	<h1>C9ETF WebIDE Dashboard - <?=$realname?></h1>
 
-	<div id="logout"><h2><a href="index.php?logout"><img src="static/images/exit.png" width="32" height="32" align="center"> Logout</a></h2></div>
+	<div id="logout"><h2><a href="profile.php"><i class="fa fa-user"></i> Profile</a> * <a href="index.php?logout"><i class="fa fa-power-off"></i> Logout</a></h2></div>
 
 	<div id="left_column">
 		<div id="webide_status" class="box">
