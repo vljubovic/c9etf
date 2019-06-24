@@ -84,6 +84,7 @@ switch($action) {
 				}
 			}
 			bfl_unlock("user $username");
+			debug_log ("change user $username $key");
 		}
 		break;
 	
@@ -193,6 +194,7 @@ switch($action) {
 			exec("chown $conf_nginx_user $htpasswd");
 			bfl_unlock("user $username");
 			print "Created local user $username\n";
+			debug_log ("add local user $username");
 		}
 		break;
 	
