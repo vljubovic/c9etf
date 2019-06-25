@@ -1,12 +1,60 @@
-diff -Naur c9upstream/plugins/c9.ide.login/login.js c9fork/plugins/c9.ide.login/login.js
---- c9upstream/plugins/c9.ide.login/login.js	2017-04-09 19:19:24.599925145 +0200
-+++ c9fork/plugins/c9.ide.login/login.js	2017-04-10 12:05:25.122109394 +0200
-@@ -146,7 +146,7 @@
- 
-         function signout() {
-             vfsEndpoint.clearCache();
--            auth.logout(ideBaseUrl);
-+            auth.logout( '/?logout' );
-         }
- 
-         function onReLogin() {
+diff -Naur c9upstream/plugins/c9.ide.login/login.js c9fork/plugins/c9.ide.login/login.js 
+--- c9upstream/plugins/c9.ide.login/login.js    2019-06-23 11:38:16.669870884 +0200
++++ c9fork/plugins/c9.ide.login/login.js        2019-06-24 16:34:42.945307749 +0200
+@@ -109,11 +109,7 @@
+                 menus.addItemByPath(name + "/~", new ui.divider(), c += 100, plugin);
+                 menus.addItemByPath(name + "/Log out", new ui.item({
+                     onclick: function() {
+-                        if (!c9.local)
+-                            return signout();
+-                        auth.logout(function() {
+-                            info.login(true);
+-                        });
++                        window.location.href = ideBaseUrl + "?logout";
+                     }
+                 }), c += 100, plugin);
+             }
+diff -Naur c9upstream/settings/standalone.js c9fork/settings/standalone.js --- c9upstream/settings/standalone.js   2019-06-23 11:38:16.681871603 +0200
++++ c9fork/settings/standalone.js       2019-06-23 23:20:51.087472368 +0200
+@@ -63,10 +63,10 @@
+         correctedInstallPath: correctedInstallPath,
+         staticPrefix: "static",
+         projectUrl: "workspace",
+-        ideBaseUrl: "http://c9.io",
++        ideBaseUrl: "/",
+         previewUrl: "preview",
+-        dashboardUrl: "https://c9.io/dashboard.html",
+-        accountUrl: "https://c9.io/account",
++        dashboardUrl: "/status.php",
++        accountUrl: "/profile.php",
+         apiUrl: "api",
+         homeUrl: "home",
+         collab: false,
+diff -Naur c9upstream/plugins/c9.ide.info/info.js c9fork/plugins/c9.ide.info/info.js 
+--- c9upstream/plugins/c9.ide.info/info.js      2019-06-24 18:55:19.358946575 +0200
++++ c9fork/plugins/c9.ide.info/info.js  2019-06-23 23:21:47.298827719 +0200
+@@ -28,12 +28,18 @@
+         /***** Methods *****/
+         
+         function getUser(callback, noCache) {
+-            if (noCache) {
+-                return api.user.get("", function(err, data) {
+-                    if (err) return callback(err);
+-                    user = data;
+-                    callback(err, data);
+-                });
++            if (noCache || user.id == -1) {
++                var xmlhttp = new XMLHttpRequest();
++                var url = "/user.php";
++                xmlhttp.onreadystatechange = function() {
++                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
++                        user = JSON.parse(xmlhttp.responseText);
++                        if (callback) callback(null, user);
++                    }
++                };
++                xmlhttp.open("GET", url, true);
++                xmlhttp.send();
++                return xmlhttp;
+             }
+             
+             return callback ? callback(null, user) : user;
