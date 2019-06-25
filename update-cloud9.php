@@ -38,6 +38,7 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_keys_plugin.
 // Disable "welcome" screen - in future maybe patch welcome screen to our needs?
 echo "\ndisable_welcome_plugin.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_welcome_plugin.diff`;
+`cp patches/welcome-img/* c9upstream/plugins/c9.ide.welcome/images`;
 
 // Disable "Open terminal here" and similar options
 echo "\ndisable_open_terminal.diff\n";
@@ -134,10 +135,6 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/gdb_evaluate_vectors
 //echo "gdb_warnings_debugging.diff\n";
 //echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/gdb_warnings_debugging.diff`;
 
-// Use our URL for logout menu action
-echo "\nlogout_url.diff\n";
-echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/logout_url.diff`;
-
 // Patches that failed to port:
 // - parse_program_output.diff is currently considered obsolete, but it's the only way to detect if program run too long
 // - gdb prevent infinite recursion, e.g. with evaluating C++ string object on stack 
@@ -150,6 +147,10 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/logout_url.diff`;
 // http://hostname/user/ide.html and not http://hostname/ide.html)
 echo "\nrelative_paths.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/relative_paths.diff`;
+
+// Use our URL for logout menu action
+echo "\nlogout_url.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/logout_url.diff`;
 
 // Display a progress bar that corresponds to actual files being loaded
 echo "\nprogress_bar.diff\n";

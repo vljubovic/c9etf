@@ -1,7 +1,7 @@
 diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
---- c9upstream/configs/ide/default.js	2017-04-10 10:35:36.988429521 +0200
-+++ c9fork/configs/ide/default.js	2017-04-10 10:35:20.952316488 +0200
-@@ -692,13 +692,13 @@
+--- c9upstream/configs/ide/default.js   2019-06-24 18:58:37.798847417 +0200
++++ c9fork/configs/ide/default.js       2019-06-24 10:16:58.595190307 +0200
+@@ -649,12 +649,13 @@
                  premium: options.project.premium,
              }
          },
@@ -11,12 +11,351 @@ diff -Naur c9upstream/configs/ide/default.js c9fork/configs/ide/default.js
 -              + "to tweak the look &amp; feel of the Cloud9 user interface. ",
 -            checkOS: true
 -        },
-+        //{
-+        //    packagePath: "plugins/c9.ide.welcome/welcome",
-+        //    intro: "Welcome to Cloud9. Use this welcome screen "
-+        //      + "to tweak the look &amp; feel of the Cloud9 user interface. ",
-+        //    checkOS: true
-+        //},
++        {
++            packagePath: "plugins/c9.ide.welcome/welcome",
++            intro: "Dobro došli na C9@ETF WebIDE. Koristite opcije ispod da započnete rad, "
++                + "ili prilagodite izgled okruženja. Kliknite na karticu Zadaci lijevo da "
++                + "otvorite neki od standardnih zadataka za predmete.",
++            checkOS: true
++        },
          {
              packagePath: "plugins/c9.cli.bridge/bridge",
              startBridge: options.startBridge
+diff -Naur c9upstream/plugins/c9.ide.welcome/style.css c9fork/plugins/c9.ide.welcome/style.css   
+--- c9upstream/plugins/c9.ide.welcome/style.css 2019-06-24 18:55:19.590960491 +0200
++++ c9fork/plugins/c9.ide.welcome/style.css     2019-06-24 15:36:08.318918044 +0200
+@@ -234,6 +234,7 @@
+     border: 1px solid rgba(255, 255, 255, 0.17);
+     background-color: rgba(148, 148, 148, 0.1);
+ }
++
+ .welcome .preset_container .preset:last-child{
+     margin-right: 0;
+ }
+@@ -276,4 +277,85 @@
+ }
+ .welcome .preset_container .preset#sublime{
+     background-image : url("@{plugin-path}/images/sublime.png");
+-}
+\ No newline at end of file
++}
++
++
++.welcome .preset_container .project{
++    width: 80px;
++    height: 80px;
++    display: inline-block;
++    margin-right: 13px;
++    margin-bottom: 25px;
++    position: relative;
++    cursor: pointer;
++    box-sizing: border-box;
++    border: 1px solid transparent;
++    background: no-repeat 50% 50%;
++
++    border: 1px solid rgba(255, 255, 255, 0.17);
++    background-color: rgba(148, 148, 148, 0.1);
++}
++
++.welcome .preset_container .project:last-child{
++    margin-right: 0;
++}
++
++.welcome .preset_container .project:hover{
++    border: 1px solid rgba(255, 255, 255, 0.28);
++    background-color: rgba(148, 148, 148, 0.15);
++}
++
++.welcome .preset_container .project.active{
++    border: 1px solid rgba(255, 255, 255, 0.28);
++    background-color: rgba(148, 148, 148, 0.19);
++}
++
++.welcome .preset_container .project label{
++    text-align: center;
++    position : absolute;
++    bottom : -25px;
++    left: 0;
++    right: 0;
++    cursor: inherit;
++    opacity: 0.5;
++    border-radius: 3px;
++    padding: 1px;
++}
++.welcome .preset_container .project:hover label{
++    opacity: 0.65;
++    background: rgba(158, 158, 158, 0.1);
++}
++
++.welcome .preset_container .project.active label{
++    opacity: 0.8;
++    background: rgba(158, 158, 158, 0.3) url("/static/plugins/c9.ide.layout.classic/images/check.gif") no-repeat 0 -16px;
++}
++
++.welcome .preset_container .project#c_project{
++    background-image : url("@{plugin-path}/images/c.png");
++}
++
++.welcome .preset_container .project#cpp_project{
++    background-image : url("@{plugin-path}/images/cpp.png");
++}
++
++.welcome .preset_container .project#java_project{
++    background-image : url("@{plugin-path}/images/java.png");
++}
++
++.welcome .preset_container .project#py_project{
++    background-image : url("@{plugin-path}/images/python.png");
++}
++
++.welcome .preset_container .project#js_project{
++    background-image : url("@{plugin-path}/images/js.png");
++}
++
++.welcome .preset_container .project#php_project{
++    background-image : url("@{plugin-path}/images/php.png");
++}
++
++#new_project {
++    display: none;
++    margin-top: 40px;
++}
+diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.welcome/welcome.html          
+--- c9upstream/plugins/c9.ide.welcome/welcome.html      2019-06-24 18:55:19.590960491 +0200
++++ c9fork/plugins/c9.ide.welcome/welcome.html  2019-06-24 15:34:30.889089187 +0200
+@@ -1,12 +1,41 @@
+ <div class="welcome">
+     <div class="main">
+         <div class="welcome-logo"></div>
+-        <div class="welcome-heading">Welcome</div>
++        <div class="welcome-heading">Dobro došli</div>
+         <div class="intro">
+             
+         </div>
+         
+         <div class="presets">
++            <h3>Kreirajte novi projekat</h3>
++            <div class="preset_container">
++                <div class="project" id="c_project">
++                    <label>C</label>
++                </div>
++                <div class="project" id="cpp_project">
++                    <label>C++</label>
++                </div>
++                <div class="project" id="java_project">
++                    <label>Java</label>
++                </div>
++                <div class="project" id="py_project">
++                    <label>Python</label>
++                </div>
++                <div class="project" id="js_project">
++                    <label>JavaScript</label>
++                </div>
++                <div class="project" id="php_project">
++                    <label>PHP</label>
++                </div>
++            </div>
++            <div id="new_project">
++                <label>Naziv projekta:</label>
++                <input type="text" id="project_name">
++                <input type="button" id="create_project" value="Kreiraj">
++            </div>
++        </div>
++        
++        <div class="presets">
+             <h3>Choose a Preset</h3>
+             <div class="preset_container">
+                 <div class="preset active" id="default">
+@@ -27,14 +56,14 @@
+             <div class="more">more settings...</div>
+         </div>
+         
+-        <div class="next">
++        <!--div class="next">
+             <h3>Next Steps</h3>
+             <ul>
+                 <li class="openterminal">Open a Terminal</li>
+                 <li class="openconsole">Open the Console</li>
+                 <li class="newfile">Create a new file</li>
+             </ul>
+-        </div>
++        </div-->
+         
+         <div class="switched">
+             <h2>The Cloud9 Minimal Editor Layout</h2>
+@@ -87,25 +116,26 @@
+             <label>Cloud9 - The introduction</label>
+         </div>
+         <div class="more"><a href="https://www.youtube.com/user/c9ide/videos?flow=grid&amp;view=1" target="_blank">more...</a></div-->
++        <script>
++        </script>
+         
+-        <h3>The Cloud9 Blog</h3>
++        <h3>Savjet dana</h3>
+         <div class="article">
+-            <h4><a href="https://c9.io/blog/edit-from-the-cloud9-terminal-like-a-boss-6-2-2015/" target="_blank">Edit from the Cloud9 Terminal like a Boss!</a></h4>
+-            <p>Since the dark ages when the green on black screens were the only interface to a machine, the terminal has been a coder’s best friend.</p>
+-            <p>This has been especially true with the advent of command line driven ecosystems like the Ruby and the Node.js communities.</p> 
++            <h4>Jeste li znali da...</h4>
++            <p id="savjeti_article"></p> 
+         </div>
+-        <div class="more"><a href="https://blog.c9.io" target="_blank">more...</a></div>
++        <div class="more"><a href="#" id="nextTipLink">sljedeći savjet...</a></div>
+         
+-        <h3>Docs</h3>
++        <h3>Dokumentacija</h3>
+         <div class="article">
+-            <h4><a href="https://docs.c9.io/v1.0/docs/setup-a-database" target="_blank">Set up a Database</a></h4>
+-            <p>Like to run a Database with your application? You can use any Database you like! We have guides for MySQL, MongoDB and more on our documentation site.</p>
++            <h4><a href="/uputstva-c9.pdf" target="_blank">Uputstva za upotrebu</a></h4>
++            <p>Pročitajte nova Uputstva za upotrebu koja smo pripremili za vas!</p>
+         </div>
+         <div class="article">
+-            <h4><a href="https://docs.c9.io/v1.0/docs/faq-general" target="_blank">General FAQ</a></h4>
+-            <p>Have a question about Cloud9? It's probably covered in our <a href="https://docs.c9.io/v1.0/docs/faq-general" target="_blank">FAQ</a>. If it's not send us a message through our <a href="https://c9.io/support" target="_blank">support page</a> and we'll get back to you as soon as possible!</p>
++            <h4><a href="/faq.php" target="_blank">Često postavljena pitanja</a></h4>
++            <p>Imate problem sa korištenjem C9@ETF? Za vas smo pripremili dokument sa često postavljenim pitanjima. Npr: koje tačno probleme možete riješiti sa <i>resetovanjem konfiguracije</i>, ko to može uraditi za vas?</p>
+         </div>
+-        <div class="more"><a href="https://docs.c9.io/v1.0/docs" target="_blank">more...</a></div>
++        <div class="more"><a href="/faq.php" target="_blank">više...</a></div>
+         
+         <br /><br />
+     </div>
+diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.welcome/welcome.js       
+--- c9upstream/plugins/c9.ide.welcome/welcome.js        2019-06-24 18:55:19.590960491 +0200
++++ c9fork/plugins/c9.ide.welcome/welcome.js    2019-06-24 18:23:18.627787109 +0200
+@@ -31,6 +31,7 @@
+         
+         var handle = editors.register("welcome", "URL Viewer", Welcome, []);
+         var intro;
++        var savjeti_article, new_project, project_name;
+         
+         var WELCOME_INTRO = (options.intro || "").replace(/\n/g, "<br />");
+         var OS_INTRO = "\n You can now use sudo and apt-get to manage your workspace!";
+@@ -52,7 +53,7 @@
+             menus.addItemByPath("Cloud9/Welcome Page", new ui.item({
+                 onclick: function() { tabManager.openEditor("welcome", true, function() {}); }
+             }), 320, handle);
+-
++            
+             
+             tabManager.once("ready", function() {
+                 settings.on("read", function(e) {
+@@ -130,6 +131,18 @@
+             }, cb);
+         }
+         
++        function nextTip() {
++            var savjeti = [
++                "Možete promijeniti vaš avatar (sličicu robota u gornjem desnom uglu) koristeći servis <a href=\"https://www.gravatar.com\" target=\"_blank\">Gravatar</a>? Avatar se vezuje za e-mail adresu koja je podešena u vašem <a href=\"/profile.php\" target=\"_blank\">profilu</a>.",
++                "Prozor koji upravo gledate se zove &quot;Welcome Page&quot;. Ako ga slučajno zatvorite, možete ga opet dobiti kroz meni <b>Cloud9</b> u gornjem lijevom uglu.",
++                "<b>Presets</b> su vrlo moćna funkcionalnost. Pomoću njih možete odjednom podesiti kompletan izgled okruženja. Ako nešto slučajno sakrijete ili obrišete, možete se vratiti na početni izgled izborom preset-a &quot;Full IDE&quot;. Ovaj preset možete naći pod menijem <b>Window / Presets</b>, a ako meniji nisu vidljivi, kliknite na tanku sivu liniju ispod plave linije u vrhu ekrana.",
++                "Isječci koda (snippets) vam omogućuju da još brže kucate blokove koda koji se često ponavljaju (npr. for petlja). Recimo, ako otkucate <b>ife</b> i pritisnete tipku Tab, dobićete gotov if-else blok koji samo trebate popuniti kodom.",
++                "Možete dobiti pomoć za bilo koju bibliotečnu klasu ili funkciju. Samo selektujte naziv funkcije/klase koja vas interesuje i otvorite karticu Reference sa desne strane (ili pritisnite Alt-H)."
++            ];
++            
++            savjeti_article.innerHTML = savjeti[Math.floor(Math.random()*savjeti.length)];
++        }
++        
+         function Welcome() {
+             var plugin = new Editor("Ajax.org", main.consumes, []);
+             //var emit = plugin.getEmitter();
+@@ -149,6 +162,80 @@
+                 intro = node.querySelector(".intro");
+                 intro.innerHTML = WELCOME_INTRO;
+                 
++                savjeti_article = node.querySelector("#savjeti_article");
++                new_project = node.querySelector("#new_project");
++                project_name = node.querySelector("#project_name");
++                
++                nextTip();
++                node.querySelector("#nextTipLink").addEventListener("click", nextTip);
++                
++                var currentProject = false;
++                var projectClick = function() {
++                    var value = this.id;
++                    currentProject = value.substr(0, value.indexOf("_project"));
++                    
++                    var projects = node.querySelectorAll(".project");
++                    for (var i = 0; i < projects.length; i++)
++                        projects[i].className = "project";
++                    
++                    this.className = "project active";
++                    new_project.style.display = "block";
++                    
++                    project_name.focus();
++                };
++                
++                var createProject = function() {
++                    var fileNames = {
++                        "c": "main.c", "cpp" : "main.cpp", "java" : "Main.java", "py" : "NAME.py", "js" : "NAME.js", "php" : "NAME.php7"
++                    };
++                    var fileContents = {
++                        "c": "#include <stdio.h>\n\nint main() {\n\tprintf(\"Hello, world!\");\n\treturn 0;\n}\n",
++                        "cpp": "#include <iostream>\n\nint main() {\n\tstd::cout << \"Hello, world!\";\n\treturn 0;\n}\n",
++                        "java": "public class Main {\n\tpublic static void main(String[] args) {\n\t\tSystem.out.println(\"Hello, world!\");\n\t}\n}",
++                        "py": "print(\"Hello, world!\")",
++                        "js": "console.log(\"Hello, world!\");",
++                        "php": "<?php\necho \"Hello, world!\";\n?>"
++                    };
++                    if (!currentProject) return;
++                    
++                    var name = project_name.value;
++                    if (name.length < 2) {
++                        alert("Project name too short");
++                        return;
++                    }
++                    var rg = /^[0-9a-zA-Z\_\-]+$/;
++                    if (!rg.test(name)) {
++                        alert("Invalid project name. Spaces and other non-alphanumeric characters are not allowed in project name.");
++                        return;
++                    }
++                    
++                    var path = "/" + name;
++                    var fullpath = path + "/" + fileNames[currentProject].replace("NAME", name);
++                    fs.exists( path, function(exists) {
++                        if (exists) {
++                            alert("Folder with this name already exists.");
++                        } else {
++                            fs.mkdirP(path, function(err) {
++                                console.log("Writing to file "+fullpath+" contents "+fileContents[currentProject]);
++                                fs.writeFile( fullpath, fileContents[currentProject], function (err, data) {
++                                    if (err) console.log(err);
++                                    tabManager.openFile( fullpath, true, function(err, tab) {
++                                        new_project.style.display = "none";
++                                    });
++                                });
++                            });
++                        } 
++                    });
++                    
++                };
++                
++                var projects = node.querySelectorAll(".project");
++                for (var i = 0; i < projects.length; i++)
++                    projects[i].addEventListener("click", projectClick);
++                    
++                node.querySelector("#create_project").addEventListener("click", createProject);
++
++                
+                 var list = [];
+                 var themes = ace.themes;
+                 for (var base in themes) {
+@@ -270,7 +357,7 @@
+                 container.querySelector(".configure .more").onclick = function() {
+                     commands.exec("openpreferences");
+                 };
+-                container.querySelector(".openterminal").onclick = function() {
++                /*container.querySelector(".openterminal").onclick = function() {
+                     tabManager.openEditor("terminal", true, function() {});
+                 };
+                 container.querySelector(".openconsole").onclick = function() {
+@@ -278,7 +365,7 @@
+                 };
+                 container.querySelector(".newfile").onclick = function() {
+                     commands.exec("newfile");
+-                };
++                };*/
+             });
+             
+             /***** Method *****/
