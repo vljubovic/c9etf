@@ -86,10 +86,10 @@ $gravatar = md5(trim(strtolower($email)));
 		<p class="box_title"><input type="button" onclick="window.location.href='<?=$changePasswordUrl?>';" style="color:black; padding:4px;" value="Change password"></p>
 		
 		<p class="box_title">Real name:</p>
-		<input type="text" name="realname" id="realname" value="<?=$realname?>">
+		<input type="text" name="realname" id="realname" readonly value="<?=$realname?>">
 		
 		<p class="box_title">E-mail address:</p>
-		<input type="text" name="email" id="realname" value="<?=$email?>">
+		<input type="text" name="email" id="realname" readonly value="<?=$email?>">
 		
 		<p class="box_title"><input type="submit" style="color:black; padding:4px;" value="Change"></p>
 		</form>
