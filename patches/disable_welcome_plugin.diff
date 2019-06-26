@@ -120,20 +120,24 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/style.css c9fork/plugins/c9.ide.wel
 +    display: none;
 +    margin-top: 40px;
 +}
-diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.welcome/welcome.html          
+diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.welcome/welcome.html 
 --- c9upstream/plugins/c9.ide.welcome/welcome.html      2019-06-24 18:55:19.590960491 +0200
-+++ c9fork/plugins/c9.ide.welcome/welcome.html  2019-06-24 15:34:30.889089187 +0200
-@@ -1,12 +1,41 @@
++++ c9fork/plugins/c9.ide.welcome/welcome.html  2019-06-26 10:11:06.599400483 +0200
+@@ -1,9 +1,41 @@
  <div class="welcome">
      <div class="main">
          <div class="welcome-logo"></div>
 -        <div class="welcome-heading">Welcome</div>
 +        <div class="welcome-heading">Dobro došli</div>
          <div class="intro">
-             
-         </div>
-         
-         <div class="presets">
+-            
++        </div>
++        
++        <div class="next">
++        <ul><li class="openzadaci">Otvori karticu Zadaci</li></ul>
++        </div>
++        
++        <div class="presets">
 +            <h3>Kreirajte novi projekat</h3>
 +            <div class="preset_container">
 +                <div class="project" id="c_project">
@@ -160,13 +164,10 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.
 +                <input type="text" id="project_name">
 +                <input type="button" id="create_project" value="Kreiraj">
 +            </div>
-+        </div>
-+        
-+        <div class="presets">
-             <h3>Choose a Preset</h3>
-             <div class="preset_container">
-                 <div class="preset active" id="default">
-@@ -27,14 +56,14 @@
+         </div>
+         
+         <div class="presets">
+@@ -27,14 +59,14 @@
              <div class="more">more settings...</div>
          </div>
          
@@ -183,7 +184,7 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.
          
          <div class="switched">
              <h2>The Cloud9 Minimal Editor Layout</h2>
-@@ -87,25 +116,26 @@
+@@ -87,25 +119,26 @@
              <label>Cloud9 - The introduction</label>
          </div>
          <div class="more"><a href="https://www.youtube.com/user/c9ide/videos?flow=grid&amp;view=1" target="_blank">more...</a></div-->
@@ -221,10 +222,27 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.html c9fork/plugins/c9.ide.
          
          <br /><br />
      </div>
-diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.welcome/welcome.js       
+diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.welcome/welcome.js     
 --- c9upstream/plugins/c9.ide.welcome/welcome.js        2019-06-24 18:55:19.590960491 +0200
-+++ c9fork/plugins/c9.ide.welcome/welcome.js    2019-06-24 18:23:18.627787109 +0200
-@@ -31,6 +31,7 @@
++++ c9fork/plugins/c9.ide.welcome/welcome.js    2019-06-26 10:11:17.232036547 +0200
+@@ -1,7 +1,7 @@
+ define(function(require, exports, module) {
+     main.consumes = [
+         "Editor", "editors", "ui", "tabManager", "settings", "Form",
+-        "commands", "fs", "ace", "layout", "c9", "menus"
++        "commands", "fs", "ace", "layout", "c9", "menus", "panels"
+     ];
+     main.provides = ["welcome"];
+     return main;
+@@ -24,6 +24,7 @@
+         var settings = imports.settings;
+         var Form = imports.Form;
+         var menus = imports.menus;
++        var panels = imports.panels;
+ 
+         var join = require("path").join;
+         
+@@ -31,6 +32,7 @@
          
          var handle = editors.register("welcome", "URL Viewer", Welcome, []);
          var intro;
@@ -232,7 +250,7 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.we
          
          var WELCOME_INTRO = (options.intro || "").replace(/\n/g, "<br />");
          var OS_INTRO = "\n You can now use sudo and apt-get to manage your workspace!";
-@@ -52,7 +53,7 @@
+@@ -52,7 +54,7 @@
              menus.addItemByPath("Cloud9/Welcome Page", new ui.item({
                  onclick: function() { tabManager.openEditor("welcome", true, function() {}); }
              }), 320, handle);
@@ -241,7 +259,7 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.we
              
              tabManager.once("ready", function() {
                  settings.on("read", function(e) {
-@@ -130,6 +131,18 @@
+@@ -130,6 +132,18 @@
              }, cb);
          }
          
@@ -260,7 +278,7 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.we
          function Welcome() {
              var plugin = new Editor("Ajax.org", main.consumes, []);
              //var emit = plugin.getEmitter();
-@@ -149,6 +162,80 @@
+@@ -149,6 +163,80 @@
                  intro = node.querySelector(".intro");
                  intro.innerHTML = WELCOME_INTRO;
                  
@@ -293,10 +311,10 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.we
 +                    var fileContents = {
 +                        "c": "#include <stdio.h>\n\nint main() {\n\tprintf(\"Hello, world!\");\n\treturn 0;\n}\n",
 +                        "cpp": "#include <iostream>\n\nint main() {\n\tstd::cout << \"Hello, world!\";\n\treturn 0;\n}\n",
-+                        "java": "public class Main {\n\tpublic static void main(String[] args) {\n\t\tSystem.out.println(\"Hello, world!\");\n\t}\n}",
++                        "java": "// Ako se vas projekat sastoji od vise klasa, promijenite runner\n// sa \"Java (single-file)\" na \"Java (workspace)\"\n\npublic class Main {\n\tpublic static void main(String[] args) {\n\t\tSystem.out.println(\"Hello, world!\");\n\t}\n}",
 +                        "py": "print(\"Hello, world!\")",
 +                        "js": "console.log(\"Hello, world!\");",
-+                        "php": "<?php\necho \"Hello, world!\";\n?>"
++                        "php": "<?php\n// Fajlovi sa ekstenzijom .php trenutno se ne mogu pokretati kroz c9@etf\n// Izaberite runner \"PHP (cli)\" umjesto \"auto\"\n// Idite na View > Syntax > PHP\n\necho \"Hello, world!\";\n?>"
 +                    };
 +                    if (!currentProject) return;
 +                    
@@ -341,16 +359,19 @@ diff -Naur c9upstream/plugins/c9.ide.welcome/welcome.js c9fork/plugins/c9.ide.we
                  var list = [];
                  var themes = ace.themes;
                  for (var base in themes) {
-@@ -270,7 +357,7 @@
+@@ -270,7 +358,10 @@
                  container.querySelector(".configure .more").onclick = function() {
                      commands.exec("openpreferences");
                  };
 -                container.querySelector(".openterminal").onclick = function() {
++                container.querySelector(".openzadaci").onclick = function() {
++                    panels.activate( "zadaci.panel" );
++                };
 +                /*container.querySelector(".openterminal").onclick = function() {
                      tabManager.openEditor("terminal", true, function() {});
                  };
                  container.querySelector(".openconsole").onclick = function() {
-@@ -278,7 +365,7 @@
+@@ -278,7 +369,7 @@
                  };
                  container.querySelector(".newfile").onclick = function() {
                      commands.exec("newfile");
