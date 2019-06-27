@@ -137,10 +137,11 @@
     },
     "tabs": {
         "json()": {
-            "focus": "tab3",
+            "focus": "tab1",
             "meta": {
                 "accessList": [
-                    "tab0"
+                    "tab0",
+                    "tab1"
                 ]
             },
             "name": "pane0",
@@ -163,6 +164,27 @@
                         "ace": {}
                     },
                     "editorType": "ace",
+                    "active": true
+                },
+                {
+                    "type": "tab",
+                    "name": "tab1",
+                    "path": "",
+                    "className": [
+                        "tab1",
+                        "focus"
+                    ],
+                    "document": {
+                        "changed": "",
+                        "meta": {
+                            "welcome": true,
+                            "timestamp": 1561479142257
+                        },
+                        "filter": true,
+                        "title": "Welcome",
+                        "welcome": []
+                    },
+                    "editorType": "welcome",
                     "active": true
                 }
             ],
