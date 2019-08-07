@@ -40,7 +40,7 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] == "submit") {
 	if (!filter_var($m_email, FILTER_VALIDATE_EMAIL)) {
 		$msg = "<p style=\"color:red;\">Invalid email format</p>"; 
 	} else {
-		$realname = preg_replace('/[^A-Za-z0-9_\-\.]/', ' ', $_POST['realname']);
+		$realname = preg_replace('/[^A-Za-z0-9_\-\.čćšđžČĆŠĐŽ]/', ' ', $_POST['realname']);
 		$email = $m_email;
 		`sudo $conf_base_path/bin/webidectl change-user $login realname '$realname'`;
 		`sudo $conf_base_path/bin/webidectl change-user $login email '$email'`;
