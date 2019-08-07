@@ -114,7 +114,7 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 	
 	?>
 	
-	<script src="https://zamger.etf.unsa.ba/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.5/ace.js" type="text/javascript" charset="utf-8"></script>
 	<script src="static/js/phpwebide.js" type="text/javascript" charset="utf-8"></script>
 	<script src="static/js/buildservice.js" type="text/javascript" charset="utf-8"></script>
 	
