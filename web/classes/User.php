@@ -1,7 +1,7 @@
 <?php
 
 class User {
-	public $login, $realname, $email, $ipAddress;
+	public $login, $realname, $email, $ipAddress, $online;
 	
 	public function __construct($login) {
 		global $conf_base_path, $users;
@@ -14,6 +14,7 @@ class User {
 		$this->realname = $users[$login]->realname;
 		$this->email = $users[$login]->email;
 		$this->ipAddress = $users[$login]->ipAddress;
+		$this->online = $users[$login]->online;
 	}
 	
 	public function permissions() {
@@ -50,6 +51,7 @@ class User {
 				$u->email = $data['email'];
 			if (array_key_exists('ip_address', $data))
 				$u->ipAddress = $data['ip_address'];
+			$u->online = ($data['status'] == "active");
 			$result[$login] = $u;
 		}
 		return $result;

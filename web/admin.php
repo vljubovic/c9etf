@@ -335,23 +335,23 @@ if ($logged_in) {
 	
 	// Show all users in a group
 	else if (isset($_REQUEST['group'])) {
-		if ($_REQUEST['group'] == "active") {
-			$group = new Group();
-			$group->name = "Active users";
-			foreach($users as $username => $userdata) {
-				if ($userdata['status'] == "active")
-					$group->members[$username] = $userdata['realname'];
-			}
+		try {
+			if ($_REQUEST['group'] == "active") {
+				if (isset($_REQUEST['course']))
+					$group = Group::allEnrolled(true, $_REQUEST['course']);
+				else
+					$group = Group::allEnrolled(true);
 			
-		} else {
-			try {
+			} else if ($_REQUEST['group'] == "course") {
+				$group = Group::allEnrolled(false, $_REQUEST['course']);
+				
+			} else {
 				$group = Group::fromId($_REQUEST['group']);
-			} catch (Exception $e) {
-				niceerror($e->getMessage());
-				return 0;
 			}
+		} catch (Exception $e) {
+			niceerror($e->getMessage());
+			return 0;
 		}
-		
 		
 		admin_log("group " . $group->name);
 		
@@ -445,8 +445,15 @@ if ($logged_in) {
 			<?php
 			$zupd .= "zamgerUpdateTasks.push('" . $group->id . "');\n";
 		}
+		if (count($course->getGroups()) == 0) {
+			?>
+			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?group=course&amp;course=<?=$course->toString()?>&amp;path=<?=$course->abbrev?>">All enrolled users</a></li>
+			<?php
+		}
+		
 		?>
-			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course->abbrev?>">Active users</a></li>
+			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?group=active&amp;course=<?=$course->toString()?>&amp;path=<?=$course->abbrev?>">Users currently online</a></li>
+			<li><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course->abbrev?>">Active users</a></li>
 		</ul></p>
 		</div>
 		<?php

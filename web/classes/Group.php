@@ -37,7 +37,6 @@ class Group {
 		return $result;
 	}
 	
-	
 	// Read group members from file if not initialized
 	public function getMembers() {
 		if ($this->members === null) {
@@ -47,6 +46,25 @@ class Group {
 			$this->members = $data['members'];
 		}
 		return $this->members;
+	}
+	
+	// Group consisting of all users currently enrolled into course
+	public static function allEnrolled($online = false, $course = false) {
+		$group = new Group();
+		if ($online)
+			$group->name = "Users currently online";
+		else
+			$group->name = "All enrolled users";
+		$group->members = [];
+		if ($course)
+			$group->course = Course::fromString($course);
+			
+		foreach(User::getAll() as $login => $user) {
+			if ($online && !$user->online) continue;
+			if ($course && !$group->course->isStudent($login)) continue;
+			$group->members[$login] = $user->realname;
+		}
+		return $group;
 	}
 }
 
