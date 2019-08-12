@@ -253,6 +253,7 @@ if ($logged_in) {
 		<p id="p-return"><a href="admin.php?<?=$backlink?>">Return to group</a></p>
 		
 		<h1><?=$user->realname?></h1>
+		<div class="content">
 		<p>&nbsp;</p>
 		<?php
 		
@@ -267,6 +268,8 @@ if ($logged_in) {
 			admin_user_summary($user);
 		}
 		
+		print "</div>\n";
+		
 	}
 	
 	
@@ -277,6 +280,38 @@ if ($logged_in) {
 		admin_log("broadcast $msg");
 		nicemessage("Message sent");
 		exit;
+	}
+	
+	
+	// Search user database
+	else if (isset($_REQUEST['search_users'])) {
+		?>
+		<h1>Search users</h1>
+		<div class="content">
+		<?php
+		
+		$users = User::getAll();
+		$query = trim($_REQUEST['search_users']);
+		if (empty(trim($query))) {
+			niceerror("Invalid query");
+			exit;
+		}
+		$q = $query;
+		if ($q[0] != '/') $q = "/$query/";
+		$result = "";
+		foreach($users as $user)
+			if (preg_match($q, $user->login) || preg_match($q, $user->realname) || preg_match($q, $user->email)) {
+				if ($user->login == $user->realname)
+					$result .= "<li><a href=\"?user=" . $user->login . "\">" . $user->login . "</a></li>\n";
+				else
+					$result .= "<li><a href=\"?user=" . $user->login . "\">" . $user->realname . " (" . $user->login . ")</a></li>\n";
+				$found = true;
+			}
+		if (empty($result))
+			nicemessage("No results.");
+		else print "Search results for query <b>$query</b>\n<ul>\n$result\n</ul>\n";
+		
+		print "</div>\n";
 	}
 	
 	// Collaborate with users
@@ -391,6 +426,8 @@ if ($logged_in) {
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
 		<h1><?=$course->name?></h1>
+		
+		<div class="content">
 
 		<div id="group-list">
 		<h2>Groups</h2>
@@ -442,6 +479,8 @@ if ($logged_in) {
 		?>
 		</div>
 		
+		</div><!-- content -->
+		
 		<script>
 		var zamgerUpdateTasks = [];
 		<?php 
@@ -484,19 +523,20 @@ if ($logged_in) {
 		} else { print "<p></p>\n"; }
 		
 		?>
+		
+		<div class="content">
 		<form action="admin.php" method="POST">
 		Message to all users:<br>
 		<input type="text" size="50" name="broadcast"> <input type="submit" value="Send"></form>
+		
+		<form action="admin.php" method="POST">
+		Search users:<br>
+		<input type="text" size="50" name="search_users"> <input type="submit" value="Query"></form>
 		<p id="p-stats"><a href="admin.php?stats">Usage statistics</a></p>
+		</div>
 		
 		<div style="position:absolute; top:200px; left:600px; width: 400px; border: 1px solid black; background: #ddd; font-size: small; padding: 5px" id="admin_news">
 		<h2>Admin news</h2>
-		<p><b>16.12.</b> Admini ne bi trebali pristupati fajlovima van predmeta na kojima su u nastavnom osobolju.</p>
-		<p><b>6.11.</b> Omogućeno automatsko kreiranje .autotest i .zadaca fajlova prema specifikaciji predmeta. Kada kliknete na točkić ako ovaj fajl ne postoji imate opciju da se kreira. Dosta popravki u realtime ažuriranju grupe.</p>
-		<p><b>26.10.</b> Novi feature: Kada otvorite grupu i neki specifičan tutorijal (npr. klikom na link T2 u zaglavlju tabele), statistike broja pokretanja, testova itd. se  ažuriraju u real-time.</p>
-		<p><b>25.10.</b> Novi feature: Kopiranje zadataka od prošle godine (zajedno sa autotestovima itd.)</p>
-		<p><b>24.10.</b> Novi feature: Sakrivanje zadataka. Klikom na točkić pored imena zadatka sada možete vidjeti checkbox "Hidden". Ako je zadatak "Hidden" mogu ga vidjeti samo korisnici u klasi administratora, a ostali ne.</p>
-		<p><b>23.10.</b> Novi feature: Activity balls. Kada uđete na grupu možete vidjeti zelene kuglice koje signaliziraju da u tom trenutku student nešto tipka. Kuglice nestaju u roku od 10ak sekundi.</p>
 		<input type="button" value="Close" onclick="document.getElementById('admin_news').style.display='none';">
 		</div>
 		

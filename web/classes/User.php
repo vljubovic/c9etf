@@ -6,23 +6,14 @@ class User {
 	public function __construct($login) {
 		global $conf_base_path, $users;
 		
-		$this->login = $login;
-		
-		$users_file = $conf_base_path . "/users";
-		eval(file_get_contents($users_file));
-		
+		$users = User::getAll();
 		if (!array_key_exists($login, $users))
 			throw new Exception("User not found");
 		
-		$this->realname = "";
-		if (array_key_exists('realname', $users[$login]))
-			$this->realname = $users[$login]['realname'];
-		if (empty(trim($this->realname)))
-			$this->realname = $login;
-		if (array_key_exists('email', $users[$login]))
-			$this->email = $users[$login]['email'];
-		if (array_key_exists('ip_address', $users[$login]))
-			$this->ipAddress = $users[$login]['ip_address'];
+		$this->login = $login;
+		$this->realname = $users[$login]->realname;
+		$this->email = $users[$login]->email;
+		$this->ipAddress = $users[$login]->ipAddress;
 	}
 	
 	public function permissions() {
@@ -36,6 +27,32 @@ class User {
 	public function isAdmin($login) {
 		global $conf_admin_users;
 		return in_array($login, $conf_admin_users);
+	}
+	
+	// Get all users
+	public static function getAll() {
+		global $conf_base_path;
+		
+		$users_file = $conf_base_path . "/users";
+		eval(file_get_contents($users_file));
+		$result = [];
+		
+		foreach($users as $login => $data) {
+			$reflector = new ReflectionClass("User");
+			$u = $reflector->newInstanceWithoutConstructor();
+			$u->login = $login;
+			$u->realname = "";
+			if (array_key_exists('realname', $data))
+				$u->realname = $data['realname'];
+			if (empty(trim($u->realname)))
+				$u->realname = $login;
+			if (array_key_exists('email', $data))
+				$u->email = $data['email'];
+			if (array_key_exists('ip_address', $data))
+				$u->ipAddress = $data['ip_address'];
+			$result[$login] = $u;
+		}
+		return $result;
 	}
 }
 
