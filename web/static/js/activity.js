@@ -64,6 +64,11 @@ function renderResults() {
 		var dist=timenow - global_activity[username]['timestamp'];
 		if (dist>255) return;
 		
+		if (activity_filter) {
+			var part = global_activity[username]['path'].substr(1, activity_filter.length);
+			if (part != activity_filter) return;
+		}
+		
 		var color = dist.toString(16);
 		if (dist<16) color="0"+color;
 		if (global_activity[username]['file'] == ".logout")

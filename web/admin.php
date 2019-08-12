@@ -389,6 +389,10 @@ if ($logged_in) {
 		var last_line = 0;
 		var frequency = 500; // Update frequency
 		var timenow = 0;
+		var activity_filter='<?php 
+		if (isset($_REQUEST['path']))
+			print trim($_REQUEST['path']);
+		?>';
 		initActive(function(item) {
 			global_activity[item['username']] = item;
 		}, frequency);
