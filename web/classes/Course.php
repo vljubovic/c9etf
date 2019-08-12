@@ -148,7 +148,7 @@ class Course {
 		$result = [];
 		foreach(Course::getAll() as $course) {
 			$course->year = $year;
-			if ($course->isAdmin($username))
+			if ($course->isAdmin($username) && file_exists($course->getPath()))
 				$result[] = $course;
 		}
 		return $result;
