@@ -60,26 +60,27 @@ function renderResults() {
 	// Regenerate HTML list of active users
 	var obj=document.getElementById('activeUsers');
 	obj.innerHTML="";
-	Object.keys(global_activity).sort().forEach(function(key) {
-		var dist=timenow - global_activity[key]['timestamp'];
+	Object.keys(global_activity).sort().forEach(function(username) {
+		var dist=timenow - global_activity[username]['timestamp'];
 		if (dist>255) return;
 		
 		var color = dist.toString(16);
 		if (dist<16) color="0"+color;
-		if (global_activity[key]['file'] == ".logout")
+		if (global_activity[username]['file'] == ".logout")
 			color = "#FF"+color+color;
-		else if (global_activity[key]['file'] == ".login")
+		else if (global_activity[username]['file'] == ".login")
 			color = "#"+color+"FF" + color;
 		else
 			color = "#"+color+color+color;
 			
-		pfile = global_activity[key]['path'] + global_activity[key]['file'];
+		pfile = global_activity[username]['path'] + global_activity[username]['file'];
 		pfile = pfile.substr(1);
 		
-		link = "admin.php?user="+key+"&amp;path="+encodeURIComponent(pfile);
+		link = "admin.php?user=" + username;
+		file_link = link + "&amp;path=" + encodeURIComponent(pfile);
 		
-		obj.innerHTML += "<div style=\"color:"+color+"\">" + key + " - " +
-			global_activity[key]['datum'] + " - <a href=\"" + link + "\">" + pfile + "</a></div>";
+		obj.innerHTML += "<div style=\"color:"+color+"\"><a href=\"" + link + "\">" + username + "</a> - " +
+			global_activity[username]['datum'] + " - <a href=\"" + file_link + "\">" + pfile + "</a></div>";
 	});
 }
 	
