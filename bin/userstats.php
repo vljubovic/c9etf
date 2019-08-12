@@ -71,6 +71,7 @@ function read_stats($username) {
 
 	$username_efn = escape_filename($username);
 	$stat_file = $conf_stats_path . "/" . "$username_efn.stats";
+	//print "reading file $stat_file\n";
 	
 	$stats = NULL;
 	if (file_exists($stat_file))
@@ -85,6 +86,7 @@ function read_stats($username) {
 	foreach ($stats as $key => $value) {
 		if (is_array($value) && array_key_exists("goto", $value)) {
 			$goto_path = $conf_stats_path . "/" . $value['goto'];
+			//print "goto $goto_path\n";
 			if (file_exists($goto_path)) {
 				eval(file_get_contents($goto_path));
 				foreach($stats_goto as $ks => $vs)
@@ -140,28 +142,117 @@ function clean_stats() {
 	global $stats, $skip_diff, $DEBUG;
 	
 	$forbidden_strings = array ("M3M4");
+	$long_line_limit = 50000;
 	
 	foreach($stats as $name => &$value) {
-		if (is_array($value) && array_key_exists('events', $value) && count($value['events'])>100) {
+		$remember = -1;
+		if (is_array($value) && array_key_exists('events', $value) && count($value['events']) > 0) {
+			// Blank empty event
+			if (array_key_exists('', $value['events'])) {
+				if ($DEBUG) print "[WWW] Deleting blank event, file $name\n";
+				unset($value['events']['']);
+			}
+		
 			$lastpos = array();
 			$lasttime = array();
 			$totaltime = array();
+			$max = max(array_keys($value['events']))+1;
+			$count = count($value['events']);
+			if ($max != $count) {
+				if ($DEBUG) print "[WWW] Renumbering...\n";
+				$value['events'] = array_values($value['events']);
+			}
+			
+			// We must use indexing to change the original array
 			for ($i=0; $i<count($value['events']); $i++) {
-				$evtext = $value['events'][$i]['text'];
+				if (!array_key_exists($i, $value['events'])) {
+					if ($DEBUG) print "[WWW] Skipping event $i, file $name\n";
+					continue;
+				}
+				
+				else if (!is_array($value['events'][$i])) {
+					if ($DEBUG) print "[WWW] Event $i not an array, file $name\n";
+					array_splice($value['events'], $i, 1);
+					continue; 
+				}
+				
+				else if (!array_key_exists('text', $value['events'][$i])) {
+					if ($DEBUG) print "[EEE] Event without text, file $name, event $i\n";
+					$evtext = "";
+				}
+				else
+					$evtext = $value['events'][$i]['text'];
+				
 				if ($evtext == "deleted" || $evtext == "created") {
 					if (!isset($lastpos['del'])) $lastpos['del']=$i;
 				} else if (isset($lastpos['del'])) {
 					if ($i-$lastpos['del'] > 100) {
-						if ($DEBUG) print "Splicing 'del' to offset $i\n";
+						if ($DEBUG) print "[WWW] Splicing 'del' to offset $i\n";
 						array_splice($value['events'], $lastpos['del'], $i-$lastpos['del']);
 						$i=0;
 					}
 					unset($lastpos['del']);
 				}
 				
+				if ($evtext == "created") {
+					if (!array_key_exists('content', $value['events'][$i]) && $i != 0 && $value['events'][$i]['time'] == $value['events'][0]['time']) {
+						if ($DEBUG) print "[WWW] Empty created event, file $name event $i count ".count($value['events']) . "\n";
+						array_splice($value['events'], $i, 1);
+						$i--;
+					} else if (!array_key_exists('content', $value['events'][$i]) && $i != 0) {
+						//print "Empty late created event, file $name event $i\n";
+					} else if (!array_key_exists('content', $value['events'][$i])) {
+						if ($DEBUG) print "[WWW] No content in created event, file $name event $i\n";
+						$value['events'][$i]['content'] = "";
+						$remember = $i;
+					} else if (!preg_match('//u', $value['events'][$i]['content'])) {
+						if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (created)\n";
+						$value['events'][$i]['content'] = "";
+					}
+					continue;
+				}
+				
+				// Checking diff contents
 				if (array_key_exists($i, $value['events']) && array_key_exists('diff', $value['events'][$i]) &&
 					is_array($value['events'][$i]['diff'])) {
-					$txt = "";
+					
+					// Check and fix unicode
+					if (array_key_exists('add_lines', $value['events'][$i]['diff']))
+						foreach ($value['events'][$i]['diff']['add_lines'] as &$line) {
+							if (!preg_match('//u', $line)) {
+								if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (add_lines)\n";
+								$line = "";
+							}
+							if (strlen($line) > $long_line_limit) {
+								if ($DEBUG) print "[WWW] Very long line, file $name event $i (add_lines) len ".strlen($line)."\n";
+								$line = "";
+							}
+						}
+					if (array_key_exists('change', $value['events'][$i]['diff']))
+						foreach ($value['events'][$i]['diff']['change'] as &$line) {
+							if (!preg_match('//u', $line)) {
+								if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (change)\n";
+								$line = "";
+							}
+							if (strlen($line) > $long_line_limit) {
+								if ($DEBUG) print "[WWW] Very long line, file $name event $i (change) len ".strlen($line)."\n";
+								$line = "";
+							}
+						}
+					if (array_key_exists('remove_lines', $value['events'][$i]['diff']))
+						foreach ($value['events'][$i]['diff']['remove_lines'] as &$line) {
+							if (!preg_match('//u', $line)) {
+								if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (remove_lines)\n";
+								$line = "";
+							}
+							if (strlen($line) > $long_line_limit) {
+								if ($DEBUG) print "[WWW] Very long line, file $name event $i (remove_lines) len ".strlen($line)."\n";
+								$line = "";
+							}
+						}
+					
+					// Join add/change lines to test for forbidden strings
+					/*$txt = "";
 					if (array_key_exists('add_lines', $value['events'][$i]['diff']))
 						foreach ($value['events'][$i]['diff']['add_lines'] as $line)
 							$txt .= $line;
@@ -196,15 +287,17 @@ function clean_stats() {
 							$i=0;
 							break; // iz foreacha
 						}
-					}
+					}*/
 				} else
 					foreach ($forbidden_strings as $fstr) unset($lastpos[$fstr]);
 			}
 			if (isset($lastpos['del']) && $i-$lastpos['del'] > 100) {
-				if ($DEBUG) print "Splicing 'del' at end of file\n";
+				if ($DEBUG) print "[WWW] Splicing 'del' at end of file\n";
 				array_splice($value['events'], $lastpos['del']);
 			}
 		}
+		
+		//if ($remember > -1) print_r($value['events'][$remember]);
 	
 		$cleanup = false;
 		foreach($skip_diff as $cpattern) {
@@ -214,16 +307,23 @@ function clean_stats() {
 		
 		if (!$cleanup) continue;
 		
-		if ($DEBUG) print "Removing diffs for file $name (in \$skip_diff)\n";
+		$found = false;
 		foreach($value['events'] as $key => &$event) {
-			if (!is_array($event)) { unset($value['events'][$key]); continue; }
-			if (array_key_exists('diff', $event))
+			if (!is_array($event)) { unset($value['events'][$key]); $found = true; continue; }
+			if (array_key_exists('diff', $event)) {
 				unset($event['diff']);
-			if (array_key_exists('content', $event))
-				unset($event['content']);
-			if (array_key_exists('output', $event))
+				$found = false;
+			}
+			if (array_key_exists('content', $event)) {
+				$event['content'] = "";
+				$found = false;
+			}
+			if (array_key_exists('output', $event)) {
 				unset($event['output']);
+				$found = false;
+			}
 		}
+		if ($DEBUG && $found) print "[WWW] Removing diffs for file $name (in \$skip_diff)\n";
 	}
 }
 
@@ -1215,8 +1315,16 @@ function compressed_diff_old($diff_text) {
 function ensure_write($filename, $content) {
 	$retry = 1;
 	while(true) {
-		if (file_put_contents($filename, $content)) return;
-		print "Error writing $filename... retry in $retry seconds\n";
+		$fh = fopen($filename, "w");
+		if ($fh) {
+			if (fwrite($fh, $content)) {
+				fclose($fh);
+				return;
+			} else
+				print "fwrite failed $filename... ";
+		} else print "Can't open $filename... ";
+		//if (file_put_contents($filename, $content)) return;
+		print "retry in $retry seconds\n";
 		sleep($retry);
 	}
 }
