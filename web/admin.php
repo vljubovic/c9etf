@@ -48,6 +48,7 @@ require_once("classes/Course.php");
 // Admin modules
 require_once("admin/stats.php");
 require_once("admin/user_table.php");
+require_once("admin/user_summary.php");
 
 require_once("admin/notices.php");
 
@@ -237,35 +238,37 @@ if ($logged_in) {
 	
 	// Show data for single user
 	else if (isset($_REQUEST['user'])) {
-		$user = str_replace("../", "", $_REQUEST['user']);
-		if (isset($_REQUEST['path'])) {
-			$path = $_REQUEST['path'];
-			admin_log("user $user, path $path");
-		} else {
-			$path = "TP";
-			$_REQUEST['path'] = "TP";
-			admin_log("user $user");
+		try {
+			$user = new User($_REQUEST['user']);
+		} catch (Exception $e) {
+			niceerror($e->getMessage());
+			return 0;
 		}
+		
 		$backlink = "";
 		if (isset($_REQUEST['backlink']))
 			$backlink = htmlentities($_REQUEST['backlink'], ENT_QUOTES);
 		
-		if (array_key_exists('realname', $users[$user]))
-			$user_realname = $users[$user]['realname'];
-		else
-			$user_realname = $user;
-		
-		// Show modules: phpwebide, log and user stats
-		
 		?>
 		<p id="p-return"><a href="admin.php?<?=$backlink?>">Return to group</a></p>
 		
-		<h1><?=$user_realname?></h1>
+		<h1><?=$user->realname?></h1>
 		<p>&nbsp;</p>
 		<?php
 		
-		phpwebide($user, $path, false, true);
+		if (isset($_REQUEST['path'])) {
+			$path = $_REQUEST['path'];
+			admin_log("user " . $user->login . ", path $path");
+			phpwebide($user, $path, false, true);
+		} else {
+			$path = "TP"; // FIXME
+			$_REQUEST['path'] = "TP";
+			admin_log("user " . $user->login);
+			admin_user_summary($user);
+		}
+		
 	}
+	
 	
 	// Send message to all users
 	else if (isset($_REQUEST['broadcast'])) {
