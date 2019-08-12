@@ -164,11 +164,17 @@ class Course {
 	
 	// Return a list of courses for which given user is enrolled as student in given year
 	// If year parameter is ommitted, use current year
+	// If year is -1, get data for all years
 	public static function forStudent($username, $year = 0) {
 		global $conf_current_year;
 		
-		if ($year == 0) $year = $conf_current_year;
 		$result = [];
+		if ($year == 0) $year = $conf_current_year;
+		if ($year == -1) {
+			foreach(Cache::getFile("years.json") as $year)
+				$result = array_merge($result, Course::forStudent($username, $year['id']));
+			return $result;
+		}
 		
 		$user_courses = Cache::getFile("user_courses/$username.json");
 		if ($user_courses === false || empty($user_courses)) 
