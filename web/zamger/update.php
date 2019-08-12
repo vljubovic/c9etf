@@ -114,7 +114,7 @@ function zamger_update_groups($course_id, $force) {
 	}
 	
 	require_once(__DIR__."/groups.php");
-	$api_groups = zamger_group_list($course['id'], $conf_current_year);
+	$api_groups = zamger_group_list($course['id'], $academic_year);
 	if ($api_groups === false)
 		json(error("ERR004", "Failed to retrieve groups for course $course_id"));		
 
@@ -187,10 +187,9 @@ function zamger_update_allstudents($course_id, $force) {
 			json(ok("All students not updated for course $course_id $time_since_update $all_students_id"));
 	}
 	
-	
 	// Get all students
 	require_once(__DIR__."/groups.php");
-	$allStudents = zamger_all_students($course['id'], $conf_current_year);
+	$allStudents = zamger_all_students($course['id'], $academic_year);
 	if ($allStudents === false)
 		json(error("ERR004", "Failed to retrieve all students for course $course_id"));		
 
