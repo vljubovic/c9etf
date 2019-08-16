@@ -33,22 +33,27 @@ while ($line = fgets($file)) {
 	$loadavg = file_get_contents("/proc/loadavg");
 	$loadavg = substr($loadavg, 0, strpos($loadavg, " "));
 
+	$memtotal = $memfree = $memavail = $membuf = $memcach = $memswaptotal = $memswapfree = $memslab = 0;
 	foreach(file("/proc/meminfo") as $memdata) {
 		if (strpos($memdata, "MemTotal") === 0)
 			$memtotal = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "MemFree") === 0)
 			$memfree = intval(substr($memdata, 17, 8));
+		if (strpos($memdata, "MemAvailable") === 0)
+			$memavail = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "Buffers") === 0)
 			$membuf = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "Cached") === 0)
 			$memcach = intval(substr($memdata, 17, 8));
+		if (strpos($memdata, "Slab") === 0)
+			$memslab = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "SwapTotal") === 0)
 			$memswaptotal = intval(substr($memdata, 17, 8));
 		if (strpos($memdata, "SwapFree") === 0)
 			$memswapfree = intval(substr($memdata, 17, 8));
 	}
 	
-	$memreal = $memtotal - $memfree - $membuf - $memcach + $memswaptotal - $memswapfree;
+	$memreal = $memtotal - $memfree - $membuf - $memcach - $memslab + $memswaptotal - $memswapfree;
 
 	// Do these every 5 seconds
 	if ($counter == 5) {
@@ -62,7 +67,7 @@ while ($line = fgets($file)) {
 		// stats[3] : number of really active users
 
 		$processes = 0;
-		foreach (ps_ax("localhost") as $process) {
+		foreach (ps_ax("") as $process) {
 			if (strstr($process['cmd'], "node server") || strstr($process['cmd'], "nodejs server"))
 				$processes++;
 		}
