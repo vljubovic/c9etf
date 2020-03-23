@@ -1,5 +1,12 @@
 {
-    "cmd" : ["sh", "-c", "/usr/local/webide/runners/cpp_runner.sh '$file_path' '$file' '${debug?DEBUGPORT}'"],
+  "script": [
+    "set -e",
+    "if [ \"$debug\" == true ]; then ",
+        "/usr/local/webide/runners/cpp_runner.sh \"$file_path\" \"$file\" DEBUGPORT",
+    "else",
+        "/usr/local/webide/runners/cpp_runner.sh \"$file_path\" \"$file\"",
+    "fi"
+  ],
     "info": "Running $file_path/$file_name",
     "env": {},
     "selector": "^.*\\.cpp$",
