@@ -35,9 +35,9 @@ echo `echo "\033[31mApplying patches\033[0m"`;
 echo "\ndisable_keys_plugin.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_keys_plugin.diff`;
 
-// Disable "welcome" screen - in future maybe patch welcome screen to our needs?
-echo "\ndisable_welcome_plugin.diff\n";
-echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/disable_welcome_plugin.diff`;
+// Improve and translate Welcome screen
+echo "\nfix_welcome_plugin.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/fix_welcome_plugin.diff`;
 `cp patches/welcome-img/* c9upstream/plugins/c9.ide.welcome/images`;
 
 // Disable "Open terminal here" and similar options
@@ -148,9 +148,9 @@ echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/gdb_evaluate_vectors
 echo "\nrelative_paths.diff\n";
 echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/relative_paths.diff`;
 
-// Use our URL for logout menu action
-echo "\nlogout_url.diff\n";
-echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/logout_url.diff`;
+// Fix "Logout" and other actions in user menu to use c9@etf infrastructure instead of c9.io
+echo "\nuser_menu.diff\n";
+echo `cd $conf_base_path/c9upstream; patch -p1 < ../patches/user_menu.diff`;
 
 // Display a progress bar that corresponds to actual files being loaded
 echo "\nprogress_bar.diff\n";
