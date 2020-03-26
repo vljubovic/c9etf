@@ -552,7 +552,7 @@ if ($logged_in) {
 		</div>
 		
 		<script>
-		var zamgerUpdateTasks = [];
+		var zamgerUpdateTasks = ['courses'];
 		<?php 
 		if (isset($_POST['login']) && $conf_zamger) print $zupd;
 		?>

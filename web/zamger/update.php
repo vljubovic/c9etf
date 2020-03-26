@@ -8,9 +8,14 @@ function zamger_update_teacher_courses($login, $force) {
 	$user_courses_path = $conf_data_path . "/user_courses";
 	if (!file_exists($user_courses_path)) mkdir($user_courses_path);
 	$user_courses_path .= "/$login.json";
+	$permissions_path = $conf_data_path . "/permissions.json";
 	
+	$user_courses = [];
 	if (file_exists($user_courses_path))
 		$user_courses = json_decode(file_get_contents($user_courses_path), true);
+	$permissions = [];
+	if (file_exists($permissions_path))
+		$permissions = json_decode(file_get_contents($permissions_path), true);
 	
 	if (!$force) {
 		if ($conf_zamger_update_interval == 0)
@@ -36,7 +41,9 @@ function zamger_update_teacher_courses($login, $force) {
 	$user_courses['last_update'] = time();
 	
 	require_once(__DIR__."/courses.php");
+	$data = ok("Courses updated for teacher");
 	$teacher_courses = teacher_courses($conf_current_year);
+	$data['c'] = $teacher_courses;
 	foreach($teacher_courses as $tc) {
 		// Update courses.json
 		$found = false;
@@ -61,10 +68,15 @@ function zamger_update_teacher_courses($login, $force) {
 			$user_courses['teacher'] = array();
 		if (!in_array($course_id, $user_courses['teacher']))
 			$user_courses['teacher'][] = $course_id;
+		if (!array_key_exists($login, $permissions))
+			$permissions[$login] = array( $course_id );
+		else if (!in_array($course_id, $permissions[$login]))
+			$permissions[$login][] = $course_id;
 	}
 	file_put_contents($courses_path, json_encode($courses, JSON_PRETTY_PRINT));
 	file_put_contents($user_courses_path, json_encode($user_courses, JSON_PRETTY_PRINT));
-	json(ok("Courses updated for teacher"));
+	file_put_contents($permissions_path, json_encode($permissions, JSON_PRETTY_PRINT));
+	json($data);
 }
 
 
