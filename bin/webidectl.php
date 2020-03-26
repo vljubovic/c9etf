@@ -1736,7 +1736,7 @@ function kill_idle_logout($minutes, $output, $sleep) {
 
 // Logout all users and kill/restart all processes related to webide
 function clear_server() {
-	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr, $is_svn_node;
+	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr, $is_svn_node, $conf_nodes;
 	
 	debug_log("clear server");
 	bfl_lock("clear server");
