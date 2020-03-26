@@ -2,7 +2,7 @@
 
 // =========================================
 // STATS_MONITOR.PHP
-// C9@ETF project (c) 2015-2018
+// C9@ETF project (c) 2015-2020
 //
 // Background process that monitors various system statistics
 // =========================================
@@ -33,27 +33,28 @@ while ($line = fgets($file)) {
 	$loadavg = file_get_contents("/proc/loadavg");
 	$loadavg = substr($loadavg, 0, strpos($loadavg, " "));
 
-	$memtotal = $memfree = $memavail = $membuf = $memcach = $memswaptotal = $memswapfree = $memslab = 0;
+	$memreal = 0;
 	foreach(file("/proc/meminfo") as $memdata) {
-		if (strpos($memdata, "MemTotal") === 0)
-			$memtotal = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "MemFree") === 0)
-			$memfree = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "MemAvailable") === 0)
-			$memavail = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "Buffers") === 0)
-			$membuf = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "Cached") === 0)
-			$memcach = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "Slab") === 0)
-			$memslab = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "SwapTotal") === 0)
-			$memswaptotal = intval(substr($memdata, 17, 8));
-		if (strpos($memdata, "SwapFree") === 0)
-			$memswapfree = intval(substr($memdata, 17, 8));
+		$parts = preg_split("/\s+/", $memdata);
+		if ($parts[0] == "MemTotal:")
+			$memreal += intval($parts[1]);
+		if ($parts[0] == "MemFree:")
+			$memreal -= intval($parts[1]);
+		//if ($parts[0] == "MemAvailable:")
+		//	$memreal += intval($parts[1]);
+		if ($parts[0] == "Buffers:")
+			$memreal -= intval($parts[1]);
+		if ($parts[0] == "Cached:")
+			$memreal -= intval($parts[1]);
+		if ($parts[0] == "Slab:")
+			$memreal -= intval($parts[1]);
+		if ($parts[0] == "SwapTotal:")
+			$memreal += intval($parts[1]);
+		if ($parts[0] == "SwapFree:")
+			$memreal -= intval($parts[1]);
 	}
 	
-	$memreal = $memtotal - $memfree - $membuf - $memcach - $memslab + $memswaptotal - $memswapfree;
+	//$memreal = $memtotal - $memfree - $membuf - $memcach - $memslab + $memswaptotal - $memswapfree;
 
 	// Do these every 5 seconds
 	if ($counter == 5) {
@@ -72,6 +73,8 @@ while ($line = fgets($file)) {
 				$processes++;
 		}
 	
+		// Report the lowest free space on any of the system partitions
+		// since the goal is to warn if disk space is too low?
 		$free_space = 0;
 		foreach(explode("\n", shell_exec("df")) as $line) {
 			$parts = preg_split("/\s+/", $line);
