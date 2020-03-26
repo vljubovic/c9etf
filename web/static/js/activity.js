@@ -42,6 +42,8 @@ function getActive(updateFunc) {
 				}
 			}
 			
+			if (result.hasOwnProperty('lines')) last_line = parseInt(result['lines']) + 1;
+			
 			// Set load average statistics
 			var loadavg = document.getElementById('loadavg');
 			if (loadavg) loadavg.innerHTML = result['loadavg'];
