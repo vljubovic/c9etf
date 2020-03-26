@@ -2,7 +2,7 @@
 
 // =========================================
 // STATS_ANALYZE.PHP
-// C9@ETF project (c) 2015-2018
+// C9@ETF project (c) 2015-2020
 // 
 // Analyze .stats file without eval() (useful for too large files, syntax errors etc.)
 // =========================================
@@ -34,9 +34,9 @@ if ($do_output)
 	$fh2 = fopen($output_file, "w");
 	
 while ($line = fgets($fh, 4096)) {
-	if (!$in_file && preg_match("/^\s+'(.*?)' =>\s*$/", $line, $matches)) {
+	if (!$in_file && preg_match("/^\s+'?(.*?)'? =>\s*$/", $line, $matches)) {
 		if (empty($fix_file) || $fix_file == $matches[1]) {
-			print "File: $matches[1]\n";
+			print "File: $matches[1]  ";
 			$in_file = true;
 			$size = strlen($line);
 		}
@@ -72,7 +72,11 @@ while ($line = fgets($fh, 4096)) {
 		fwrite($fh2, $line);
 }
 fclose($fh);
-if ($do_output) fclose($fh2);
+if ($do_output) {
+	fclose($fh2);
+	rename($filename, $filename . ".bak");
+	rename($output_file, $filename);
+}
 
 function nicesize($size) {
 	if ($size>1024*1024*1024) {
