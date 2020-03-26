@@ -107,6 +107,7 @@ function userTableMaybeAddColumn(assignments_assoc) {
 			var url = location.href;
 			var x1 = url.indexOf("&path=");
 			var x2 = url.indexOf("&", x1+1);
+			if (x2 == -1) x2 = url.length;
 			url = url.substring(0,x1+6) + assignments_assoc[asgn].path + url.substring(x2);
 			//th.innerHTML = asgn;
 			th.innerHTML = "<a href=\"" + url + "\">" + asgn + "</a>";
