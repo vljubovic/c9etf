@@ -207,7 +207,7 @@ switch($action) {
 		// If memory is high on control it's probably high on all others, due to load balancing
 		$active_users = 0;
 		foreach($users as $user) if ($user['status'] == "active") $active_users++;
-		if ($active_users > 170) break; // It just manufactures more load... :( FIXME
+		if ($active_users > $conf_max_users_culling) break; // It just manufactures more load... :( FIXME
 		
 		$stats = server_stats();
 		$memlimit = $conf_memory_emergency * 1024 * 1024;

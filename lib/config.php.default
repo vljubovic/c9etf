@@ -61,6 +61,8 @@ $conf_limit_active_users = 0;
 $conf_limit_diskspace = 100; // in MB
 $conf_limit_inodes = 10000; // Minimum number of free inodes in home partition
 $conf_limit_loadavg_fixsvn = 4; // Postpone fixsvn if load is greater than this
+// Skip culling if there are more users then this, since it just makes the load worse
+$conf_max_users_culling = 270; 
 
 // If users home+SVN repo cross these limits, SVN reinstall is triggered which regains 
 // space/inodes but drops SVN history (this is not a problem since history is preserved
