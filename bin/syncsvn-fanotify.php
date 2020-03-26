@@ -172,8 +172,9 @@ while(true) {
 		}
 		
 		// Detect date change
-		if (intval($oldtime) > intval($time)) {
+		if (intval($oldtime) > intval($time) || intval($oldtime) - intval($time) > 1000) {
 			$date = date("d.m.Y");
+			print "New date is $date\n";
 		}
 		$oldtime = $time;
 		
