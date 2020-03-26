@@ -107,7 +107,7 @@ if (isset($_POST['login'])) {
 			$user_courses = json_decode(file_get_contents($conf_data_path . "/user_courses/$login.json"), true);
 		if (!$user_courses || !is_array($user_courses['student']) || !in_array($conf_allow_course, $user_courses['student']))
 			$greska = "Pristup vašem korisniku je trenutno zabranjen $conf_deny_reason. Kontaktirajte administratora ili dodjite kasnije.";
-	}	
+	}
 
 	if ($greska == "") {
 		$greska = login($login, $pass);
@@ -199,13 +199,38 @@ if (isset($_REQUEST['logout'])) {
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 
+<script>
+var elsewhere = [ 
+<?php
+
+	$users_file = $conf_base_path . "/users";
+	eval(file_get_contents($users_file));
+	$comma = false;
+	foreach($users as $user => $data)
+		if (array_key_exists("elsewhere", $data)) {
+			if ($comma) print ",\n";
+			print "{ 'user' : '$user', 'url' : '".$data['elsewhere']."' }";
+			$comma = true;
+		}
+
+?>
+];
+
+function is_elsewhere() {
+	for(var i=0; i<elsewhere.length; i++)
+		if (elsewhere[i].user == document.getElementById('login__username').value)
+			document.getElementById('login__form').action = elsewhere[i].url;
+	return true;
+}
+</script>
+
 
 <body class="align">
 
   <div class="site__container">
 
     <div class="grid__container">
-      <form action="index.php" method="post" class="form form--login">
+      <form action="index.php" method="post" class="form form--login" id="login__form" onsubmit="return is_elsewhere()">
         <h1>ETF WebIDE</h1>
         <?php if ($greska !== "") print "<p style=\"color: red; font-weight: bold\">$greska</p>\n"; ?>
         <div class="form__field">
