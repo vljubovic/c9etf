@@ -2,7 +2,7 @@
 
 // =========================================
 // WEBIDECTL.PHP
-// C9@ETF project (c) 2015-2019
+// C9@ETF project (c) 2015-2020
 //
 // Master control script
 // =========================================
@@ -140,6 +140,9 @@ switch($action) {
 	case "logout":
 		// There is no reason for logout if clear-server is currently active
 		if (file_exists($conf_base_path."/watch/webidectl.clear-server."))
+			break;
+		
+		if ($users[$username]["status"] == "inactive") // Already logged out
 			break;
 		
 		$wait = 0;
