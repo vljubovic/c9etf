@@ -1880,6 +1880,12 @@ function storage_nightly($all_stats) {
 			continue;
 		}
 		
+		$last = last_access($username);
+		if (time() - $last > 24*60*60) {
+			print "Inactive for >24h, skipping.\n";
+			continue;
+		}
+		
 		// Clean core files
 		print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
 		print run_as($username, "cd $workspace; find . -name \"*core*\" -delete");
