@@ -2242,22 +2242,23 @@ function sync_local($user) {
 	$remote_inuse = $remote_home . "/.in_use";
 	$local_inuse = $userdata['home'] . "/.in_use";
 	if (file_exists($local_inuse)) { 
+		debug_log ("sync_local $user - failed (local in_use)");
 		print "ERROR: in use\n"; 
 		return; 
 	}
 	$is_remote_in_use = 0;
 	exec("rsync -n $remote_inuse 2>&1 >/dev/null", $output, $is_remote_in_use);
 	if ($is_remote_in_use == 0) { 
+		debug_log ("sync_local $user - failed (remote in_use)");
 		print "ERROR: in use\n"; 
 		return; 
 	}
 	
 	// Prevent user from logging in below this point
+	debug_log ("sync_local $user");
 	bfl_lock("user $user");
 	
 	// If timestamp is recent then no need to sync
-	$last_path = $conf_home_path . "/last/" . $userdata['efn'] . ".last";
-	$local_mtime = intval(file_get_contents($last_path));
 	$remote_last_path = $users[$user]["volatile-remote"] . "/last/" . $userdata['efn'] . ".last";
 	exec("rsync -a $remote_last_path /tmp/somelast");
 	$remote_mtime = intval(file_get_contents("/tmp/somelast"));
@@ -2270,9 +2271,9 @@ function sync_local($user) {
 	$local_svn = substr($userdata['svn'], 0, strlen($userdata['svn']) - strlen($user));
 	exec("rsync -a $local_inuse $remote_inuse");
 	
-	//if ($remote_mtime - $local_mtime < 5 && file_exists($userdata['home'])) return; // 5 seconds allowed for syncing time
-	
+	debug_log ("sync_local $user home");
 	exec("rsync -a $remote_home $local_home");
+	debug_log ("sync_local $user svn");
 	exec("rsync -a $remote_svn_path $local_svn");
 	
 	// Sync stats files
@@ -2283,6 +2284,7 @@ function sync_local($user) {
 			$stats_paths[] = $path;
 	}
 	
+	debug_log ("sync_local $user stats");
 	foreach($stats_paths as $stats_path) {
 		$stats_path .= "/$user.stats";
 		$remote_stats_path = $users[$user]["volatile-remote"] . substr($stats_path, strlen($conf_home_path));
@@ -2299,6 +2301,7 @@ function sync_local($user) {
 	unlink($local_inuse);
 	
 	bfl_unlock("user $user");
+	debug_log ("sync_local $user finished");
 }
 
 
