@@ -1,6 +1,8 @@
 <?php
 
 
+// Class for reverse reconstructing various versions of file from history
+
 require_once(dirname(__FILE__) . "/../lib/config.php");
 require_once(dirname(__FILE__) . "/../lib/webidelib.php");
 
@@ -279,7 +281,7 @@ class Reconstruct
             for ($i=$this->lastEvent; $i<$end; $i++) 
                 {
                     if (!array_key_exists($i, $file_log)) continue;
-                    //if (self::$DEBUG) print "Event: $i\n";
+                    if (self::$DEBUG) print "Event: $i\n";
                     if ($timestamp[0] != "+" && $file_log[$i]['time'] > $timestamp) break;
                     if ($i < -$timestamp) break;
                     $this->firstLineAffected = $this->lastLineAffected = -1;
@@ -307,6 +309,21 @@ class Reconstruct
                                     $this->file[$lineno-1] = $text . "\n";
                                     $this->UpdateAffectedLines( $lineno - 1 );
                                 }
+                    
+                    $hasRemove = array_key_exists("remove_lines", $file_log[$i]['diff']);
+                    $hasAdd = array_key_exists("add_lines", $file_log[$i]['diff']);
+                    
+                    // Detect code-replace events
+                    $isCodeReplace = false;
+                    $removeCount = 0;
+                    if ($hasRemove) $removeCount = count($file_log[$i]['diff']['remove_lines']);
+
+                    if (count($this->file) - $removeCount < self::$REPLACE_LIMIT )
+                        {
+                            if ($removeCount > 5) $this->codeReplace[$i-1] = $this->file;
+                            $isCodeReplace = true;
+                            if (self::$DEBUG) print "CodeReplace: removed $removeCount from ".count($this->file)."\n";
+                        }
                     
                     if (array_key_exists("remove_lines", $file_log[$i]['diff'])) 
                         {
@@ -336,9 +353,27 @@ class Reconstruct
                     if (array_key_exists("add_lines", $file_log[$i]['diff'])) 
                             foreach($file_log[$i]['diff']['add_lines'] as $lineno => $text) 
                                 {
+                                    if ($lineno >= count($this->file))
+                                        for ($j = count($this->file); $j < $lineno-1; $j++)
+                                            $this->file[$j] = "";
                                     array_splice($this->file, $lineno-1, 0, $text . "\n");
                                     $this->UpdateAffectedLines( $lineno - 1 );
                                 }
+                            
+                    // Check if we are infact reverting to an older version (a.k.a accidental delete / reformat events)
+                    if ($isCodeReplace)
+                        {
+                            foreach($this->codeReplace as $eventId => $code) {
+                                $linesDiff = Reconstruct::EquivalentCode($code, $this->file);
+                                if (self::$DEBUG) print "isCodeReplace Reverted ".$linesDiff." lines, eventid $eventId i $i\n";
+                                if ($linesDiff < 3) {
+                                    if ($eventId == $i-1)
+                                        unset($this->codeReplace[$eventId]); // Reformat event
+                                    else
+                                        $this->codeReplaceMatch[$eventId] = $i;
+                                }
+                            }
+                        }
                 }
             
             $this->lastEvent = $end;
@@ -580,5 +615,3 @@ class Reconstruct
             return trim($txt);
         }
 }
-
-?>
