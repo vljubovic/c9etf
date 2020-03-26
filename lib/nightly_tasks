@@ -65,8 +65,3 @@ echo kill-inactive >> /usr/local/webide/log/webidectl.log
 #/usr/local/webide/bin/webidectl clean-inodes
 #cd /usr/local/webide/web/buildservice
 #php pull.php wait 5 >/usr/local/webide/log/pull_php.log &
-
-sleep 900
-echo Storage nightly
-echo Storage nightly >> /usr/local/webide/log/webidectl.log
-ssh 172.16.20.91 "/usr/local/webide/bin/webidectl storage-nightly > /usr/local/webide/log/nightly-log.txt"
