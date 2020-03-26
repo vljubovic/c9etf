@@ -267,15 +267,26 @@ function fixsvn($command) {
 		else if (preg_match("/Pristine text '(.*?)' not present/", $line, $matches)) {
 			$pristine = basename($matches[1]);
 			file_put_contents("/tmp/fixsvn_script.sh", "cd " . $userdata['workspace'] . "; sqlite3 .svn/wc.db 'select local_relpath from nodes where checksum=\"\$sha1\$" . $pristine . "\";'");
-			$filepath = trim(run_as($username, "source /tmp/fixsvn_script.sh"));
+			$filepath = trim(run_as($username, "/bin/sh /tmp/fixsvn_script.sh"));
 			$filename = basename($filepath);
 			
-			file_put_contents("/tmp/fixsvn_script.sh", "cd " . $userdata['workspace'] . "; sqlite3 .svn/wc.db 'update nodes set presence='not-present' where checksum=\"\$sha1\$" . $pristine . "\";'");
+			file_put_contents("/tmp/fixsvn_script.sh", "cd " . $userdata['workspace'] . "; sqlite3 .svn/wc.db 'update nodes set presence=\"not-present\" where checksum=\"\$sha1\$" . $pristine . "\";'");
 
 			run_as($username, "mv \"$filepath\" \"/tmp/$filename\"");
+			run_as($username, "/bin/sh /tmp/fixsvn_script.sh");
 			fixsvn("svn cleanup");
 			fixsvn("svn update --force");
 			run_as($username, "mv \"/tmp/$filename\" \"$filepath\"");
+			fixsvn($command);
+			$ok = true;
+			break;
+		}
+		
+		else if (strstr($line, "database disk image is malformed")) {
+			fixsvn("sqlite3 .svn/wc.db \"reindex nodes\"");
+			fixsvn("sqlite3 .svn/wc.db \"reindex pristine\"");
+			
+			fixsvn("svn cleanup");
 			fixsvn($command);
 			$ok = true;
 			break;
