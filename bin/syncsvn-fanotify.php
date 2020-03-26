@@ -2,7 +2,7 @@
 
 // =========================================
 // SYNCSVN-FANOTIFY.PHP
-// C9@ETF project (c) 2015-2018
+// C9@ETF project (c) 2015-2020
 //
 // Commit all changed files to user repository (fanotify version)
 // =========================================
@@ -12,15 +12,15 @@
 # residing in /usr/local/bin
 
 
-
 require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
 
 
-// Syncsvn-fanotify configuration
+// syncsvn-fanotify configuration
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", ".git", ".tmux.lock", "core", ".core", ".valgrind.out.core", ".nfs", "last/");
 $file_size_limit = 100000; // 100kB
 $file_limit_delete = 100000000; // 100MB
+$count_active = 0;
 
 $logfile = $conf_base_path . "/log/syncsvn.log";
 $data_path = $conf_base_path . "/data";
@@ -41,6 +41,7 @@ if ($is_compute_node)
 	$daemon = "node";
 else
 	$daemon = "nfsd";
+
 
 // Read users file
 $users_file = $conf_base_path . "/users";
@@ -171,8 +172,9 @@ while(true) {
 		}
 		
 		// Detect date change
-		if (intval($oldtime) > intval($time))
+		if (intval($oldtime) > intval($time)) {
 			$date = date("d.m.Y");
+		}
 		$oldtime = $time;
 		
 		// Check for folder create
@@ -197,7 +199,11 @@ while(true) {
 				if ($first_path == "") $first_path = $path_part;
 			} while ($p != 0);
 			
-			run_as($user, "cd $user_ws; svn ci -m monitor \"$path\"");
+			$error = run_as($user, "cd $user_ws; svn ci -m monitor \"$path\" 2>&1");
+			if (stristr($error, "run ") && strstr($error, "cleanup")) {
+				print "-- Running 'cleanup' for $user\n";
+				run_as($user, "cd $user_ws; svn cleanup");
+			}
 		}
 		
 		// Check for file create
@@ -226,7 +232,11 @@ while(true) {
 		}
 		
 		// Commit change
-		run_as($user, "cd $user_ws; svn ci -m monitor \"$pfile\"");
+		$error = run_as($user, "cd $user_ws; svn ci -m monitor \"$pfile\"");
+		if (stristr($error, "run ") && strstr($error, "cleanup") && $pfile != ".logout") {
+			print "-- Running 'cleanup' for $user\n";
+			run_as($user, "cd $user_ws; svn cleanup");
+		}
 		
 		// Write monitor.out
 		print "$date $time ($user) - /$path - $file - WRITE\n";
