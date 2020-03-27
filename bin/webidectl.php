@@ -88,14 +88,16 @@ switch($action) {
 		}
 		break;
 	
+	// Input password from stdin and update web password file for user
+	case "set-password":
+		print "Password: ";
+		$password = fgets(STDIN);
+		set_password($username, $password);
+		break;
+	
 	// Login or create user
 	case "login":
-		$ip_address = $argv[3]; $password = "";
-		
-		if ($is_control_node) {
-			print "Password: ";
-			$password = fgets(STDIN);
-		}
+		$ip_address = $argv[3];
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {
@@ -103,13 +105,13 @@ switch($action) {
 				print $users[$username]["port"]; // Already logged in, print port
 				`date +%s > /tmp/already-$username`;
 			} else if ($users[$username]["status"] == "inactive") {
-				activate_user($username, $password, $ip_address);
+				activate_user($username, $ip_address);
 				if (file_exists("/tmp/already-$username")) unlink("/tmp/already-$username");
 			}
 		}
 		else {
-			create_user($username, $password);
-			activate_user($username, $password, $ip_address);
+			create_user($username);
+			activate_user($username, $ip_address);
 		}
 		break;
 	
@@ -123,7 +125,7 @@ switch($action) {
 			if (array_key_exists($username, $users))
 				print "ERROR: User $username already exists\n";
 			else {
-				create_user($username, $password);
+				create_user($username);
 				if ($argc>3) {
 					bfl_lock("users file");
 					read_files();
@@ -196,8 +198,8 @@ switch($action) {
 			exec("htpasswd -bc $htpasswd " . $userdata['esa'] . " $password_esa 2>&1");
 			exec("chown $conf_nginx_user $htpasswd");
 			bfl_unlock("user $username");
-			print "Created local user $username\n";
 			debug_log ("add local user $username");
+			print "Created local user $username\n";
 		}
 		break;
 	
@@ -207,7 +209,7 @@ switch($action) {
 		// If memory is high on control it's probably high on all others, due to load balancing
 		$active_users = 0;
 		foreach($users as $user) if ($user['status'] == "active") $active_users++;
-		if ($active_users > $conf_max_users_culling) break; // It just manufactures more load... :( FIXME
+		if ($active_users > $conf_max_users_culling) break; // It just manufactures more load... :(
 		
 		$stats = server_stats();
 		$memlimit = $conf_memory_emergency * 1024 * 1024;
@@ -824,14 +826,13 @@ exit(0);
 // If node type is control, it will run relevant commands on all other nodes
 // They handle locking (do not lock anything before calling them)
 
-function activate_user($username, $password, $ip_address) {
+function activate_user($username, $ip_address) {
 	global $conf_defaults_path, $conf_base_path, $conf_c9_group, $conf_nodes, $users;
 	global $conf_ssh_tunneling, $conf_port_upper, $conf_port_lower, $conf_my_address;
 	global $conf_home_path;
 	global $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr;
 	
 	$userdata = setup_paths($username);
-	$password_esa = escapeshellarg($password);
 	$port = 0;
 	
 	// Prevent logging in while clear_server is running
@@ -844,11 +845,6 @@ function activate_user($username, $password, $ip_address) {
 		// v1 migrate
 		if (!file_exists($userdata['home']))
 			migrate_v1_v3($username);
-
-		// Create htpasswd i.e. overwrite existing one (due to possible pwd change)
-		exec("htpasswd -bc " . $userdata['htpasswd'] . " " . $userdata['esa'] . " $password_esa 2>&1");
-		exec("chown " . $userdata['esa'] . ":$conf_c9_group " . $userdata['htpasswd']);
-		chmod($userdata['htpasswd'], 0644);
 		
 		// Try to sync local folder against remote (if volatile-remote)
 		if (array_key_exists("volatile-remote", $users[$username]) && $users[$username]['status'] != "active") {
@@ -927,7 +923,7 @@ function activate_user($username, $password, $ip_address) {
 			$port = find_free_port(); 
 			print "Found port: $port\n";
 		} else {
-			$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
+			$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
 			
 			// We can't allow nginx configuration to be invalid, ever
 			$port = intval($port);
@@ -935,7 +931,7 @@ function activate_user($username, $password, $ip_address) {
 				run_on($best_node, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
 				sleep(5);
 				read_files();
-				$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa'] . " $password_esa");
+				$port = run_on($best_node, "$conf_base_path/bin/webidectl login " . $userdata['esa']);
 			}
 			print "Port at $best_node is $port\n";
 			$users[$username]['port'] = $port;
@@ -1010,7 +1006,7 @@ function activate_user($username, $password, $ip_address) {
 	print $port;
 }
 
-function create_user($username, $password) {
+function create_user($username) {
 	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users, $conf_home_path;
 	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr;
 	
@@ -1038,7 +1034,7 @@ function create_user($username, $password) {
 		exec("chown -R " . $userdata['esa'] . ":$conf_c9_group ". $userdata['home']);
 	} else {
 		if ($is_control_node)
-			run_on($storage_node_addr, "$conf_base_path/bin/webidectl add-user " . $userdata['esa'] . " " . escapeshellarg($password));
+			run_on($storage_node_addr, "$conf_base_path/bin/webidectl add-user " . $userdata['esa']);
 		exec("useradd -d " . $userdata['home'] . " -g $conf_c9_group " . $userdata['esa']);
 	}
 	
@@ -1048,7 +1044,7 @@ function create_user($username, $password) {
 			if (!in_array("control", $node['type']) && !in_array("compute", $node['type']) && !in_array("svn", $node['type']))
 				continue;
 			if (!is_local($node['address']) && !in_array("control", $node['type']))
-				run_on($node['address'], "$conf_base_path/bin/webidectl add-user " . $userdata['esa'] . " " . escapeshellarg($password));
+				run_on($node['address'], "$conf_base_path/bin/webidectl add-user " . $userdata['esa']);
 		}
 	}
 
@@ -1086,6 +1082,19 @@ function create_user($username, $password) {
 	write_files();
 	bfl_unlock("users file");
 	bfl_unlock("user $username");
+}
+
+
+// Create htpasswd or overwrite existing one
+function set_password($username, $password) {
+	global $conf_c9_group;
+
+	$userdata = setup_paths($username);
+	$password_esa = escapeshellarg($password);
+	
+	exec("htpasswd -bc " . $userdata['htpasswd'] . " " . $userdata['esa'] . " $password_esa 2>&1");
+	exec("chown " . $userdata['esa'] . ":$conf_c9_group " . $userdata['htpasswd']);
+	chmod($userdata['htpasswd'], 0644);
 }
 
 

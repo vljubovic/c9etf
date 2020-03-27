@@ -144,7 +144,7 @@ if (isset($_POST['login'])) {
 			2 => array("file", "/tmp/error-output.txt", "a") // stderr is a file to write to
 		);
 		$output = array();
-		$process = proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $ip_address", $descriptorspec, $pipes);
+		$process = proc_open("sudo $conf_base_path/bin/webidectl set-password $login_esa", $descriptorspec, $pipes);
 		if (is_resource($process)) {
 			fwrite($pipes[0], $pass);
 			fclose($pipes[0]);
@@ -152,6 +152,7 @@ if (isset($_POST['login'])) {
 			fclose($pipes[1]);
 			proc_close($process);
 		}
+		proc_close(proc_open("sudo $conf_base_path/bin/webidectl login $login_esa $ip_address 2>&1 &", array(), $foo));
 		header("Location: status.php");
 		return;
 	}
