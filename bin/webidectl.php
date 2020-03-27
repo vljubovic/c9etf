@@ -1469,7 +1469,10 @@ function start_node($username) {
 	$userdata = setup_paths($username);
 	$useropts = $users[$username];
 	
-	$nodecmd     = "$conf_base_path/bin/startnode";
+	if (array_key_exists('webide', $useropts))
+		$nodecmd     = "$conf_base_path/bin/start" . $useropts['webide'];
+	else
+		$nodecmd     = "$conf_base_path/bin/startnode";
 	$c9_path     = $userdata['home'] . "/fork";
 	$port        = $useropts['port'];
 	$listen_addr = $useropts['server'];

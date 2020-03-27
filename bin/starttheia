@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#cd $1 
+#/home/c9/.c9/node/bin/node server.js -p $2 -a : -l $3 -w $4 &>> $5 &
+cd /usr/local/webide/theia
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+nvm use --delete-prefix v10.19.0 --silent
+nvm install 10
+nvm use --delete-prefix v10.19.0 --silent
+yarn theia start $4 --hostname $3 --port $2 &>> $5 &
+echo $! > $6
