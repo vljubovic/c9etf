@@ -123,6 +123,9 @@ $conf_limit_loadavg_web = 13;
 $conf_limit_users_web = 300;
 $conf_limit_memory_web = 13; // in GB
 
+// How many seconds to wait until actually logging out user (limits performance impact of many logout/login operations)
+$conf_logout_delay = 180;
+
 $conf_current_year = 1; // ID of current academic year
 
 // Zamger web services for: authentication, list of courses and members

@@ -187,7 +187,7 @@ if (isset($_REQUEST['logout'])) {
 		if (isset($_REQUEST['zamjena']))
 			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa &", array(), $foo));
 		else
-			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa 180 &", array(), $foo));
+			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa $conf_logout_delay &", array(), $foo));
 		return;
 	}
 }
