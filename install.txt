@@ -28,6 +28,11 @@ astyle - formatting C/C++/Java programs
 sqlite3 - for debugging svn problems
 valgrind
 zip - required for automated testing (buildservice)
+clangd - for Theia webide C/C++ support 
+
+Note: Ubuntu 18.04 recommends to install clangd using snap. Do NOT use it because
+snap doesn't support nonstandard home direcories (that we use). Install package 
+named clang-tools and add /usr/lib/llvm-6.0/bin to PATH.
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 

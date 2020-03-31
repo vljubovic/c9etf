@@ -1,5 +1,15 @@
 <?php
 
+
+// =========================================
+// UPDATE-CLOUD9.PHP
+// C9@ETF project (c) 2015-2020
+//
+// Software installation component
+// Download and install Cloud9 and apply patches
+// =========================================
+
+
 require("lib/config.php");
 
 

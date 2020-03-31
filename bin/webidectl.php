@@ -1484,7 +1484,7 @@ function kick_user($username) {
 
 // Start nodejs instance for user
 function start_node($username) {
-	global $conf_base_path, $conf_home_path, $users;
+	global $conf_base_path, $conf_home_path, $users, $conf_c9_group;
 	
 	$userdata = setup_paths($username);
 	$useropts = $users[$username];
@@ -1493,7 +1493,8 @@ function start_node($username) {
 		$nodecmd     = "$conf_base_path/bin/start" . $useropts['webide'];
 	else
 		$nodecmd     = "$conf_base_path/bin/startnode";
-	$c9_path     = $userdata['home'] . "/fork";
+	$esa         = $userdata['esa'];
+	$home        = $userdata['home'];
 	$port        = $useropts['port'];
 	$listen_addr = $useropts['server'];
 	$workspace   = $userdata['workspace'];
@@ -1508,7 +1509,7 @@ function start_node($username) {
 	touch($lastfile);
 	chown($lastfile, $username);
 	chmod($lastfile, 0666);
-	run_as($username, "$nodecmd $c9_path $port $listen_addr $workspace $log_path $watch_path");
+	run_as($username, "$nodecmd $home $port $listen_addr $workspace $log_path $watch_path");
 }
 
 // Stop nodejs instance and related user processes
@@ -1694,6 +1695,9 @@ function reset_config($username) {
 	
 	exec ("rm -fr ".$userdata['home']."/.c9");
 	run_as($username, "cp -R $conf_defaults_path/c9 " . $userdata['home'] . "/.c9");
+	
+	exec ("rm -fr ".$userdata['home']."/.theia");
+	run_as($username, "cp -R $conf_defaults_path/theia " . $userdata['home'] . "/.theia");
 
 	exec ("rm -fr ".$userdata['home']."/.node-gyp");
 }
