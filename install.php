@@ -1,5 +1,14 @@
 <?php
 
+
+// =========================================
+// INSTALL.PHP
+// C9@ETF project (c) 2015-2020
+//
+// Software installation
+// =========================================
+
+
 require(dirname(__FILE__) . "/lib/config.php");
 
 
@@ -110,7 +119,7 @@ echo `echo "\033[31mDownloading Buildservice\033[0m"`;
 
 // Add cron tasks
 `echo "45 *     * * *   root    $conf_base_path/bin/webidectl culling" >> /etc/crontab`;
-`echo "20 3     * * *   root    $conf_base_path/lib/nightly_tasks" >> /etc/crontab`;
+`echo "20 3     * * *   root    php $conf_base_path/lib/nightly_tasks.php" >> /etc/crontab`;
 `echo "5 *     * * *   root    php $conf_base_path/lib/ensure_running.php" >> /etc/crontab`;
  // This is stupid...
 `echo "0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/c9fork/node_modules/engine.io-client" >> /etc/crontab`;

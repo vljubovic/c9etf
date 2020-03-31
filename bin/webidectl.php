@@ -120,13 +120,14 @@ switch($action) {
 		if ($argc < 3) 
 			print "ERROR: Wrong number of parameters.\n";
 		else {
-			$password = $argv[3];
-
 			if (array_key_exists($username, $users))
 				print "ERROR: User $username already exists\n";
 			else {
 				create_user($username);
 				if ($argc>3) {
+					$password = $argv[3];
+					set_password($username, $password);
+					
 					bfl_lock("users file");
 					read_files();
 					$users[$username]['realname'] = $argv[4];
@@ -639,7 +640,8 @@ switch($action) {
 		$bcfile = $conf_base_path . "/broadcast.txt";
 		file_put_contents($bcfile, $argv[2]);
 		chmod($bcfile, 0644);
-		sleep(60);
+		if ($argc > 3) $sleep = intval($argv[3]); else $sleep = 60;
+		if ($sleep > 0) sleep($sleep);
 		unlink($bcfile);
 		break;
 
@@ -773,42 +775,60 @@ switch($action) {
 		break;
 	
 	case "help":
-		print "webidectl.php\n\nUsage:\n";
-		print "\tlogin username \t- doesn't check password!\n";
-		print "\tlogout username\n";
-		print "\tstop-node username \t\t- stop nodejs without logging out user\n\t\t\t\t\t  can be called even if user is listed as not logged in\n";
-		print "\tadd-user username \t- creates data for new user\n\t\t\t\t\t  will be called automatically by login if neccessary\n";
-		print "\tadd-local-user username password - adds user into local userlist (doesn't call add-user)\n";
-		print "\tremove username \t\t- remove user data from system\n";
-		print "\tcollaborate username \t\t- start collab version of nodejs for user\n";
-		print "\n";
-		print "\tculling \t\t\t- logout users inactive for >120m, stop nodejs for >45m, shorter if low memory\n";
-		print "\tkill-idle minutes type sleep\t- logout users inactive for minutes, type \"soft\" just stops nodejs,\n\t\t\t\t\t  pause sleep seconds for each user\n";
-		print "\tkill-inactive \t\t\t- remove zombie users from other nodes (marked as logged out but still process running)\n";
-		print "\n";
-		print "\tlast username \t\t\t- time of users last activity (add \"nice\" for nicer output)\n";
-		print "\tlast-update username \t\t- update time of last access to now\n";
-		print "\tlist-active \t\t\t- list of currently logged in users\n";
-		print "\tverify-user username \t\t- restart services that are not running for user\n";
-		print "\tverify-all-users \t\t- this may be very long\n";
-		print "\tis-node-up username \t\t- check if nodejs is running for user\n";
-		print "\tserver-stats\n";
-		print "\tbroadcast message\t\t- show message bubble to all users\n";
-		print "\n";
-		print "\treset-config username \t\t- revert Cloud9 configuration to default for user\n";
-		print "\treset-nginx \t\t\t- rebuild nginx configuration file\n";
-		print "\tdisk-cleanup \t\t\t- delete some backups to recover disk space\n";
-		print "\n";
-		print "\tgit-init username \t\t- create new Git repository for user (delete existing)\n";
-		print "\tgit-commit username \t\t- commit all changes for user to Git\n";
-		print "\tupdate-stats username \t\t- update usage statistics file for user\n";
-		print "\tupdate-all-stats\t\t- this may be very long\n";
-		print "\tfix-svn username \t\t- automatically fix all SVN problems for username\n";
-		print "\tuser-reinstall-svn username \t- create new SVN repository for user (delete existing)\n";
-		print "\tuser-reset-svn username \t- call update-stats then user-reinstall-svn\n";
-		print "\tclean-inodes \t\t\t- call user-reset-svn for all users exceeding inode or disk usage limit\n";
-		print "\tsvnrestore username path revision - restore older version of file from SVN\n";
-		
+print <<<END
+WEBIDECTL.PHP
+C9@ETF project (c) 2015-2020
+
+Master control script for C9@ETF
+
+Usage: webidectl command [username] [other options]
+
+User management commands:
+	login username 		- doesn't check password!
+	logout username
+	add-user username [password realname email] - creates data for new user
+				   will be called automatically by login if neccessary
+	add-local-user username password - adds user into local userlist (prepares for add-user)
+	set-password username 	- change password for user
+	change-user username key value - change a property value for user
+	remove username 	- remove users' data from system
+
+User administration commands:
+	is-node-up username	- check if webide is running for user
+	stop-node username 	- stop webide without logging out user
+				  can be called even if user is not logged in
+	verify-user username	- restart webide for user if not running
+	kick-user username 	- change compute node at which users processes reside
+	collaborate username 	- restart webide in collaboration mode
+	reset-config username	- revert webide configuration to default for user
+	last username 		- time of users' last activity (add "nice" for nicer output)
+	last-update username 	- update time of last access to now
+
+Server administration commands:
+	server-stats 		- get a list of statistics for server
+	culling 		- logout users inactive for >120m, stop nodejs for >45m, shorter if low memory
+	kill-idle minutes type sleep - logout users inactive for minutes, type "soft" just stops nodejs,
+				  pause sleep seconds for each user
+	kill-inactive 		- remove zombie users from other nodes 
+				  (marked as logged out but still process running)
+	clear-server 		- logout all users and kill any remaining processes
+	list-active 		- list currently logged in users
+	verify-all-users	- run verify-user for all logged in users
+	broadcast message	- show message bubble to all users
+	reset-nginx 		- rebuild nginx configuration file
+
+Server maintenance commands:
+	disk-cleanup 		- delete some backups to recover disk space
+	git-init username 	- create new Git repository for user (delete existing)
+	git-commit username 	- commit all changes for user to Git
+	update-stats username 	- update usage statistics file for user
+	fix-svn username 	- automatically fix all SVN problems for username
+	user-reinstall-svn username - create new SVN repository for user (delete existing repo)
+	user-reset-svn username	- call update-stats then user-reinstall-svn
+	storage-nightly		- nightly tasks to perform on storage server (rebuild stats, fix svn problems...)
+	svnrestore username path revision - restore older version of file from SVN
+
+END;
 		break;
 }
 
