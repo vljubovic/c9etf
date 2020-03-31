@@ -1028,7 +1028,7 @@ function activate_user($username, $ip_address) {
 
 function create_user($username) {
 	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users, $conf_home_path;
-	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr;
+	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr, $conf_chroot;
 	
 	$forbidden_usernames = array('root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 'mail', 'news', 'uucp', 'proxy', 'www-data', 'backup', 'list', 'irc', 'gnats', 'nobody', 'libuuid', 'syslog', 'messagebus', 'landscape', 'sshd', 'c9test', 'c9');
 	if (in_array($username, $forbidden_usernames)) {
@@ -1079,6 +1079,14 @@ function create_user($username) {
 	else
 		if ($is_control_node)
 			run_on($storage_node_addr, "$conf_base_path/bin/webidectl reset-config " . $userdata['esa']);
+			
+	// Create chroot
+	if ($conf_chroot) {
+		if ($is_storage_node && $is_control_node)
+			exec("$conf_base_path/lib/create_chroot.sh " . $userdata['esa'] . " $conf_c9_group ". $userdata['home']);
+		else if ($is_storage_node)
+			run_on($storage_node_addr, "$conf_base_path/lib/create_chroot.sh " . $userdata['esa'] . " $conf_c9_group ". $userdata['home']);
+	}
 
 	// Add default files to SVN
 	if ($is_svn_node) 
@@ -1099,6 +1107,7 @@ function create_user($username) {
 	read_files();
 	$users[$username] = array();
 	$users[$username]['status'] = "inactive";
+	if ($conf_chroot) $users[$username]['workspace'] = "chroot";
 	write_files();
 	bfl_unlock("users file");
 	bfl_unlock("user $username");
@@ -1498,6 +1507,8 @@ function start_node($username) {
 	$port        = $useropts['port'];
 	$listen_addr = $useropts['server'];
 	$workspace   = $userdata['workspace'];
+	if (array_key_exists('workspace', $useropts) && $useropts['workspace'] == "chroot") 
+		$workspace = "/workspace";
 	$log_path    = "$conf_base_path/log/" . $userdata['efn'];
 	$watch_path  = $userdata['node_watch'];
 	
@@ -1509,7 +1520,11 @@ function start_node($username) {
 	touch($lastfile);
 	chown($lastfile, $username);
 	chmod($lastfile, 0666);
-	run_as($username, "$nodecmd $home $port $listen_addr $workspace $log_path $watch_path");
+	if (array_key_exists('workspace', $useropts) && $useropts['workspace'] == "chroot") {
+		exec("echo chroot --userspec=$esa:$conf_c9_group $home $nodecmd /root $port $listen_addr $workspace $log_path $watch_path >> $log_path");
+		shell_exec("sudo chroot --userspec=$esa:$conf_c9_group $home $nodecmd /root $port $listen_addr $workspace $log_path $watch_path");
+	} else
+		run_as($username, "$nodecmd $home $port $listen_addr $workspace $log_path $watch_path");
 }
 
 // Stop nodejs instance and related user processes
