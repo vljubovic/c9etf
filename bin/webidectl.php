@@ -858,6 +858,17 @@ function activate_user($username, $ip_address) {
 	// Prevent logging in while clear_server is running
 	bfl_lock("clear server", false);
 	
+	// Prepare the mounts for chroot
+	if ($is_svn_node) {
+		if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
+			$home = $userdata['home'];
+			foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
+				list($rootdir,$userdir) = explode(",", trim($line));
+				`sudo mount --bind $rootdir $home$userdir`;
+			}
+		}
+	}
+	
 	if ($is_control_node) {
 		if (!check_limits(server_stats(), /* $output= */ true)) return;
 		bfl_lock("user $username");
@@ -998,6 +1009,7 @@ function activate_user($username, $ip_address) {
 	
 	else {
 		bfl_lock("user $username");
+		
 		if ($is_svn_node)
 			syncsvn($username);
 		if ($is_compute_node) {
@@ -1172,7 +1184,7 @@ function deactivate_user($username, $skip_svn = false) {
 		write_nginx_config();
 		write_files();
 		bfl_unlock("users file");
-		
+	
 		// Stop nodejs on server where user is running
 		if (is_local($server) || empty($server))
 			stop_node($username, false);
@@ -1205,6 +1217,16 @@ function deactivate_user($username, $skip_svn = false) {
 			unlink($userdata['svn_watch']);
 		}
 		stop_inotify($username);
+		
+		// Unmount binded mounts for chroot
+		if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
+			$home = $userdata['home'];
+			`sudo umount $home/dev/pts`;
+			foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
+				list($rootdir,$userdir) = explode(",", trim($line));
+				`sudo umount $home$userdir`;
+			}
+		}
 		
 		// Commit remaining stuff to svn
 		$script  = "cd " . $userdata['workspace'] . "; ";
@@ -2437,6 +2459,7 @@ function bfl_lock($lock = "all", $take_lock = true) {
 	$wait_add = $wait_inc;
 	$ultimate_limit = 100000000; // Break in after 100s
 
+	if (file_exists($bfl_file))
 	while (in_array($lock."\n", file($bfl_file))) {
 		debug_log("$action ceka na bfl $lock pid ".getmypid());
 		print "Čekam na bfl - ak\n";
@@ -2457,7 +2480,7 @@ function bfl_unlock($lock = "all") {
 	
 	$bfl_file = "/tmp/webide.bfl";
 	$new_locks = "";
-//	debug_log("$action unlock $lock pid ".getmypid());
+	if (file_exists($bfl_file))
 	foreach(file($bfl_file) as $m_lock)
 		if ($m_lock !== $lock . "\n") $new_locks .= $m_lock;
 	file_put_contents($bfl_file, $new_locks);

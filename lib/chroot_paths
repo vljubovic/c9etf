@@ -1,0 +1,10 @@
+/bin,/bin
+/lib,/lib
+/lib64,/lib64
+/usr,/usr
+/var,/var
+/proc,/proc
+/sys,/sys
+/dev,/dev
+/dev/pts,/dev/pts
+/home/c9,/home/c9
