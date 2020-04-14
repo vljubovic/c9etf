@@ -149,7 +149,7 @@ switch($action) {
 			break;
 		
 		$wait = 0;
-		if ($argc >= 3)
+		if ($argc > 3)
 			$wait = intval($argv[3]);
 		if ($wait>0) {
 			sleep($wait);

@@ -1,5 +1,7 @@
 <?php
 
+// TODO: port this code to classes
+
 function zamger_update_teacher_courses($login, $force) {
 	global $conf_data_path, $conf_current_year, $conf_zamger_update_interval;
 	
@@ -107,6 +109,11 @@ function zamger_update_groups($course_id, $force) {
 	// Get groups file
 	$groups = array();
 	$groups_path = $conf_data_path . "/" . $course_id . "/groups";
+	
+	// Course is not configured on c9
+	if (!file_exists($conf_data_path . "/" . $course_id))
+		json(ok("Groups not updated for course $course_id"));
+		
 	if (file_exists($groups_path))
 		$groups = json_decode(file_get_contents($groups_path), true);
 	
