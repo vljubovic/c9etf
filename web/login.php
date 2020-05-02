@@ -39,7 +39,7 @@ function local_login($login, $pass) {
 		return "";
 	}
 	
-	return "error";
+	return "Pogrešna lozinka";
 }
 
 function login($login, $pass) {
@@ -52,6 +52,7 @@ function login($login, $pass) {
 		require_once("zamger/login.php");
 		return zamger_login($login, $pass);
 	}
+	return $result;
 }
 
 function logout() {
