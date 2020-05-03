@@ -1,21 +1,8 @@
 <?php 
 
-function assignment_table($course, $year, $external) {
-	global $conf_data_path;
-	
-	// Read data from files and set vars
-	$url_part = "course=$course&amp;year=$year";
-	if ($external) {
-		$course_path_part = "X$course"."_$year";
-		$url_part .= "&amp;X";
-	} else
-		$course_path_part = "$course"."_$year";
-		
-	$course_path = $conf_data_path . "/$course_path_part";
-	$asgn_file_path = $course_path . "/assignments";
-	$assignments = array();
-	if (file_exists($asgn_file_path))
-		$assignments = json_decode(file_get_contents($asgn_file_path), true);
+function assignment_table($course) {
+	$root = $course->getAssignments();
+	$assignments = $root->getItems();
 
 	if (empty($assignments)) {
 		?>
@@ -28,26 +15,22 @@ function assignment_table($course, $year, $external) {
 	
 	
 	// Sort assigments by type, then by name (natural)
-	function cmp($a, $b) { 
-		if ($a['type'] == $b['type']) return strnatcmp($a['name'], $b['name']); 
-		if ($a['type'] == "tutorial") return -1;
-		if ($b['type'] == "tutorial") return 1;
-		if ($a['type'] == "homework") return -1;
-		if ($b['type'] == "homework") return 1;
+	function cmp($a, $b) {
+		if ($a->type == $b->type) return strnatcmp($a->name, $b->name); 
+		if ($a->type == "tutorial") return -1;
+		if ($b->type == "tutorial") return 1;
+		if ($a->type == "homework") return -1;
+		if ($b->type == "homework") return 1;
 		// Other types are considered equal
-		return strnatcmp($a['name'], $b['name']); 
+		return strnatcmp($a->name, $b->name); 
 	}
 	usort($assignments, "cmp");
-	
-	$max_tasks = 1;
-	foreach($assignments as $a) {
-		if ($a['tasks'] > $max_tasks) $max_tasks = $a['tasks'];
-	}
 	
 	// Output table
 	
 	if (count($assignments) > 0) {
 	
+		$max = $root->maxTasks();
 	?>
 	<script src="static/js/assignment.js" type="text/javascript" charset="utf-8"></script>
 	<table cellspacing="0" cellpadding="2" border="0" class="assignment-table">
@@ -56,7 +39,7 @@ function assignment_table($course, $year, $external) {
 			<td class="text cell">&nbsp;</td>
 			<td class="text cell">&nbsp;</td>
 			<?php 
-				for ($i=1; $i<=$max_tasks; $i++) 
+				for ($i = 1; $i <= $max; $i++) 
 					print "<td class='text cell stronger' align='center'>Task $i</td>";
 			?>
 		</tr>
@@ -64,52 +47,7 @@ function assignment_table($course, $year, $external) {
 	}
 	
 	foreach ($assignments as $a) {
-		$style = "text-align: left; ";
-		if (array_key_exists('hidden', $a) && $a['type'] == "homework" && $a['hidden'] == "true") $style .= "background: #f4e1c3; color: #666;";
-		else if (array_key_exists('hidden', $a) && $a['type'] == "tutorial" && $a['hidden'] == "true") $style .= "background: #e7e9fd; color: #666;";
-		else if (array_key_exists('hidden', $a) && $a['hidden'] == "true") $style .= "background: #e2f3c8; color: #666;";
-		else if ($a['type'] == "homework") $style .= "background: #f4d1aa";
-		else if ($a['type'] == "tutorial") $style .= "background: #d7d9fd";
-		else $style .= "background: #d2edb8";
-		
-		$edit_link = "assignment/edit.php?action=edit&amp;$url_part&amp;assignment=" . $a['id'];
-		
-		$deploy_js = "return deployAssignmentFile($course, $year, ";
-		if ($external) $deploy_js .= "true, "; else $deploy_js .= "false, ";
-		
-		?>
-		<tr>
-			<td class="text cell stronger" style="<?=$style?>"><?=$a['name']?></td>
-			<td><a href="<?=$edit_link?>"><i class="fa fa-gear"></i></a></td>
-			<?php
-		
-		for ($i=1; $i<=$max_tasks; $i++) {
-			if ($i <= $a['tasks']) {
-				$at_path = $course_path . "/assignment_files/" . $a['path'] . "/Z$i/.autotest";
-				$at_name = $a['path'] . "/Z$i/.autotest";
-				$count_tests = 0;
-				if (file_exists($at_path)) {
-					$autotest = json_decode(file_get_contents($at_path), true);
-					if (!empty($autotest) && array_key_exists("test_specifications", $autotest))
-						$count_tests = count($autotest['test_specifications']);
-				
-					$link = "autotest/preview.php?fileData=$at_path";
-					$deploy_js_this = $deploy_js . $a['id'] . ", $i, '$at_name', 'all-users');";
-					
-					?>
-					<td>
-						<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
-						<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
-					</td>
-					<?php
-				} else {
-					?>
-					<td>&nbsp;</td>
-					<?php
-				}
-			} else
-				print "<td>&nbsp;</td>\n";
-		}
+		assignment_print($a, $course, $max, 0);
 	}
 	
 	?>
@@ -130,9 +68,9 @@ function assignment_table($course, $year, $external) {
 				<font class="text stronger">Create new assignment:</font>
 				<form action="assignment/edit.php" method="post">
 					<input type="hidden" name="action" value="create">
-					<input type="hidden" name="course" value="<?=$course?>">
-					<input type="hidden" name="year" value="<?=$year?>">
-					<input type="hidden" name="external" value="<?=($external)?"1":"0"?>">
+					<input type="hidden" name="course" value="<?=$course->id?>">
+					<input type="hidden" name="year" value="<?=$course->year?>">
+					<input type="hidden" name="external" value="<?=($course->external)?"1":"0"?>">
 					
 					Assignment type: <select name="type" onchange="showOther(this);">
 						<option value="tutorial">Tutorial</option>
@@ -150,17 +88,13 @@ function assignment_table($course, $year, $external) {
 				
 				<?php
 				
-				// Previous year
-				if ($external) {
-					$prev_course_path = $conf_data_path . "/X$course" . "_" . ($year-1);
-				} else {
-					$prev_course_path = $conf_data_path . "/$course" . "_" . ($year-1);
-				}
-				$prev_asgn_file_path = $prev_course_path . "/assignments";
-
-				if (file_exists($prev_course_path) && file_exists($prev_asgn_file_path)) {
+				// Test if the same course was delivered in the previous year
+				$previous_year_course = Course::find($course->id, $course->external);
+				$previous_year_course->year = $course->year - 1;
+				$previous_asgn_root = $previous_year_course->getAssignments();
+				if (!empty($previous_asgn_root->getItems())) {
 					?>
-					<font class="text stronger"><a href="assignment/copy.php?<?=$url_part?>">Copy assignment from last year</a></font>
+					<font class="text stronger"><a href="assignment/copy.php?<?=$course->urlPart() ?>">Copy assignment from last year</a></font>
 					<?php
 				}
 				?>
@@ -168,4 +102,90 @@ function assignment_table($course, $year, $external) {
 		</div>
 	<?php
 }
+
+
+// Helper function to print single assignment in a table row
+function assignment_print($a, $course, $max, $level) {
+	$style = "text-align: left; ";
+	if ($a->hidden) {
+		if ($a->type == "homework")
+			$style .= "background: #f4e1c3; color: #666;";
+		else if ($a->type == "tutorial")
+			$style .= "background: #e7e9fd; color: #666;";
+		else
+			$style .= "background: #e2f3c8; color: #666;";
+	} else {
+		if ($a->type == "homework")
+			$style .= "background: #f4d1aa";
+		else if ($a->type == "tutorial")
+			$style .= "background: #d7d9fd";
+		else
+			$style .= "background: #d2edb8";
+	}
+	
+	$edit_link = "assignment/edit.php?action=edit&amp;" . $course->urlPart() . "&amp;assignment=" . $a->id;
+	
+	$deploy_js = "return deployAssignmentFile(" . $course->id . ", " . $course->year . ", ";
+	if ($course->external) $deploy_js .= "true, "; else $deploy_js .= "false, ";
+	
+	$levelprint = "";
+	for ($i=0; $i<$level; $i++)
+		$levelprint .= "&nbsp;&nbsp;&nbsp;";
+	if ($level > 0)
+		$levelprint .= "&#x2514;";
+	
+	?>
+	<tr>
+		<td class="text cell stronger" style="<?=$style?>"><?=$levelprint . $a->name?></td>
+		<td><a href="<?=$edit_link?>"><i class="fa fa-gear"></i></a></td>
+		<?php
+	
+	$items = $a->getItems();
+	// Is there printable subitems?
+	$printable = [];
+	foreach($items as $item) {
+		if (count($item->getItems()))
+			$printable[] = $item;
+	}
+	$i = 1;
+	foreach( $a->getItems() as $item) {
+		if (count($item->getItems()) == 0) {
+			$at_path = $item->filesPath() . "/.autotest";
+			// FIXME: hack to get relative path
+			$absolute = $course->getPath() . "/assignment_files/";
+			$at_name = substr($at_path, strlen($absolute));
+			
+			$count_tests = 0;
+			if (file_exists($at_path)) {
+				$autotest = json_decode(file_get_contents($at_path), true);
+				if (!empty($autotest) && array_key_exists("test_specifications", $autotest))
+					$count_tests = count($autotest['test_specifications']);
+			
+				$link = "autotest/preview.php?fileData=$at_path";
+				$deploy_js_this = $deploy_js . $a->id . ", " . $item->id . ", '$at_name', 'all-users');";
+				
+				?>
+				<td>
+					<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
+					<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
+				</td>
+				<?php
+			} else {
+				?>
+				<td>&nbsp;</td>
+				<?php
+			}
+			$i++;
+		}
+	}
+	
+	while ($i++ <= $max) {
+		print "<td>&nbsp;</td>\n";
+	}
+	
+	foreach($printable as $item) {
+		assignment_print($item, $course, $max, $level+1);
+	}
+}
+
 ?>

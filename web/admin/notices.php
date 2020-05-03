@@ -1,6 +1,6 @@
 <?php
 
-function admin_notices($course, $year, $external) {
+function admin_notices($course) {
 	nicemessage("Under construction :)");
 }
 
