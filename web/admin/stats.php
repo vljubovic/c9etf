@@ -171,6 +171,7 @@ function admin_stats() {
 				$ar = explode(" ", trim($logline));
 				$sec = intval($ar[0]); $disk = intval($ar[1]);
 				if (count($ar)>2) $inodes = intval($ar[2]);  // Not shown
+				$bstasks = 0;
 				if (count($ar)>3) $bstasks = intval($ar[3]); 
 				if ($sec < $sec_min) continue;
 				$disk = round(($disk / 1024) / 1024, 3);
