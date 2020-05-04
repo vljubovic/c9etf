@@ -1,5 +1,84 @@
 <?php
 
+// Hidden status ne radi
+// Autor nestane negdje u nekom trenutku
+// Upload fajla radi samo jednom
+// Kreiranje foldera radi samo jednom
+// Kreirani folder se ne vidi dok se negdje ne klikne
+
+
+function assignment_create($course) {
+	global $login;
+	
+	$user = new User($login);
+	$realname = $user->realname;
+	
+	$root = $course->getAssignments();
+	$assignments = $root->getItems();
+	
+	$asgn = new Assignment();
+	$asgn->type = $_REQUEST['type'];
+	$nr = intval($_REQUEST['assignment_number']);
+	if ($asgn->type == "homework") {
+		$asgn->name = "Zadaća $nr";
+		$asgn->path = "Z$nr";
+	}
+	else if ($asgn->type == "tutorial") {
+		$asgn->name = "Tutorijal $nr";
+		$asgn->path = "T$nr";
+	}
+	else if ($asgn->type == "independent") {
+		$asgn->name = "ZSR $nr";
+		$asgn->path = "ZSR$nr";
+	}
+	else if ($asgn->type == "exam") {
+		$asgn->name = "Ispit $nr";
+		$asgn->path = "Ispit$nr";
+	}
+	else {
+		if ($asgn->type == "other") $asgn->type = $_REQUEST['type_other'];
+		$asgn->name = $asgn->type . " $nr";
+		$asgn->path = $asgn->type . $nr;
+	}
+	if (isset($_REQUEST['homework_id'])) $asgn->homework_id = intval($_REQUEST['homework_id']);
+	
+	$asgn->parent = null;
+		
+	$name_exists = $path_exists = false;
+	foreach($root->getItems() as $a) {
+		if ($a->name == $asgn->name) $name_exists = true;
+		if ($a->path == $asgn->path) $path_exists = true;
+	}
+	if ($name_exists) {
+		niceerror("Assignment with name " . $asgn->name . " already exists");
+		return;
+	}
+	if ($path_exists) {
+		niceerror("Assignment with folder name (path) " . $asgn->path . " already exists");
+		return;
+	}
+	
+	$new_asgn = $root->addItem($asgn);
+	
+	$tasks = intval($_REQUEST['nr_tasks']);
+	for ($i=1; $i<=$tasks; $i++) {
+		$item = new Assignment();
+		$item->id = $new_asgn->id; // Ensure id is invalid so that new one will be assigned by addItem()
+		$item->name = "Zadatak $i";
+		$item->type = "zadatak";
+		$item->path = "Z$i";
+		$item->files = [];
+		$item->getItems();
+		$new_asgn->addItem($item);
+	}
+	
+	$root->update();
+	
+	admin_log("assignment created - " . $new_asgn->id . " (" . $course->toString() . ")");
+	nicemessage("Assignment " . $new_asgn->name . " (" . $new_asgn->id . ") successfully created");
+	print "<p><a href=\"/admin.php?" . $course->urlPart() . "\">Go back</a></p>\n";
+}
+
 
 function assignment_fill_flat(&$flat_array, $asgn, $level, $parent = false) {
 	$asgn->level = $level;
@@ -24,6 +103,7 @@ function assignment_fill_flat(&$flat_array, $asgn, $level, $parent = false) {
 	foreach($asgn->getItems() as $item)
 		assignment_fill_flat($flat_array, $item, $level+1, $asgn);
 }
+
 
 function assignment_edit($course) {
 	global $login;
@@ -195,6 +275,7 @@ if (!$course->isAdmin($login)) {
 // Actions
 if (isset($_REQUEST['action'])) {
 	if ($_REQUEST['action'] == "edit") assignment_edit($course);
+	if ($_REQUEST['action'] == "create") assignment_create($course);
 }
 
 ?>
