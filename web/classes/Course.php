@@ -211,6 +211,7 @@ class Course {
 			if (is_dir($files_path . "/" . $files[$i]) || $files[$i] == "..") 
 				unset($files[$i]);
 		}
+		if ($files == false) $files = [];
 		return $files;
 	}
 	
