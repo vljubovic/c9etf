@@ -42,6 +42,8 @@ function assignment_files($course) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
+	global $conf_admin_users, $conf_data_path, $conf_base_path, $login, $_REQUEST;
+	
 	require_once("../../lib/config.php"); // Webide config
 	require_once("../../lib/webidelib.php"); // Webide library
 	require_once("../login.php"); // Login
