@@ -29,15 +29,10 @@ function admin_stats() {
 	<p>Period: <a href="admin.php?stats&amp;period=12h">12 hours</a> * <a href="admin.php?stats&amp;period=1d">1 day</a> * <a href="admin.php?stats&amp;period=7d">7 days</a> * <a href="admin.php?stats&amp;period=30d">30 days</a></p>
 	
 	<script type="text/javascript"
-		src="https://www.google.com/jsapi?autoload={
-		'modules':[{
-		'name':'visualization',
-		'version':'1',
-		'packages':['corechart']
-		}]
-		}"></script>
+		src="//www.gstatic.com/charts/loader.js"></script>
 
 	<script type="text/javascript">
+	google.charts.load('current', {packages: ['corechart']});
 	google.setOnLoadCallback(drawChart);
 
 	function drawChart() {
