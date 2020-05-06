@@ -4,7 +4,7 @@
 // Assume credentials checked etc.
 // - $editable - if true, files can be edited!
 // - $tabs - show "tabs" with admin tools
-function phpwebide($username, $cur_path, $editable, $tabs) {
+function phpwebide($user, $cur_path, $editable, $tabs) {
 
 	// Pass PHP boolean to JS
 	if ($editable) $editable_txt = "true"; else $editable_txt = "false";
@@ -120,7 +120,8 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 	
 	<SCRIPT>
 	var pwi_current_path = '<?=$cur_path?>';
-	var pwi_current_user = '<?=$username?>';
+	var pwi_current_user = '<?=$user->login?>';
+	var pwi_current_username = '<?=$user->realname?>';
 	
 	window.onload = function() {
 		<?php if ($tabs) { ?> pwi_tabs_reset(); <?php } ?>
@@ -132,14 +133,16 @@ function phpwebide($username, $cur_path, $editable, $tabs) {
 		var namecell = document.getElementById('user-stats-table-realname');
 		namecell.id = 'user-stats-table-' + pwi_current_user;
 		namecell.innerHTML = userTableFix(namecell.innerHTML);
-		document.getElementById('user-stats-table-options').innerHTML = userTableFix(document.getElementById('user-stats-table-options').innerHTML);
+		var options = document.getElementById('user-stats-table-options');
+		console.log(options);
+		options.innerHTML = userTableFix(options.innerHTML);
 		userTableLoad(pwi_current_user, pwi_current_path);
 	}
 	
 	function userTableFix(text) {
-		text = text.replace("USERNAME", pwi_current_user);
-		text = text.replace("REALNAME", pwi_current_user); // FIXME
-		text = text.replace("BACKLINK", "FIXME"); // FIXME
+		text = text.replace(/USERNAME/g, pwi_current_user);
+		text = text.replace(/REALNAME/g, pwi_current_username);
+		text = text.replace(/BACKLINK/g, "FIXME"); // FIXME
 		return text;
 	}
 	</SCRIPT>
