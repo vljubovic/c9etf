@@ -38,7 +38,7 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] == "submit") {
 			$pass_esa = escapeshellarg($password);
 			// add-local-user will overwrite the password
 			`sudo $conf_base_path/bin/webidectl add-local-user $login $pass_esa`;
-			$msg = "<p>Password is changed</p>"; 
+			$msg = "<p>Password is changed</p><script>setTimeout(function(){ location.replace('/profile.php'); }, 2000);</script>"; 
 			
 		} else {
 			$msg = "<p style=\"color:red;\">Old password is incorrect</p>"; 
@@ -63,7 +63,7 @@ if (isset($_REQUEST['action']) && $_REQUEST['action'] == "submit") {
 	<div id="profile" class="box">
 		<?=$msg?>
 		
-		<form action="profile.php" method="POST">
+		<form action="change-password.php" method="POST">
 		<input type="hidden" name="action" value="submit">
 		
 		<p class="box_title">Old password:</p>
