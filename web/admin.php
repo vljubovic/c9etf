@@ -37,6 +37,9 @@ require_once("../lib/webidelib.php");
 require_once("login.php");
 
 eval(file_get_contents("../users"));
+// Admin should exist in users file
+if (!array_key_exists($login, $users))
+	$users[$login] = [ "status" => "inactive" ];
 
 
 // Library
