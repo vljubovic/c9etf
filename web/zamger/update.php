@@ -188,6 +188,7 @@ function zamger_update_allstudents($course_id, $force) {
 		json(error("ERR002", "No (All students) group on course $course_id"));
 	
 	// Check update interval
+	if (!file_exists($conf_data_path . "/groups/")) mkdir($conf_data_path . "/groups/");
 	$as_group_file = $conf_data_path . "/groups/" . $all_students_id;
 	$asgroup = array();
 	if (file_exists($as_group_file)) 
@@ -274,6 +275,7 @@ function zamger_update_group($group_id, $force) {
 	global $conf_data_path, $conf_current_year, $conf_zamger_update_interval;
 	
 	// Check update interval
+	if (!file_exists($conf_data_path . "/groups/")) mkdir($conf_data_path . "/groups/");
 	$group_file = $conf_data_path . "/groups/" . $group_id;
 	$group = array();
 	if (file_exists($group_file)) 
