@@ -71,6 +71,10 @@ function read_stats($username) {
 
 	$username_efn = escape_filename($username);
 	$stat_file = $conf_stats_path . "/" . "$username_efn.stats";
+	
+	if (!file_exists($conf_stats_path))
+		mkdir($conf_stats_path, 0755, true);
+	
 	//print "reading file $stat_file\n";
 	
 	$stats = NULL;
