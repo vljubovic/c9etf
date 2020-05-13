@@ -62,3 +62,6 @@ if ($storage_node) {
 // Kill inactive users, if they somehow remained logged in
 `echo kill-inactive >> $conf_base_path/log/webidectl.log`;
 `$conf_base_path/bin/webidectl kill-inactive`;
+
+if ($storage_node)
+	`$conf_base_path/bin/webidectl storage-nightly`;
