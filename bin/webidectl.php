@@ -850,7 +850,7 @@ function activate_user($username, $ip_address) {
 	global $conf_defaults_path, $conf_base_path, $conf_c9_group, $conf_nodes, $users;
 	global $conf_ssh_tunneling, $conf_port_upper, $conf_port_lower, $conf_my_address;
 	global $conf_home_path;
-	global $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr;
+	global $is_control_node, $is_compute_node, $is_svn_node, $svn_node_addr, $is_storage_node;
 	
 	$userdata = setup_paths($username);
 	$port = 0;
@@ -940,7 +940,12 @@ function activate_user($username, $ip_address) {
 
 		// Let SVN know that user logged in
 		// This must be done before syncsvn to avoid conflicts
-		$script  = "date > " . $userdata['workspace'] . "/.login; ";
+		// If control_node=storage_node, syncsvn filters only events by node process
+		// So we must write .login and .logout from node :(
+		if ($is_storage_node)
+			$script = $userdata['home'] . "/.c9/node/bin/node $conf_base_path/lib/loginout.js " . $userdata['workspace'] . "/.login";
+		else
+			$script = "date > " . $userdata['workspace'] . "/.login";
 		run_as($username, $script);
 	
 		// Start syncsvn
@@ -1142,7 +1147,7 @@ function set_password($username, $password) {
 // The philosophy is that deactivate can be called on user who is marked inactive, 
 // to stop whatever running services etc. for this user, except on svn node
 function deactivate_user($username, $skip_svn = false) {
-	global $users, $is_control_node, $is_compute_node, $conf_base_path, $is_svn_node, $svn_node_addr, $conf_svn_problems_log, $conf_ssh_tunneling;
+	global $users, $is_control_node, $is_compute_node, $conf_base_path, $is_svn_node, $svn_node_addr, $conf_svn_problems_log, $conf_ssh_tunneling, $is_storage_node;
 	
 	// Prevent overloading svn server during clear_server
 	if (!$is_control_node && $is_svn_node)
@@ -1169,7 +1174,12 @@ function deactivate_user($username, $skip_svn = false) {
 	else if ($is_control_node) {
 		
 		// Update logout file
-		$script = "date > " . $userdata['workspace'] . "/.logout";
+		// If control_node=storage_node, syncsvn filters only events by node process
+		// So we must write .login and .logout from node :(
+		if ($is_storage_node)
+			$script = $userdata['home'] . "/.c9/node/bin/node $conf_base_path/lib/loginout.js " . $userdata['workspace'] . "/.logout";
+		else
+			$script = "date > " . $userdata['workspace'] . "/.logout";
 		run_as($username, $script);
 
 		// Remove user from nginx - this will inform user that they are logged out
