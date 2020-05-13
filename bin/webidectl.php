@@ -1953,6 +1953,12 @@ function storage_nightly($all_stats) {
 			continue;
 		}
 		
+		$total_usage_stats[$username]['svn'] = false;
+		$total_usage_stats[$username]['inodes'] = false;
+		$total_usage_stats[$username]['ws.old'] = false;
+		$total_usage_stats[$username]['svn.old'] = false;
+		$total_usage_stats[$username]['old.inodes'] = false;
+		
 		$last = last_access($username);
 		if (time() - $last > 24*60*60) {
 			print "Inactive for >24h, skipping.\n";
@@ -1975,12 +1981,6 @@ function storage_nightly($all_stats) {
 		
 		// Clean inodes
 		read_files();
-		
-		$total_usage_stats[$username]['svn'] = false;
-		$total_usage_stats[$username]['inodes'] = false;
-		$total_usage_stats[$username]['ws.old'] = false;
-		$total_usage_stats[$username]['svn.old'] = false;
-		$total_usage_stats[$username]['old.inodes'] = false;
 		
 		if ($users[$username]["status"] == "active") {
 			print "User $username is online! Not cleaning inodes\n";
