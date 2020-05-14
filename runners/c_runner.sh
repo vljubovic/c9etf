@@ -22,6 +22,7 @@ then
 	/usr/bin/gcc -g -Wall -Wuninitialized -Winit-self -Wno-unused-result -Wfloat-equal -Wno-sign-compare -Werror=implicit-function-declaration -Werror=vla -pedantic -pass-exit-codes "$srcfile" -lm -o "$exefile" 2>&1 | tee "$gccout" 
 	if [ ${PIPESTATUS[0]} != 0 ] 
 	then 
+		sleep 1
 		exit ${PIPESTATUS[0]}
 	fi
 fi
