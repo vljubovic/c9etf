@@ -16,7 +16,7 @@ web/static/mini_require.js
 web/static/static
 web/static/plugins
 web/static/lib/architect
-web/static/lib/event.js
+web/static/lib/events.js
 
 web/buildservice
 web/news.php
