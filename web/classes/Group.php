@@ -48,6 +48,16 @@ class Group {
 		return $this->members;
 	}
 	
+	public function _getMembers() {
+		if ($this->members === null) {
+			$data = Cache::getFile("groups/$this->id");
+			if ($data === false)
+				throw new Exception("Unknown group");
+			$this->members = $data['members'];
+		}
+		return $this->members;
+	}
+	
 	// Group consisting of all users currently enrolled into course
 	public static function allEnrolled($online = false, $course = false) {
 		$group = new Group();
@@ -68,4 +78,4 @@ class Group {
 	}
 }
 
-?>
+

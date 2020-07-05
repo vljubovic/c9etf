@@ -59,7 +59,7 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 					$response_data['groups'] = $groups;
 				} else {
 					// get specific group
-					$response_group = 'Not found';
+					$response_group = null;
 					$group_id = $_REQUEST['group_id'];
 					foreach ($groups as $group) {
 						if ($group->id == $group_id) {
@@ -69,10 +69,7 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 					}
 					if (isset($_REQUEST['members'])) {
 						// get students for specific group
-						$data = Cache::getFile("groups/$group_id");
-						if ($data === false)
-							throw new Exception("Unknown group");
-						$response_data['members'] = $data['members'];
+						$response_data['members'] = $response_group->_getMembers();
 					}
 					$response_data['group'] = $response_group;
 				}
@@ -92,12 +89,12 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 		$year = $conf_current_year;
 	}
 	$response_data = Course::forAdmin($login, $year);
-	function coursecmp($a, $b)
+	function course_cmp($a, $b)
 	{
 		return $a->name > $b->name;
 	}
 	
-	usort($response_data, "coursecmp");
+	usort($response_data, "course_cmp");
 }
 
 ini_set('default_charset', 'UTF-8');
@@ -113,4 +110,3 @@ if ($error == "") {
 	$result['message'] = $error;
 }
 print json_encode($result);
-?>
