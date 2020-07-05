@@ -40,16 +40,6 @@ class Group {
 	// Read group members from file if not initialized
 	public function getMembers() {
 		if ($this->members === null) {
-			$data = Cache::getFile("groups/$group");
-			if ($data === false)
-				throw new Exception("Unknown group");
-			$this->members = $data['members'];
-		}
-		return $this->members;
-	}
-	
-	public function _getMembers() {
-		if ($this->members === null) {
 			$data = Cache::getFile("groups/$this->id");
 			if ($data === false)
 				throw new Exception("Unknown group");

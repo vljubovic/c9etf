@@ -69,7 +69,7 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 					}
 					if (isset($_REQUEST['members'])) {
 						// get students for specific group
-						$response_data['members'] = $response_group->_getMembers();
+						$response_data['members'] = $response_group->getMembers();
 					}
 					$response_data['group'] = $response_group;
 				}
