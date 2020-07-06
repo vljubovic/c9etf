@@ -1,0 +1,25 @@
+.idea
+
+lib/config.php
+
+# New stuff
+c9fork
+data
+htpasswd
+localusers
+log
+register
+server_stats.log
+users
+watch
+
+web/static/mini_require.js
+web/static/static
+web/static/plugins
+web/static/lib/architect
+web/static/lib/events.js
+
+web/buildservice
+web/news.php
+
+nginx.skeleton.conf
