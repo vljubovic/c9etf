@@ -19,6 +19,8 @@ RUN alias python=python2
 RUN ls /etc/init.d/
 # Add php-fpm to startup
 RUN update-rc.d php7.4-fpm defaults
+# Start it immediately
+RUN service php7.4-fpm start
 
 # Add nginx to startup
 RUN update-rc.d nginx defaults
@@ -39,7 +41,7 @@ COPY ./ /usr/local/webide
 
 # Begin installation
 WORKDIR "/usr/local/webide"
-RUN php install.php
+RUN service php7.4-fpm start && php install.php
 
 # Add local admin
 RUN bin/webidectl add-local-user admin password
@@ -67,25 +69,5 @@ RUN mkdir _webide && \
 RUN rm -rf webide
 
 # MAGIC
-CMD     (cp -RPn _webide/c9fork webide/                                   || true) && \
-        (cp -RPn _webide/data webide/                                     || true) && \
-        (cp -RPn _webide/htpasswd webide/                                 || true) && \
-        (cp -RPn _webide/localusers webide/                               || true) && \
-        (cp -RPn _webide/log webide/                                      || true) && \
-        (cp -RPn _webide/register webide/                                 || true) && \
-        (cp -RPn _webide/server_stats.log webide/                         || true) && \
-        (cp -RPn _webide/users _webide/                                   || true) && \
-        (cp -RPn _webide/watch _webide/                                   || true) && \
-        (ln -s webide/c9fork/node_modules/architect-build/build_support/mini_require.js webide/web/static/mini_require.js || true) && \
-        (ln -s webide/c9fork/plugins/c9.nodeapi/events.js webide/web/static/lib/events.js || true) && \
-        (ln -s webide/c9fork/node_modules/architect webide/web/static/lib/architect || true) && \
-        (ln -s webide/c9fork/plugins webide/web/static/plugins || true) && \
-        # (ln -s webide/c9fork/node_modules/treehugger webide/web/static/plugins/node_modules/treehugger || true) && \
-        # (ln -s webide/c9fork/node_modules/tern webide/web/static/plugins/node_modules/tern || true) && \
-        # (ln -s webide/c9fork/node_modules/c9 webide/web/static/plugins/node_modules/c9 || true) && \
-        # (ln -s webide/c9fork/node_modules/c9/assert.js webide/web/static/plugins/node_modules/assert.js || true) && \
-        (ln -s webide/web/static webide/web/static/static || true) &&\
-        (cp -RPn _webide/web/buildservice webide/web/                     || true) && \
-        (cp -RPn _webide/web/news.php webide/web/                         || true) && \
-        (cp -RPn _webide/nginx.skeleton.conf webide/                      || true) ; exit 0
+CMD ./webide/docker_cmd_script.sh
 
