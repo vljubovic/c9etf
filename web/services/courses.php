@@ -70,6 +70,7 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 					if (isset($_REQUEST['members'])) {
 						// get students for specific group
 						$response_data['members'] = $response_group->getMembers();
+						
 					}
 					$response_data['group'] = $response_group;
 				}
@@ -88,7 +89,11 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 	} else {
 		$year = $conf_current_year;
 	}
-	$response_data = Course::forAdmin($login, $year);
+	try {
+		$response_data = Course::forAdmin($login, $year);
+	} catch (Exception $e) {
+		$error = $e->getMessage();
+	}
 	function course_cmp($a, $b)
 	{
 		return $a->name > $b->name;

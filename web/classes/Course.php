@@ -9,8 +9,13 @@ class Course {
 	public $id, $year, $external;
 	public $name, $abbrev, $data;
 	
-	// Return course with given id and external status, in current year
-	// If you want a different year, just change $year attribute
+	/**
+	 * If you want a different year, just change $year attribute
+	 * @param string $id
+	 * @param $external
+	 * @return Course Course with given id and external status, in current year
+	 * @throws Exception
+	 */
 	public static function find($id, $external) {
 		global $conf_current_year; 
 		
@@ -32,8 +37,13 @@ class Course {
 		return $str;
 	}
 
-	// Create Course object from string representation given in toString
-	// For example: X2_14 is external course (X) with id 2 in year 14
+	/**
+	 * Create Course object from string representation given in toString
+	 * For example: X2_14 is external course (X) with id 2 in year 14
+	 * @param $string
+	 * @return Course
+	 * @throws Exception
+	 */
 	public static function fromString($string) {
 		if (strlen($string) < 1 || !strstr($string, "_")) throw new Exception("Course not found");
 		if ($string[0] == "X") {
@@ -56,14 +66,16 @@ class Course {
 	
 	// Returns a string with HTML form with hidden fields, useful for creating POST forms
 	public function htmlForm() {
-		$data = '<input type="hidden" name="action" value="create">
+		return '<input type="hidden" name="action" value="create">
 	<input type="hidden" name="course" value="' . $this->id . '">
 	<input type="hidden" name="year" value="' . $this->year . '">
 	<input type="hidden" name="external" value="' . ($this->external?"1":"0") . '">';
-		return $data;
 	}
 	
-	// Creates a new Course object with all course data encoded using urlPart() function
+	/**
+	 * @return Course Course object with all course data encoded using urlPart() function
+	 * @throws Exception
+	 */
 	public static function fromRequest() {
 		if (!isset($_REQUEST['course'])) throw new Exception("Course not found");
 		
@@ -92,9 +104,13 @@ class Course {
 
 	}
 	
-	// Create Course object from folder name in user workspace
-	// For example: OR2016 is course with abbreviation OR in year 2016
-	// Note however that there may be multiple courses with same abbreviation so this function is approximate at best
+	/**
+	 * Create Course object from folder name in user workspace
+	 * For example: OR2016 is course with abbreviation OR in year 2016
+	 * @Note however that there may be multiple courses with same abbreviation so this function is approximate at best
+	 * @param $string
+	 * @return bool|Course
+	 */
 	public static function fromFolder($string) {
 		global $conf_current_year;
 		foreach(Course::getAll() as $course)
@@ -105,7 +121,9 @@ class Course {
 		return false;
 	}
 	
-	// Return list of all currently known courses
+	/**
+	 * @return Course[] All currently known courses
+	 */
 	public static function getAll() {
 		$result = [];
 		foreach(Cache::getFile("courses.json") as $c) {
@@ -120,13 +138,20 @@ class Course {
 		return $result;
 	}
 	
-	// System path for Course
+	/**
+	 * @return string System path for Course
+	 */
 	public function getPath() {
 		global $conf_data_path;
 		return $conf_data_path . "/" . $this->toString();
 	}
 	
-	// Returns true if given user is admin for current course
+	/**
+	 * Returns true if given user is admin for current course
+	 * @param string $username
+	 * @return bool
+	 * @throws Exception
+	 */
 	public function isAdmin($username) {
 		global $conf_sysadmins;
 		
@@ -139,8 +164,12 @@ class Course {
 		return false;
 	}
 	
-	// Return a list of courses for which given user is admin in given year
-	// If year parameter is ommitted, use current year
+	/**
+	 * @param string $username
+	 * @param int $year
+	 * @return Course[] Courses for which given user is admin in given year (default is current)
+	 * @throws Exception
+	 */
 	public static function forAdmin($username, $year = 0) {
 		global $conf_current_year;
 		
@@ -154,7 +183,11 @@ class Course {
 		return $result;
 	}
 	
-	// Returns true if given user is student for current course
+	/**
+	 * Returns true if given user is student for current course
+	 * @param string $username
+	 * @return bool
+	 */
 	public function isStudent($username) {
 		$user_courses = Cache::getFile("user_courses/$username.json");
 		if ($user_courses === false || empty($user_courses)) 
@@ -162,9 +195,11 @@ class Course {
 		return (in_array($this->toString(), $user_courses['student']));
 	}
 	
-	// Return a list of courses for which given user is enrolled as student in given year
-	// If year parameter is ommitted, use current year
-	// If year is -1, get data for all years
+	/**
+	 * @param string $username
+	 * @param int $year
+	 * @return Course[] Courses for which given user is enrolled as student in given year (default is current, -1 for all years)
+	 */
 	public static function forStudent($username, $year = 0) {
 		global $conf_current_year;
 		
@@ -188,13 +223,16 @@ class Course {
 		return $result;
 	}
 	
-	// Return a list of assignments defined for this course
-	// Actually returns a single Assignment object with all assignments inside its $items property
+	/**
+	 * @return Assignment Assignment of this course with every assignment in the items property
+	 */
 	public function getAssignments() {
 		return Assignment::forCourse($this);
 	}
 	
-	// Return a list of Groups defined for this course
+	/**
+	 * @return Group[] Groups defined for this course
+	 */
 	public function getGroups() {
 		return Group::forCourse($this);
 	}
@@ -226,5 +264,3 @@ class Course {
 	}
 }
 
-
-?>
