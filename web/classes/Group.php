@@ -11,6 +11,7 @@ class Group {
 	 * @throws Exception
 	 */
 	public static function fromId($id) {
+		$id = basename($id);
 		$data = Cache::getFile("groups/$id");
 		if ($data === false)
 			throw new Exception("Unknown group");
