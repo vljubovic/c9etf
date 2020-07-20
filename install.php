@@ -65,8 +65,8 @@ foreach($web_readable as $path) {
 `chmod 775 $conf_home_path/last`;
 
 // Move some files into their default location
-`mv $conf_base_path/web/news.default.php $conf_base_path/web/news.php`;
-`mv $conf_base_path/nginx.sample.skeleton.conf $conf_base_path/nginx.skeleton.conf`;
+`cp $conf_base_path/web/news.default.php $conf_base_path/web/news.php`;
+`cp $conf_base_path/nginx.sample.skeleton.conf $conf_base_path/nginx.skeleton.conf`;
 
 
 
@@ -96,7 +96,7 @@ echo "\n";
 echo `echo "\033[31mDownloading Buildservice\033[0m"`;
 `git clone $buildservice_git_url $conf_base_path/web/buildservice`;
 `cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
-`rm -fr $conf_base_path/web/buildservice.c9`;
+//`rm -fr $conf_base_path/web/buildservice.c9`;
 
 // Prepare SVN path
 `mkdir $conf_svn_path`;

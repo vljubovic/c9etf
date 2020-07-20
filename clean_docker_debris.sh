@@ -1,0 +1,1 @@
+sudo rm -rf server_stats.log web/news.php log localusers c9fork data htpasswd web/static/mini_require.js web/static/plugins web/static/static web/buildservice nginx.skeleton.conf register web/static/lib/architect web/static/lib/events.js
