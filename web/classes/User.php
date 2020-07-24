@@ -4,8 +4,7 @@ class User {
 	public $login, $realname, $email, $ipAddress, $online;
 	
 	public function __construct($login) {
-		global $conf_base_path, $users;
-		
+		global $users;
 		$users = User::getAll();
 		if (!array_key_exists($login, $users))
 			throw new Exception("User not found");
@@ -24,17 +23,24 @@ class User {
 		return array();
 	}
 	
-	// Test if user has access to admin interface
+	/**
+	 * Test if user has access to admin interface
+	 * @param string $login
+	 * @return bool
+	 */
 	public function isAdmin($login) {
 		global $conf_admin_users;
 		return in_array($login, $conf_admin_users);
 	}
 	
-	// Get all users
+	/**
+	 * @return User[] All users from users file
+	 */
 	public static function getAll() {
 		global $conf_base_path;
 		
 		$users_file = $conf_base_path . "/users";
+		$users = [];
 		eval(file_get_contents($users_file));
 		$result = [];
 		
@@ -58,4 +64,4 @@ class User {
 	}
 }
 
-?>
+

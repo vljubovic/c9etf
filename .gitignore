@@ -12,6 +12,7 @@ register
 server_stats.log
 users
 watch
+adminpanel
 
 web/static/mini_require.js
 web/static/static

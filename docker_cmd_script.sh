@@ -6,8 +6,8 @@ ls &&\
 (cp -RPn _webide/log webide/                                      || true) && \
 (cp -RPn _webide/register webide/                                 || true) && \
 (cp -RPn _webide/server_stats.log webide/                         || true) && \
-(cp -RPn _webide/users _webide/                                   || true) && \
-(cp -RPn _webide/watch _webide/                                   || true) && \
+(cp -RPn _webide/users webide/                                   || true) && \
+(cp -RPn _webide/watch webide/                                   || true) && \
 (ln -s webide/c9fork/node_modules/architect-build/build_support/mini_require.js webide/web/static/ || true) &&\
 (ln -s webide/c9fork/plugins/c9.nodeapi/events.js webide/web/static/lib/events.js || true) && \
 (ln -s webide/c9fork/node_modules/architect webide/web/static/lib/architect || true) && \
@@ -20,4 +20,4 @@ ls &&\
 (cp -RPn _webide/web/buildservice webide/web/ || true) && \
 (cp -RPn _webide/web/news.php webide/web/ || true) &&\
 (cp -RPn _webide/nginx.skeleton.conf webide/ || true) &&
-service php7.4-fpm start && service nginx restart && /bin/bash
+service php7.4-fpm start && service nginx restart && php /usr/local/webide/lib/ensure_running.php && /bin/bash

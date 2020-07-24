@@ -103,9 +103,9 @@ function json_query($action, $parameters = array(), $method = "GET")
 
 function json_login() 
 {
-	global $conf_json_base_url, $conf_json_user, $conf_json_pass;
+	global $conf_json_base_apiv5, $conf_json_user, $conf_json_pass;
 
-	$url = $conf_json_base_url."auth.php";  // FIXME make RESTful
+	$url = $conf_json_base_apiv5."/auth";
 
 	$data = array("login" => $conf_json_user, "pass" => $conf_json_pass);
 	$result = json_request_retry ($url, $data, "POST");
@@ -165,4 +165,4 @@ function json_get_binary_file($filename, $action, $parameters = array(), $method
 	return true;
 }
 
-?>
+

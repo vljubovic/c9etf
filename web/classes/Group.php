@@ -5,11 +5,14 @@ class Group {
 	private $members = null;
 	
 	
-	// Create a Group object from string ID
+	/**
+	 * @param string $id
+	 * @return Group
+	 * @throws Exception
+	 */
 	public static function fromId($id) {
-		$group = basename($_REQUEST['group']);
-		
-		$data = Cache::getFile("groups/$group");
+		$id = basename($id);
+		$data = Cache::getFile("groups/$id");
 		if ($data === false)
 			throw new Exception("Unknown group");
 		
@@ -21,7 +24,10 @@ class Group {
 	}
 	
 	
-	// Return all groups for given course
+	/**
+	 * @param Course $course
+	 * @return Group[] Groups for given course
+	 */
 	public static function forCourse($course) {
 		$result = [];
 		$groups = Cache::getFile($course->toString() . "/groups");
@@ -37,7 +43,11 @@ class Group {
 		return $result;
 	}
 	
-	// Read group members from file if not initialized
+	/**
+	 * @Note Reads group members from file if not initialized
+	 * @return User[] Members of group
+	 * @throws Exception
+	 */
 	public function getMembers() {
 		if ($this->members === null) {
 			$data = Cache::getFile("groups/$this->id");
@@ -48,7 +58,12 @@ class Group {
 		return $this->members;
 	}
 	
-	// Group consisting of all users currently enrolled into course
+	/**
+	 * @param bool $online
+	 * @param string|bool $course
+	 * @return Group Group consisting of all users currently enrolled into course
+	 * @throws Exception
+	 */
 	public static function allEnrolled($online = false, $course = false) {
 		$group = new Group();
 		if ($online)
