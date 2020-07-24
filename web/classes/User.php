@@ -5,7 +5,6 @@ class User {
 	
 	public function __construct($login) {
 		global $users;
-		
 		$users = User::getAll();
 		if (!array_key_exists($login, $users))
 			throw new Exception("User not found");

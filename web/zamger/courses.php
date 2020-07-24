@@ -6,7 +6,6 @@ require_once(__DIR__."/jsonlib.php");
 function teacher_courses($year=0) {
 	global $session_id, $conf_json_base_apiv5;
 	$parameters["SESSION_ID"] = $session_id;
-	
 	$url = $conf_json_base_apiv5 . "course/teacher/" . $_SESSION['userid'];
 	if ($year>0) $url .= "/$year";
 	$result = json_request_retry($url, $parameters, "GET");

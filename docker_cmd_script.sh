@@ -20,4 +20,4 @@ ls &&\
 (cp -RPn _webide/web/buildservice webide/web/ || true) && \
 (cp -RPn _webide/web/news.php webide/web/ || true) &&\
 (cp -RPn _webide/nginx.skeleton.conf webide/ || true) &&
-service php7.4-fpm start && service nginx restart && /bin/bash
+service php7.4-fpm start && service nginx restart && php /usr/local/webide/lib/ensure_running.php && /bin/bash
