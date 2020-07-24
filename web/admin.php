@@ -37,9 +37,6 @@ require_once("../lib/webidelib.php");
 require_once("login.php");
 
 eval(file_get_contents("../users"));
-// Admin should exist in users file
-if (!array_key_exists($login, $users))
-	$users[$login] = [ "status" => "inactive" ];
 
 
 // Library
@@ -93,8 +90,11 @@ if ($logged_in && !in_array($login, $conf_admin_users)) {
 }
 
 
-
 if ($logged_in) {
+	// Admin should exist in users file
+	if (!array_key_exists($login, $users))
+		$users[$login] = [ "status" => "inactive" ];
+
 	?>
 	<p id="p-login">Login: <span id="username"><?=$login?></span> - <a href="admin.php?logout">logout</a></p>
 	<?php
