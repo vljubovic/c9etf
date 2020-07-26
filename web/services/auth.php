@@ -31,9 +31,9 @@ if ($error == "") {
 	$result['success'] = true;
 	$result['sid'] = session_id();
 	$result['message'] = "Welcome to c9";
-	if (!in_array($login,$conf_sysadmins)) {
+	if (in_array($login,$conf_sysadmins)) {
 		$result['role'] = "sysadmin";
-	} else if (!in_array($login,$conf_admin_users)) {
+	} else if (in_array($login,$conf_admin_users)) {
 		$result['role'] = "admin";
 	} else {
 		$result['role'] = "student";
