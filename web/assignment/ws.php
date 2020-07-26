@@ -57,7 +57,6 @@ function assignments_process(&$assignments, $parentPath, $courseFiles) {
 	global $login, $conf_admin_users;
 	
 	foreach($assignments as $key => $value) {
-		//if ($value['type'] == "exam" && $login != "test" && $login != "epajic1" && $login != "ec15261") unset($assignments[$key]);
 		if (array_key_exists('hidden', $value) && $value['hidden'] == "true" && !in_array($login, $conf_admin_users) && $login != "test") {
 			unset($assignments[$key]);
 			continue;
@@ -74,6 +73,7 @@ function assignments_process(&$assignments, $parentPath, $courseFiles) {
 				if (is_array($cfile) && array_key_exists('filename', $cfile))
 					$ccfile = $cfile['filename'];
 				foreach ($assignments[$key]['files'] as $file) {
+					$ffile = $file;
 					if (is_array($file) && array_key_exists('filename', $file))
 						$ffile = $file['filename'];
 					if ($ccfile == $ffile)

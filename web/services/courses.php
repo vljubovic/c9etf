@@ -26,6 +26,7 @@ if (!$logged_in) {
 }
 
 session_write_close();
+$error = "";
 
 // If user is not admin, they can only access their own files
 if (in_array($login, $conf_admin_users) && isset($_GET['user']))
