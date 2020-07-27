@@ -171,11 +171,11 @@ while(true) {
 			continue; 
 		}
 		
-		// Detect date change
-		if (intval($oldtime) != intval($time)) {
+		// Detect date change 
+		// intval will strip everything after : so this compares just the hours
+		// We reset the $date variable every time hour changes, which is not too much
+		if (intval($oldtime) != intval($time))
 			$date = date("d.m.Y");
-			print "New date is $date\n";
-		}
 		$oldtime = $time;
 		
 		// Check for folder create
