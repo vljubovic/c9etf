@@ -21,6 +21,7 @@ if (isset($_POST['login'])) {
 
 $error = login($login, $_POST['password']);
 
+
 ini_set('default_charset', 'UTF-8');
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -30,6 +31,13 @@ if ($error == "") {
 	$result['success'] = true;
 	$result['sid'] = session_id();
 	$result['message'] = "Welcome to c9";
+	if (in_array($login,$conf_sysadmins)) {
+		$result['role'] = "sysadmin";
+	} else if (in_array($login,$conf_admin_users)) {
+		$result['role'] = "admin";
+	} else {
+		$result['role'] = "student";
+	}
 } else {
 	$result['success'] = false;
 	$result['message'] = $error;
@@ -37,4 +45,4 @@ if ($error == "") {
 
 print json_encode($result);
 
-?>
+
