@@ -7,7 +7,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Update indices
 RUN apt-get update -y &&\
 apt-get install -y --fix-missing \
-                    npm nodejs build-essential nginx \
+                    npm nodejs build-essential nginx locales-all \
                     php-fpm php-cli php-ldap php-mbstring php-xml \
                     inotify-tools subversion git apache2-utils \
                     gdb gdbserver astyle sqlite3 valgrind zip ntp python2 clangd &&\

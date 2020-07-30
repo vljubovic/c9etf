@@ -21,6 +21,8 @@ subversion
 git
 apache2-utils
 
+On Ubuntu 20.04 LTS also add: locales-all
+
 C9 admin page also uses php-svn package but it no longer supports php7 (see errata).
 
 Optional:
