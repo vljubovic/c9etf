@@ -7,7 +7,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Update indices
 RUN apt-get update -y &&\
 apt-get install -y --fix-missing \
-                    npm nodejs build-essential nginx locales-all \
+                    npm nodejs build-essential nginx locales-all nano vim \
                     php-fpm php-cli php-ldap php-mbstring php-xml \
                     inotify-tools subversion git apache2-utils \
                     gdb gdbserver astyle sqlite3 valgrind zip ntp python2 clangd &&\
@@ -47,6 +47,5 @@ RUN service php7.4-fpm start && php install.php
 RUN bin/webidectl add-local-user admin password
 COPY ./docker_cmd_script.sh /usr/local/docker.sh
 # MAGIC
-RUN apt-get update -y && apt-get install -y nano vim
 CMD /usr/local/docker.sh
 

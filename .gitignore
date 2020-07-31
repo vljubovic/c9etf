@@ -24,3 +24,6 @@ web/buildservice
 web/news.php
 
 nginx.skeleton.conf
+
+# Some symlinks accidentally point to real files
+defaults/home/.nvm
