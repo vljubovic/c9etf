@@ -36,5 +36,10 @@ export NODE_OPTIONS=--max_old_space_size=8192
 yarn theia build
 
 # Start theia once so that some default files will be created
-# The process will be killed later today so we don't care about stopping it
+echo
+echo -e "\033[31mRunning theia for the first time\033[0m"
 yarn theia start &
+
+# We must kill it or the PHP process will never end
+sleep 5
+ps aux | grep node | cut -c 10-16 | xargs kill

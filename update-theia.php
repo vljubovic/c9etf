@@ -19,12 +19,12 @@ do {
 
 // Fix permisions
 `chmod a+r $conf_base_path/theia-upstream -R`;
-`chmod 777 $conf_home_path/$conf_c9_user/.cache -R`;
-`chmod 777 $conf_home_path/$conf_c9_user/.config -R`;
-`chmod 777 $conf_home_path/$conf_c9_user/.npm -R`;
-`chmod 777 $conf_home_path/$conf_c9_user/.nvm -R`;
-`chmod 777 $conf_home_path/$conf_c9_user/.yarn -R`;
-`chmod 644 $conf_home_path/$conf_c9_user/.yarnrc`;
+`chmod 777 $conf_shared_path/.cache -R`;
+`chmod 777 $conf_shared_path/.config -R`;
+`chmod 777 $conf_shared_path/.npm -R`;
+`chmod 777 $conf_shared_path/.nvm -R`;
+`chmod 777 $conf_shared_path/.yarn -R`;
+`chmod 644 $conf_shared_path/.yarnrc`;
 
 // New theia becomes default theia
 `rm -fr $conf_base_path/theia-old`;
