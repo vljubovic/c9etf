@@ -2,8 +2,10 @@
 
 lib/config.php
 web/zamger/config.php
+
 # New stuff
 c9fork
+c9util
 data
 htpasswd
 localusers
@@ -25,5 +27,6 @@ web/news.php
 
 nginx.skeleton.conf
 
+razlog_nerada.txt
 # Some symlinks accidentally point to real files
 defaults/home/.nvm
