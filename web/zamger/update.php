@@ -238,8 +238,8 @@ function zamger_update_allstudents($course_id, $force) {
 	$user_courses_path = $conf_data_path . "/user_courses/";
 	
 	foreach ($allStudents['members'] as $member) {
-		$id = $member['student']['login'];
-		$name = $member['student']['name'] . " " . $member['student']['surname'];
+		$id = $member['Person']['login'];
+		$name = $member['Person']['name'] . " " . $member['Person']['surname'];
 		
 		$asgroup['members'][$id] = $name;
 		
@@ -248,7 +248,7 @@ function zamger_update_allstudents($course_id, $force) {
 		
 		// Update user courses
 		$user_courses = array();
-		$user_courses_path_current = $user_courses_path . "/" . $member['student']['login'] . ".json";
+		$user_courses_path_current = $user_courses_path . "/" . $member['Person']['login'] . ".json";
 		if (file_exists($user_courses_path_current))
 			$user_courses = json_decode(file_get_contents($user_courses_path_current), true);
 		
