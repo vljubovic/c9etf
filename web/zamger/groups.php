@@ -20,7 +20,6 @@ function zamger_all_students($course, $year) {
 	$parameters["SESSION_ID"] = $session_id;
 	$parameters["year"] = $year;
 	$parameters["names"] = true;
-	$parameters["resolve[]"] = "Person";
 	$url = $conf_json_base_apiv5 . "group/course/$course/allStudents";
 	$result = json_request_retry($url, $parameters, "GET");
 	if ($result == -1 || (array_key_exists('success', $result) && $result['success'] != "true"))
