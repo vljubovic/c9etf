@@ -106,3 +106,19 @@ function json($data) {
 		print json_encode($data);
 	exit();
 }
+
+function assignment_replace_template_parameters($code, $course, $task) {
+	$title = $task->parent->name . ", " . $task->name;
+	$code = str_replace("===TITLE===", $title, $code);
+	$code = str_replace("===COURSE===", $course->name, $code);
+	
+	foreach(Cache::getFile("years.json") as $year)
+		if ($year['id'] == $course->year)
+			$year_name = $year['name'];
+	$code = str_replace("===YEAR===", $year_name, $code);
+	
+	if (!empty($task->author))
+		$code = str_replace("===AUTHOR===", $task->author, $code);
+	
+	return $code;
+}

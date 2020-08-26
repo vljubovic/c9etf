@@ -124,12 +124,21 @@ function get_file_content($course)
 		if ($filename && check_filename($filename)) {
 			// filesPath is like /usr/local/webide/data/X1_1/assignment_files
 			$path = $course->getAssignments()->filesPath() . $relative_path . "/" . $filename;
+			$task = Assignment::fromWorkspacePath($course->folderName() . $relative_path);
 			if (!file_exists($path)) {
-				error("422", "File does not exist");
-				return;
+				$template_file_path = $course->getPath() . "/files/$filename";
+				if (file_exists($template_file_path)) {
+					$content = assignment_replace_template_parameters(file_get_contents($template_file_path),$course,$task);
+					$data = array('content'=>$content, 'isFromGlobalTemplate' => true);
+					messageAndData("Content of file: $filename",$data);
+				} else {
+					error("422", "File does not exist");
+					return;
+				}
 			}
 			$content = file_get_contents($path);
-			messageAndData("Content of file: $relative_path/$filename", $content);
+			$data = array('content'=>$content, 'isFromGlobalTemplate' => false);
+			messageAndData("Content of file: $relative_path/$filename", $data);
 		} else {
 			error("400", "filename property not set");
 		}
