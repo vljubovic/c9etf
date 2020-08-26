@@ -52,10 +52,10 @@ function compareAssignments($a, $b)
 	return -1;
 }
 
-function sniffFolder($folder_path, $root_path)
+function sniffFolder($folder_path, $discarded_part_of_path)
 {
 	$result['name'] = basename($folder_path);
-	$result['path'] = substr($folder_path, strlen($root_path));
+	$result['path'] = substr($folder_path, strlen($discarded_part_of_path));
 	$result['isDirectory'] = true;
 	$result['children'] = [];
 	foreach (scandir($folder_path) as $item) {
@@ -64,10 +64,45 @@ function sniffFolder($folder_path, $root_path)
 			continue;
 		}
 		if (is_dir($path)) {
-			$result['children'][] = sniffFolder($path, $root_path);
+			$result['children'][] = sniffFolder($path, $discarded_part_of_path);
 		} else {
-			$result['children'][] = array('name' => $item, 'path' => substr($folder_path.$item, strlen($root_path)),'isDirectory' => false);
+			$result['children'][] = array('name' => $item, 'path' => substr($folder_path.$item, strlen($discarded_part_of_path)),'isDirectory' => false);
 		}
 	}
 	return $result;
+}
+
+/**
+ * @param Course $course
+ * @param string $login
+ */
+function checkAdminAccess(Course $course, string $login): void
+{
+	try {
+		if (!$course->isAdmin($login)) {
+			error("403", "You are not an admin on this course");
+		}
+	} catch (Exception $e) {
+		error("500", $e->getMessage());
+	}
+}
+
+function check_filename($filename)
+{
+	$ref = null;
+	$matches = preg_match('/[^\/?*:{};]+/', $filename, $ref);
+	$contains_backslash = boolval(strpos($filename, "\\"));
+	if ($filename !== "" && $filename !== "." && $filename !== ".." && $matches && $ref !== null && $ref[0] == $filename && !$contains_backslash) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+function json($data) {
+	if (defined("JSON_PRETTY_PRINT"))
+		print json_encode($data, JSON_PRETTY_PRINT);
+	else
+		print json_encode($data);
+	exit();
 }
