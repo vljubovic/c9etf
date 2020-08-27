@@ -52,7 +52,7 @@ function create_file($course)
 				file_put_contents($path, $content);
 			}
 			$task = Assignment::fromWorkspacePath($course->folderName() . $relative_path);
-			$file = array('filename'=>$filename, 'show' => true, 'binary' => false);
+			$file = array('filename' => $filename, 'show' => true, 'binary' => false);
 			if (!in_array($file, $task->files)) {
 				$task->files[] = $file;
 			}
@@ -133,16 +133,16 @@ function get_file_content($course)
 			if (!file_exists($path)) {
 				$template_file_path = $course->getPath() . "/files/$filename";
 				if (file_exists($template_file_path)) {
-					$content = assignment_replace_template_parameters(file_get_contents($template_file_path),$course,$task);
-					$data = array('content'=>$content, 'isFromGlobalTemplate' => true);
-					messageAndData("Content of file: $filename",$data);
+					$content = assignment_replace_template_parameters(file_get_contents($template_file_path), $course, $task);
+					$data = array('content' => $content, 'isFromGlobalTemplate' => true);
+					messageAndData("Content of file: $filename", $data);
 				} else {
 					error("422", "File does not exist");
 					return;
 				}
 			}
 			$content = file_get_contents($path);
-			$data = array('content'=>$content, 'isFromGlobalTemplate' => false);
+			$data = array('content' => $content, 'isFromGlobalTemplate' => false);
 			messageAndData("Content of file: $relative_path/$filename", $data);
 		} else {
 			error("400", "filename property not set");
@@ -163,8 +163,17 @@ function get_assignments($course)
 	
 	assignments_process($assignments, $course->abbrev, $course->getFiles());
 	usort($assignments, "compareAssignments");
+	$path = $course->getPath() . '/assignment_files';
+	$files = scandir($course->getPath() . '/files');
+	$tree = sniffFolder($path, $path);
+	if ($files) {
+		$files = array_filter($files, "notDotDotAndDot");
+		addItemsToLeaves($tree, $files);
+		extractInfoFromOldAssignments($tree['children'], $assignments, $course);
+	}
 	
-	messageAndData("Assignments", $assignments);
+	usort($tree['children'], "compareAssignments");
+	messageAndData("Assignments", array('newFormat' => $tree['children'], 'current' => $assignments));
 }
 
 /**

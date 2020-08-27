@@ -66,7 +66,7 @@ function sniffFolder($folder_path, $discarded_part_of_path)
 		if (is_dir($path)) {
 			$result['children'][] = sniffFolder($path, $discarded_part_of_path);
 		} else {
-			$result['children'][] = array('name' => $item, 'path' => substr($folder_path.$item, strlen($discarded_part_of_path)),'isDirectory' => false);
+			$result['children'][] = array('name' => $item, 'path' => substr($folder_path . '/' . $item, strlen($discarded_part_of_path)), 'isDirectory' => false);
 		}
 	}
 	return $result;
@@ -99,7 +99,8 @@ function check_filename($filename)
 	}
 }
 
-function json($data) {
+function json($data)
+{
 	if (defined("JSON_PRETTY_PRINT"))
 		print json_encode($data, JSON_PRETTY_PRINT);
 	else
@@ -107,12 +108,13 @@ function json($data) {
 	exit();
 }
 
-function assignment_replace_template_parameters($code, $course, $task) {
+function assignment_replace_template_parameters($code, $course, $task)
+{
 	$title = $task->parent->name . ", " . $task->name;
 	$code = str_replace("===TITLE===", $title, $code);
 	$code = str_replace("===COURSE===", $course->name, $code);
 	
-	foreach(Cache::getFile("years.json") as $year)
+	foreach (Cache::getFile("years.json") as $year)
 		if ($year['id'] == $course->year)
 			$year_name = $year['name'];
 	$code = str_replace("===YEAR===", $year_name, $code);
@@ -121,4 +123,103 @@ function assignment_replace_template_parameters($code, $course, $task) {
 		$code = str_replace("===AUTHOR===", $task->author, $code);
 	
 	return $code;
+}
+
+function addItemsToLeaves(&$node, $items)
+{
+	if ($node['isDirectory']) {
+		$leaf = true;
+		foreach ($node['children'] as $child) {
+			if ($child['isDirectory']) {
+				$leaf = false;
+			}
+		}
+		if ($leaf) {
+			foreach ($items as $key => $item) {
+				$node['children'][] = array('name' => $item, 'path' => $node['path'] . '/' . $item, 'isDirectory' => false);
+			}
+		} else {
+			foreach ($node['children'] as &$child) {
+				if ($child['isDirectory']) {
+					addItemsToLeaves($child, $items);
+				}
+			}
+		}
+	}
+}
+
+function notDotDotAndDot($item)
+{
+	return !($item == '.' || $item == '..');
+}
+
+/**
+ * @param $assignments
+ * @param array<Assignment> $old
+ * @param Course $course
+ */
+function extractInfoFromOldAssignments(&$assignments, $old, $course)
+{
+	foreach ($assignments as &$assignment) {
+		foreach ($old as $item) {
+			$path = substr($item['path'], strlen($course->abbrev));
+			if ($assignment['path'] == $path) {
+				if ($item['id']) {
+					$assignment['id'] = $item['id'];
+				}
+				if ($item['type']) {
+					$assignment['type'] = $item['type'];
+				}
+				if ($item['name']) {
+					$assignment['name'] = $item['name'];
+				}
+				if ($item['hidden']) {
+					$assignment['hidden'] = $item['hidden'];
+				}
+				if ($assignment['children']) {
+					extractInfoFromOldAssignments($assignment['children'], $item['items'], $course);
+				}
+				uksort($assignment, 'sortKeys');
+			}
+		}
+	}
+}
+
+function sortKeys($a, $b)
+{
+	if ($a == 'id') {
+		return -1;
+	} elseif ($a == 'name') {
+		if ($b == 'id') {
+			return 1;
+		} else {
+			return -1;
+		}
+	} elseif ($a == 'path') {
+		if ($b == 'id' || $b == 'name') {
+			return 1;
+		} else {
+			return -1;
+		}
+	} elseif ($a == 'type') {
+		if ($b == 'id' || $b == 'name' || $b == 'path') {
+			return 1;
+		} else {
+			return -1;
+		}
+	} elseif ($a == 'hidden') {
+		if ($b == 'id' || $b == 'name' || $b == 'path' || $b == 'type') {
+			return 1;
+		} else {
+			return -1;
+		}
+	} elseif ($a == 'isDirectory') {
+		if ($b == 'id' || $b == 'name' || $b == 'path' || $b == 'type' || $b == 'hidden') {
+			return 1;
+		} else {
+			return -1;
+		}
+	} else {
+		return 1;
+	}
 }
