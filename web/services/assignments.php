@@ -173,7 +173,7 @@ function get_assignments($course)
 	}
 	
 	usort($tree['children'], "compareAssignments");
-	messageAndData("Assignments", array('newFormat' => $tree['children'], 'current' => $assignments));
+	messageAndData("Assignments", $tree['children']);
 }
 
 /**
