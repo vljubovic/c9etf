@@ -51,7 +51,12 @@ function create_file($course)
 			if ($content) {
 				file_put_contents($path, $content);
 			}
-			$course->getAssignments()->update();
+			$task = Assignment::fromWorkspacePath($course->folderName() . $relative_path);
+			$file = array('filename'=>$filename, 'show' => true, 'binary' => false);
+			if (!in_array($file, $task->files)) {
+				$task->files[] = $file;
+			}
+			$task->update();
 			message("Successfully created file $relative_path/$filename");
 		} else {
 			error("400", "filename property not set");
