@@ -158,26 +158,50 @@ function notDotDotAndDot($item)
  * @param array<Assignment> $old
  * @param Course $course
  */
-function extractInfoFromOldAssignments(&$assignments, $old, $course)
+function extractInfoFromOldAssignments(&$assignments, array $old, Course $course)
 {
 	foreach ($assignments as &$assignment) {
 		foreach ($old as $item) {
-			$path = substr($item['path'], strlen($course->abbrev));
+			$path = '';
+			if (!$assignment['isDirectory']) {
+				if (!is_string($item) && array_key_exists('filename', $item)) {
+					$path = substr($assignment['path'],0, strrpos($assignment['path'],'/')) . '/' . $item['filename'];
+				} else {
+					$path = substr($assignment['path'],0, strrpos($assignment['path'],'/')) . '/' . $item;
+				}
+			}else{
+				$path = substr($item['path'], strlen($course->abbrev));
+			}
+
 			if ($assignment['path'] == $path) {
-				if ($item['id']) {
+				if (!is_string($item) && array_key_exists('id',$item)) {
 					$assignment['id'] = $item['id'];
 				}
-				if ($item['type']) {
+				if (!is_string($item) && array_key_exists('type',$item)) {
 					$assignment['type'] = $item['type'];
 				}
-				if ($item['name']) {
+				if (!is_string($item) && array_key_exists('name',$item)) {
 					$assignment['name'] = $item['name'];
 				}
-				if ($item['hidden']) {
+				if (!is_string($item) && array_key_exists('hidden',$item)) {
 					$assignment['hidden'] = $item['hidden'];
 				}
-				if ($assignment['children']) {
-					extractInfoFromOldAssignments($assignment['children'], $item['items'], $course);
+				if (!$assignment['isDirectory']) {
+					$assignment['show'] = true;
+					$assignment['binary'] = false;
+					if (!is_string($item) && array_key_exists('show',$item)) {
+						$assignment['show'] = $item['show'];
+					}
+					if (!is_string($item) && array_key_exists('binary',$item)) {
+						$assignment['binary'] = $item['binary'];
+					}
+				}
+				if (array_key_exists('children', $assignment)) {
+					if (array_key_exists('items', $item) && count($item['items']) !== 0) {
+						extractInfoFromOldAssignments($assignment['children'], $item['items'], $course);
+					} else {
+						extractInfoFromOldAssignments($assignment['children'], $item['files'], $course);
+					}
 				}
 				uksort($assignment, 'sortKeys');
 			}
