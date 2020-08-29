@@ -92,9 +92,11 @@ if ($logged_in && !in_array($login, $conf_admin_users)) {
 
 if ($logged_in) {
 	// Admin should exist in users file
-	if (!array_key_exists($login, $users))
+	if (!array_key_exists($login, $users)) {
 		$users[$login] = [ "status" => "inactive" ];
-
+		$users_file = $conf_base_path . "/users";
+		file_put_contents( $users_file, "\$users = ". var_export($users, true) . ";" );
+	}
 	?>
 	<p id="p-login">Login: <span id="username"><?=$login?></span> - <a href="admin.php?logout">logout</a></p>
 	<?php

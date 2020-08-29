@@ -1,5 +1,9 @@
-<?php 
+<?php
 
+/**
+ * Class Assignment
+ * @property array<Assignment> items
+ */
 class Assignment {
 	private $items, $parsedItems = null, $course;
 	public $id, $type, $name, $path="", $files, $homework_id, $hidden, $parent, $author="";
@@ -156,6 +160,7 @@ class Assignment {
 		if ($this->parent === null) {
 			$path = $conf_data_path . "/" . $this->course->toString() . "/assignments";
 			file_put_contents($path, json_encode($this->items, JSON_PRETTY_PRINT));
+			file_put_contents("/usr/local/webide/data/a.json", json_encode($this->items, JSON_PRETTY_PRINT));
 		}
 	}
 	
@@ -181,6 +186,10 @@ class Assignment {
 	// For example: OR2016/T4/Z1 will return object within course OR2016 whose path is T4/Z1
 	// Note that this uses Course::fromFolder() which is inexact
 	// Returns false on failure
+	/**
+	 * @param string $path
+	 * @return false|Assignment
+	 */
 	public static function fromWorkspacePath($path) {
 		$startpos = strpos($path, "/");
 		if (!$startpos) return false;

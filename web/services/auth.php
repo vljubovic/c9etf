@@ -8,6 +8,8 @@ require_once("../../lib/config.php");
 require_once("../../lib/webidelib.php");
 require_once("../login.php");
 
+$login = $pass = "";
+
 if (isset($_POST['login'])) {
 	$login = $_POST['login'];
 	$pass = $_POST['password'];
@@ -19,7 +21,7 @@ if (isset($_POST['login'])) {
 	}
 }
 
-$error = login($login, $_POST['password']);
+$error = login($login, $pass);
 
 
 ini_set('default_charset', 'UTF-8');
