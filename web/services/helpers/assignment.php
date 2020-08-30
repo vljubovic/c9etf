@@ -79,7 +79,7 @@ function sniff_folder($folder_path, $discarded_part_of_path)
  * @param Course $course
  * @param string $login
  */
-function check_admin_access(Course $course, string $login): void
+function check_admin_access($course, $login): void
 {
 	try {
 		if (!$course->isAdmin($login)) {
@@ -161,7 +161,7 @@ function notDotDotAndDot($item)
  * @param array<Assignment> $old
  * @param Course $course
  */
-function extractInfoFromOldAssignments(&$assignments, array $old, Course $course)
+function extractInfoFromOldAssignments(&$assignments, array $old, $course)
 {
 	foreach ($assignments as &$assignment) {
 		foreach ($old as $item) {
@@ -189,6 +189,9 @@ function extractInfoFromOldAssignments(&$assignments, array $old, Course $course
 				if (!is_string($item) && array_key_exists('hidden', $item)) {
 					$assignment['hidden'] = $item['hidden'];
 				}
+				if (!is_string($item) && array_key_exists('homework_id', $item)) {
+					$assignment['homework_id'] = $item['homework_id'];
+				}
 				if (!$assignment['isDirectory']) {
 					$assignment['show'] = true;
 					$assignment['binary'] = false;
@@ -213,7 +216,7 @@ function extractInfoFromOldAssignments(&$assignments, array $old, Course $course
 }
 
 
-function get_updated_assignments_from_old_format(Course $course)
+function get_updated_assignments_from_old_format($course)
 {
 	$root = $course->getAssignments();
 	$root->getItems(); // Parse legacy data
@@ -282,7 +285,7 @@ function deleteFromTree(&$tree, string $path)
  * @param Course $course
  * @return mixed
  */
-function getAssignmentFilesystemTree(Course $course)
+function getAssignmentFilesystemTree($course)
 {
 	$path = $course->getPath() . '/assignment_files';
 	$files = scandir($course->getPath() . '/files');
@@ -305,7 +308,7 @@ function get_updated_assignments_json(Course $course)
 
 function mergeTreesIntoFirst(&$a, $b)
 {
-	takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP($a, $b, ['id', 'name', 'path', 'type', 'hidden'], ['path']);
+	takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP($a, $b, ['id', 'name', 'path', 'type', 'hidden', 'show', 'binary', 'homework_id'], ['path']);
 	if (is_array($a) && is_array($b) && array_key_exists('children', $a) && array_key_exists('children', $b)) {
 		foreach ($a['children'] as &$child) {
 			foreach ($b['children'] as $c) {
@@ -323,7 +326,7 @@ function takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP(&$a, $b, $keys, $p
 	if (is_array($a) && is_array($b)) {
 		foreach ($keys as $key) {
 			if (array_key_exists($key, $b)) {
-				if ($key !== 'path') {
+				if (in_array($key, $p)) {
 					$a[$key] = $b[$key];
 				}
 			}
@@ -331,7 +334,12 @@ function takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP(&$a, $b, $keys, $p
 	}
 }
 
-function addFileToTreeAndSaveToFile(Course $course, string $path, array $file)
+/**
+ * @param Course $course
+ * @param string $path
+ * @param array $file
+ */
+function addFileToTreeAndSaveToFile($course, $path, $file)
 {
 	$assignments_file_path = $course->getPath() . '/assignments.json';
 	if (!file_exists($assignments_file_path)) {
