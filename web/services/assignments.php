@@ -40,6 +40,8 @@ function create_file($course)
 		$filename = $input["filename"];
 		$content = $input["content"];
 		$relative_path = $input["path"];
+		$show = boolval($input['show']);
+		$binary = boolval($input['binary']);
 		if ($filename && check_filename($filename)) {
 			// filesPath is like /usr/local/webide/data/X1_1/assignment_files
 			$path = $course->getAssignments()->filesPath() . $relative_path . "/" . $filename;
@@ -51,12 +53,8 @@ function create_file($course)
 			if ($content) {
 				file_put_contents($path, $content);
 			}
-			$task = Assignment::fromWorkspacePath($course->folderName() . $relative_path);
-			$file = array('filename' => $filename, 'show' => true, 'binary' => false);
-			if (!in_array($file, $task->files)) {
-				$task->files[] = $file;
-			}
-			$task->update();
+			$file = array('name' => $filename, 'show' => $show, 'binary' => $binary);
+			addFileToTreeAndSaveToFile($course, $relative_path, $file);
 			message("Successfully created file $relative_path/$filename");
 		} else {
 			error("400", "filename property not set");
@@ -85,7 +83,6 @@ function edit_file($course)
 			if ($content) {
 				file_put_contents($path, $content);
 			}
-			$course->getAssignments()->update();
 			message("Successfully edited file $relative_path/$filename");
 		} else {
 			error("400", "filename property not set");
@@ -110,6 +107,13 @@ function delete_file($course)
 				return;
 			}
 			unlink($path);
+			$tree = json_decode(file_get_contents($course->getPath() . '/assignments.json'), true);
+			deleteFromTree($tree, $path);
+			if (defined("JSON_PRETTY_PRINT")) {
+				file_put_contents($course->getPath() . '/assignments.json', json_encode($tree, JSON_PRETTY_PRINT));
+			} else {
+				file_put_contents($course->getPath() . '/assignments.json', json_encode($tree));
+			}
 			message("Successfully deleted file $relative_path/$filename");
 		} else {
 			error("400", "filename property not set");
@@ -128,14 +132,14 @@ function get_file_content($course)
 		$relative_path = $input["path"];
 		if ($filename && check_filename($filename)) {
 			// filesPath is like /usr/local/webide/data/X1_1/assignment_files
-			$path = $course->getAssignments()->filesPath() . $relative_path . "/" . $filename;
+			$path = $course->getPath() . '/assignment_files' . $relative_path . "/" . $filename;
 			$task = Assignment::fromWorkspacePath($course->folderName() . $relative_path);
 			if (!file_exists($path)) {
 				$template_file_path = $course->getPath() . "/files/$filename";
 				if (file_exists($template_file_path)) {
 					$content = assignment_replace_template_parameters(file_get_contents($template_file_path), $course, $task);
 					$data = array('content' => $content, 'isFromGlobalTemplate' => true);
-					messageAndData("Content of file: $filename", $data);
+					message_and_data("Content of file: $filename", $data);
 				} else {
 					error("422", "File does not exist");
 					return;
@@ -143,11 +147,28 @@ function get_file_content($course)
 			}
 			$content = file_get_contents($path);
 			$data = array('content' => $content, 'isFromGlobalTemplate' => false);
-			messageAndData("Content of file: $relative_path/$filename", $data);
+			message_and_data("Content of file: $relative_path/$filename", $data);
 		} else {
 			error("400", "filename property not set");
 		}
 	}
+}
+
+
+function update_assignments(Course $course)
+{
+	$path = $course->getPath() . '/assignments.json';
+	if (!file_exists($path)) {
+		$tree = get_updated_assignments_from_old_format($course);
+	} else {
+		$tree = get_updated_assignments_json($course);
+	}
+	if (JSON_PRETTY_PRINT) {
+		file_put_contents($path, json_encode($tree, JSON_PRETTY_PRINT));
+	} else {
+		file_put_contents($path, json_encode($tree));
+	}
+	return $tree;
 }
 
 /**
@@ -155,26 +176,24 @@ function get_file_content($course)
  */
 function get_assignments($course)
 {
-	$root = $course->getAssignments();
-	$root->getItems(); // Parse legacy data
-	$assignments = $root->getData();
-	if (empty($assignments))
-		json(error("ERR003", "No assignments for this course"));
-	
-	assignments_process($assignments, $course->abbrev, $course->getFiles());
-	usort($assignments, "compareAssignments");
-	$path = $course->getPath() . '/assignment_files';
-	$files = scandir($course->getPath() . '/files');
-	$tree = sniffFolder($path, $path);
-	if ($files) {
-		$files = array_filter($files, "notDotDotAndDot");
-		addItemsToLeaves($tree, $files);
-		extractInfoFromOldAssignments($tree['children'], $assignments, $course);
+	if (isset($_REQUEST['oldTree']) || !file_exists($course->getPath() . '/assignments.json')) {
+//		$root = $course->getAssignments();
+//		$root->getItems(); // Parse legacy data
+//		$assignments = $root->getData();
+//		if (empty($assignments))
+//			json(error("ERR003", "No assignments for this course"));
+//
+//		assignments_process($assignments, $course->abbrev, $course->getFiles());
+//		usort($assignments, "compareAssignments");
+		$tree = get_updated_assignments_from_old_format($course);
+	} else {
+		$tree = get_updated_assignments_json($course);
 	}
 	
-	usort($tree['children'], "compareAssignments");
-	messageAndData("Assignments", $tree['children']);
+	usort($tree['children'], "compare_assignments");
+	message_and_data("Assignments", $tree['children']);
 }
+
 
 /**
  * @param Course $course
@@ -231,26 +250,29 @@ try {
 $action = $_REQUEST["action"];
 
 if ($action == "createFile") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	create_file($course);
 } else if ($action == "editFile") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	edit_file($course);
 } else if ($action == "deleteFile") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	delete_file($course);
 } else if ($action == "getFileContent") {
 	get_file_content($course);
 } else if ($action == "getAssignments") {
 	get_assignments($course);
+} else if ($action == "updateAssignments") {
+	check_admin_access($course, $login);
+	update_assignments($course);
 } else if ($action == "addAssignment") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	add_assignment($course);
 } else if ($action == "editAssignment") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	edit_assignment($course);
 } else if ($action == "deleteAssignment") {
-	checkAdminAccess($course, $login);
+	check_admin_access($course, $login);
 	delete_assignment($course);
 } else {
 	error("422", "Unknown action");
