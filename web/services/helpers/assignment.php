@@ -237,8 +237,6 @@ function get_updated_assignments_from_old_format($course)
 	
 	usort($tree['children'], "compare_assignments");
 	return $tree;
-
-//	message("Assignments updated for course: $course->name");
 }
 
 function addFileToTree(&$tree, string $path, array $file)
@@ -308,7 +306,7 @@ function get_updated_assignments_json(Course $course)
 
 function mergeTreesIntoFirst(&$a, $b)
 {
-	takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP($a, $b, ['id', 'name', 'path', 'type', 'hidden', 'show', 'binary', 'homework_id'], ['path']);
+	takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP($a, $b, ['id', 'name', 'type', 'hidden', 'show', 'binary', 'homework_id']);
 	if (is_array($a) && is_array($b) && array_key_exists('children', $a) && array_key_exists('children', $b)) {
 		foreach ($a['children'] as &$child) {
 			foreach ($b['children'] as $c) {
@@ -321,14 +319,12 @@ function mergeTreesIntoFirst(&$a, $b)
 	uksort($a, 'sortKeys');
 }
 
-function takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP(&$a, $b, $keys, $p)
+function takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP(&$a, $b, $keys)
 {
 	if (is_array($a) && is_array($b)) {
 		foreach ($keys as $key) {
 			if (array_key_exists($key, $b)) {
-				if (in_array($key, $p)) {
 					$a[$key] = $b[$key];
-				}
 			}
 		}
 	}

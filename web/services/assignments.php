@@ -177,14 +177,6 @@ function update_assignments(Course $course)
 function get_assignments($course)
 {
 	if (isset($_REQUEST['oldTree']) || !file_exists($course->getPath() . '/assignments.json')) {
-//		$root = $course->getAssignments();
-//		$root->getItems(); // Parse legacy data
-//		$assignments = $root->getData();
-//		if (empty($assignments))
-//			json(error("ERR003", "No assignments for this course"));
-//
-//		assignments_process($assignments, $course->abbrev, $course->getFiles());
-//		usort($assignments, "compareAssignments");
 		$tree = get_updated_assignments_from_old_format($course);
 	} else {
 		$tree = get_updated_assignments_json($course);
