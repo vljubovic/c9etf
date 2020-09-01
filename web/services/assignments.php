@@ -6,6 +6,7 @@ require_once("../../lib/webidelib.php");
 require_once("../login.php");
 require_once("../admin/lib.php");
 require_once("../classes/Course.php");
+require_once("../classes/Cache.php");
 require_once("../classes/Assignment.php");
 require_once("../classes/User.php");
 require_once("./helpers/assignment.php");
@@ -31,6 +32,15 @@ if (!$logged_in) {
 
 session_write_close();
 
+function validateRequired($keys, $array)
+{
+	foreach ($keys as $key) {
+		if (!array_key_exists($key, $array)) {
+			error("400", "Required field $key not present in body!");
+		}
+	}
+}
+
 /**
  * @param Course $course
  */
@@ -38,12 +48,7 @@ function create_file($course)
 {
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
-		if (
-			!array_key_exists('folderPath', $input)
-			|| !array_key_exists('name', $input)
-		) {
-			error("400", 'body must contain :folderPath: and :name: fields');
-		}
+		validateRequired(['folderPath', 'name'], $input);
 		$path = $input["folderPath"];
 		$name = $input['name'];
 		if (!array_key_exists('show', $input)) {
@@ -70,6 +75,7 @@ function create_file($course)
 		if ($name && check_filename($name)) {
 			try {
 				$folder->addFile(['name' => $name, 'show' => $show, 'binary' => $binary], $content);
+				file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
 				message("Successfully created file $name");
 			} catch (Exception $exception) {
 				error("400", $exception->getMessage());
@@ -86,10 +92,25 @@ function edit_file($course)
 {
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
-		$content = $input["content"];
+		validateRequired(['path'], $input);
+		
 		$path = $input["path"];
-		$show = boolval($input["show"]);
-		$binary = boolval($input["binary"]);
+		if (!array_key_exists('content', $input)) {
+			$content = null;
+		} else {
+			$content = $input["content"];
+		}
+		if (!array_key_exists('show', $input)) {
+			$show = true;
+		} else {
+			$show = boolval($input['show']);
+		}
+		if (!array_key_exists('binary', $input)) {
+			$binary = false;
+		} else {
+			$binary = boolval($input['binary']);
+		}
+		
 		$fsNode = FSNode::constructTreeForCourse($course);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
@@ -98,9 +119,13 @@ function edit_file($course)
 		if ($node->isDirectory) {
 			error("400", "This is a folder, not a file");
 		}
+		$message = "";
+		if ($node->isTemplateFile()) {
+			$message = "You edited a template file. That means that you created a file in this folder and it is no longer part of the template.";
+		}
 		$node->editFile($content, $show, $binary);
 		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
-		message("File $node->name edited");
+		message("File $node->name edited. " . $message);
 	}
 }
 
@@ -111,6 +136,8 @@ function delete_file($course)
 {
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
+		validateRequired(['path'], $input);
+		
 		$path = $input['path'];
 		$path = str_replace('/../', '/', $path);
 		$path = str_replace('../', '/', $path);
@@ -139,6 +166,8 @@ function get_file_content($course)
 {
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
+		validateRequired(['path'], $input);
+		
 		$path = $input["path"];
 		$path = str_replace('/../', '/', $path);
 		$path = str_replace('../', '/', $path);
@@ -149,7 +178,7 @@ function get_file_content($course)
 		}
 		try {
 			$content = $node->getFileContent();
-			message_and_data("Content of file: $node->name", array('content' => $content, 'isFromGlobalTemplate' => false));
+			message_and_data("Content of file: $node->name", array('content' => $content, 'isFromGlobalTemplate' => $node->isTemplateFile()));
 		} catch (Exception $exception) {
 			error("500", $exception->getMessage());
 		}
@@ -161,6 +190,9 @@ function convert_to_new_format(Course $course)
 {
 	$fsNode = FSNode::constructTreeForCourseFromOldTree($course);
 	$content = $fsNode->getJson();
+	if ($content == null) {
+		error("500", "Json is null. Check if everything is ok with the old file.");
+	}
 	$result = file_put_contents($course->getPath() . '/assignments.json', $content);
 	if ($result == false) {
 		error("500", "Could not write to " . $course->getPath() . '/assignments.json');
@@ -181,9 +213,37 @@ function get_assignments($course)
 /**
  * @param Course $course
  */
-function add_assignment($course)
+function create_assignment($course)
 {
-	error("NYI", "Not yet implemented");
+	$input = json_decode(file_get_contents('php://input'), true);
+	if ($input) {
+		validateRequired(['path', 'name', 'displayName', 'type', 'hidden'], $input);
+		$path = $input['path'];
+		$name = $input['name'];
+		$displayName = $input['displayName'];
+		$type = $input['type'];
+		$hidden = $input['hidden'];
+		$homeworkId = null;
+		if (array_key_exists('homeworkId', $input)) {
+			$homeworkId = $input['homeworkId'];
+		}
+		$fsNode = FSNode::constructTreeForCourse($course);
+		$node = $fsNode->getNodeByPath($path);
+		if ($node == null) {
+			error("400", "Invalid path. Path must point to the parent folder for the new assignment");
+		}
+		try {
+			$node->addFolder($name, $displayName, $type, $hidden, $homeworkId);
+			$content = $fsNode->getJson();
+			if ($content == null) {
+				error("500", "Please send this to your administrator. Add assignments is not working properly.");
+			}
+			file_put_contents($course->getPath() . '/assignments.json', $content);
+			message("Successfully added folder $name with display name $displayName to path: $path");
+		} catch (Exception $exception) {
+			error("400", $exception->getMessage());
+		}
+	}
 }
 
 /**
@@ -191,7 +251,43 @@ function add_assignment($course)
  */
 function edit_assignment($course)
 {
-	error("NYI", "Not yet implemented");
+	$input = json_decode(file_get_contents('php://input'), true);
+	if ($input) {
+		validateRequired(['path'], $input);
+		$path = $input['path'];
+		$fsNode = FSNode::constructTreeForCourse($course);
+		$node = $fsNode->getNodeByPath($path);
+		if ($node == null) {
+			error("400", "Invalid path");
+		}
+		if (!array_key_exists('displayName', $input)) {
+			$displayName = null;
+		} else {
+			$displayName = $input['displayName'];
+		}
+		if (!array_key_exists('hidden', $input)) {
+			$hidden = null;
+		} else {
+			$hidden = $input['hidden'];
+		}
+		if (!array_key_exists('type', $input)) {
+			$type = null;
+		} else {
+			$type = $input['type'];
+		}
+		if (!array_key_exists('homeworkId', $input)) {
+			$homeworkId = null;
+		} else {
+			$homeworkId = $input['homeworkId'];
+		}
+		$node->editFolder($displayName, $type, $hidden, $homeworkId);
+		$content = $fsNode->getJson();
+		if ($content == null) {
+			error("500", "Contact your administrator. Edit assignment service endpoint problem");
+		}
+		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
+		message("Successfully updated assignment $path");
+	}
 }
 
 /**
@@ -199,7 +295,23 @@ function edit_assignment($course)
  */
 function delete_assignment($course)
 {
-	error("NYI", "Not yet implemented");
+	$input = json_decode(file_get_contents('php://input'), true);
+	if ($input) {
+		validateRequired(['path'], $input);
+		$path = $input['path'];
+		$fsNode = FSNode::constructTreeForCourse($course);
+		$node = $fsNode->getNodeByPath($path);
+		if ($node == null) {
+			error("400", "Invalid path");
+		}
+		$node->deleteFolder();
+		$content = $fsNode->getJson();
+		if ($content == null) {
+			error("500", "Contact your administrator. Delete assignment service endpoint problem");
+		}
+		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
+		message("Successfully deleted assignment $path");
+	}
 }
 
 
@@ -266,12 +378,12 @@ if ($action == "createFile") {
 		error("403", "You are not the system admin");
 	}
 	convert_to_new_format($course);
-} else if ($action == "addAssignment") {
+} else if ($action == "createAssignment") {
 	if (!file_exists($course->getPath() . '/assignments.json')) {
 		error("404", "Assignments not configured. Contact your administrator!");
 	}
 	check_admin_access($course, $login);
-	add_assignment($course);
+	create_assignment($course);
 } else if ($action == "editAssignment") {
 	if (!file_exists($course->getPath() . '/assignments.json')) {
 		error("404", "Assignments not configured. Contact your administrator!");

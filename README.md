@@ -32,3 +32,95 @@ If stuff doesn't work from UI, try from command line!
 su c9 -s /bin/bash
 /usr/local/webide/c9fork/scripts/install-sdk.sh
 ```
+# Web service endpoints
+
+## Assignments endpoint
+Designed to work with files and assignments of a specific course.
+
+#### URL: /services/assignments.php
+##### global request parameters
+ - course_id : ```number``` *required*
+ - external : ```boolean``` *optional* | default is false
+ - year : ```number``` *optional* | default is current
+ 
+##### getAssignments endpoint
+ - action=getAssignments 
+##### createAssignment endpoint
+ - action=createAssignment
+ 
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1         - required
+    "name":         <string>    ex. Z1          - required
+    "displayName":  <string>    ex. Zadatak 1   - required
+    "hidden":       <boolean>   ex. false       - required
+    "type":         <string>    ex. zadatak     - required
+    "homeworkId:    <number>    ex. 123         - optional
+ } 
+```
+##### editAssignment endpoint
+ - action=editAssignment
+  
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1/Z1      - required
+    "displayName":  <string>    ex. Zadatak 1   - optional
+    "hidden":       <boolean>   ex. false       - optional
+    "type":         <string>    ex. zadatak     - optional
+    "homeworkId:    <number>    ex. 123         - optional
+ } 
+``` 
+##### deleteAssignment endpoint
+ - action=deleteAssignment
+   
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1/Z1         - required
+ } 
+```  
+##### getFileContent endpoint
+ - action=getFileContent
+    
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1/Z1/main.c   - required
+ } 
+``` 
+##### createFile endpoint
+ - action=createFile
+   
+ Body
+ ```
+ {
+    "folderPath":   <string>    ex. /T1/Z1      - required
+    "name":         <string>    ex. main.c      - required
+    "binary":       <boolean>   ex. false       - optional
+    "show":         <boolean>   ex. true        - optional
+    "content:       <string>    ex. 123         - optional
+ } 
+```  
+##### editFile endpoint
+ - action=editFile 
+   
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1/Z1/main.c      - required
+    "binary":       <boolean>   ex. false              - optional
+    "show":         <boolean>   ex. true               - optional
+    "content:       <string>    ex. 123                - optional
+ } 
+``` 
+##### deleteFile endpoint
+ - action=deleteFile
+     
+ Body
+ ```
+ {
+    "path":         <string>    ex. /T1/Z1/main.c   - required
+ } 
+``` 

@@ -14,7 +14,7 @@ class FSNode
 	public
 		$children = null,
 		$id = null,
-		$homework_id = null,
+		$homeworkId = null,
 		$name = null,
 		$path = null,
 		$type = null,
@@ -140,8 +140,26 @@ class FSNode
 		if ($this->isDirectory && $this->isLeafFolder()) {
 			$path = $this->getAbsolutePath() . "/" . $file['name'];
 			$this->createFile($path, $content);
-			$this->children[] = FSNode::makeFileNode($file, $path, $this);
+			$relativePath = $this->path . '/' . $file['name'];
+			$this->children[] = FSNode::makeFileNode($file, $relativePath, $this);
 		}
+	}
+	
+	private function getReplacedTemplatePlaceholders($code){
+		$parent = $this->parent;
+		$grand = $this->parent;
+		if ($grand->parent !== null) {
+			$grand = $grand->parent;
+		}
+		$title = $grand->name . ", " . $parent->name;
+		$code = str_replace("===TITLE===", $title, $code);
+		$code = str_replace("===COURSE===", $this->course->name, $code);
+		
+		foreach (Cache::getFile("years.json") as $year)
+			if ($year['id'] == $this->course->year)
+				$year_name = $year['name'];
+		$code = str_replace("===YEAR===", $year_name, $code);
+		return $code;
 	}
 	
 	public function getFileContent()
@@ -149,6 +167,7 @@ class FSNode
 		if (!file_exists($this->getAbsolutePath())) {
 			if (file_exists($this->course->getPath() . '/files/' . $this->name)) {
 				$content = file_get_contents($this->course->getPath() . '/files/' . $this->name);
+				$content = $this->getReplacedTemplatePlaceholders($content);
 				if ($content == false) {
 					throw new Exception("Could not read file!");
 				}
@@ -194,7 +213,7 @@ class FSNode
 				$this->hidden = $hidden;
 			}
 			if ($homework_id !== null) {
-				$this->homework_id = $homework_id;
+				$this->homeworkId = $homework_id;
 			}
 		}
 	}
@@ -285,7 +304,13 @@ class FSNode
 			}
 			if ($leaf) {
 				foreach ($items as $key => $item) {
-					$node['children'][] = array('name' => $item, 'path' => $node['path'] . '/' . $item, 'isDirectory' => false);
+					$node['children'][] = array(
+						'name' => $item,
+						'path' => $node['path'] . '/' . $item,
+						'isDirectory' => false,
+						'show' => true,
+						'binary' => false
+					);
 				}
 			} else {
 				foreach ($node['children'] as &$child) {
@@ -336,7 +361,7 @@ class FSNode
 						$assignment['hidden'] = $item['hidden'];
 					}
 					if (!is_string($item) && array_key_exists('homework_id', $item)) {
-						$assignment['homework_id'] = $item['homework_id'];
+						$assignment['homeworkId'] = $item['homework_id'];
 					}
 					if (!$assignment['isDirectory']) {
 						$assignment['show'] = true;
@@ -466,7 +491,13 @@ class FSNode
 			if (is_dir($path)) {
 				$result['children'][] = FSNode::sniffFolder($path, $discarded_part_of_path);
 			} else {
-				$result['children'][] = array('name' => $item, 'path' => substr($folder_path . '/' . $item, strlen($discarded_part_of_path)), 'isDirectory' => false);
+				$result['children'][] = array(
+					'name' => $item,
+					'path' => substr($folder_path . '/' . $item, strlen($discarded_part_of_path)),
+					'isDirectory' => false,
+					'show' => true,
+					'binary' => false
+				);
 			}
 		}
 		return $result;
@@ -577,18 +608,18 @@ class FSNode
 		}
 	}
 	
-	private static function makeFolderNode($path, $displayName, string $type, bool $hidden, $homeworkId, $parent)
+	private static function makeFolderNode($name, $displayName, string $type, bool $hidden, $homeworkId, $parent)
 	{
 		$maxId = FSNode::getMaxId($parent);
 		$child = new FSNode();
 		$child->id = $maxId + 1;
 		$child->parent = $parent;
-		$child->path = $path;
+		$child->path = $parent->path . '/' . $name;
 		$child->isDirectory = true;
 		$child->name = $displayName;
 		$child->type = $type;
 		$child->hidden = $hidden;
-		$child->homework_id = $homeworkId;
+		$child->homeworkId = $homeworkId;
 		return $child;
 	}
 	
@@ -632,15 +663,15 @@ class FSNode
 	{
 		$path = $course->getPath() . '/assignment_files';
 		$files = scandir($course->getPath() . '/files');
-		$tree = sniff_folder($path, $path);
+		$tree = FSNode::sniffFolder($path, $path);
 		if ($files) {
-			$files = array_filter($files, "notDotDotAndDot");
-			add_items_to_leaves($tree, $files);
+			$files = array_filter($files, "FSNode::notDotDotAndDot");
+			FSNode::addItemsToLeaves($tree, $files);
 		}
 		return $tree;
 	}
 	
-	private static function takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP(&$a, $b, $keys)
+	private static function takeKeysIfTheyExist(&$a, $b, $keys)
 	{
 		if (is_array($a) && is_array($b)) {
 			foreach ($keys as $key) {
@@ -653,7 +684,7 @@ class FSNode
 	
 	private static function mergeTreesIntoFirst(&$a, $b)
 	{
-		FSNode::takeKeysIfTheyExistAndExcludeIfAlreadyPresentInAAndP($a, $b, ['id', 'name', 'type', 'hidden', 'show', 'binary', 'homework_id']);
+		FSNode::takeKeysIfTheyExist($a, $b, ['id', 'name', 'type', 'hidden', 'show', 'binary', 'homeworkId']);
 		if (is_array($a) && is_array($b) && array_key_exists('children', $a) && array_key_exists('children', $b)) {
 			foreach ($a['children'] as &$child) {
 				foreach ($b['children'] as $c) {
@@ -663,7 +694,7 @@ class FSNode
 				}
 			}
 		}
-		uksort($a, 'sortKeys');
+		uksort($a, 'FSNode::sortKeys');
 	}
 	
 	private static function getUpdatedAssignmentsJson(Course $course)
