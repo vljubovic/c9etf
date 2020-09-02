@@ -160,7 +160,6 @@ class Assignment {
 		if ($this->parent === null) {
 			$path = $conf_data_path . "/" . $this->course->toString() . "/assignments";
 			file_put_contents($path, json_encode($this->items, JSON_PRETTY_PRINT));
-			file_put_contents("/usr/local/webide/data/a.json", json_encode($this->items, JSON_PRETTY_PRINT));
 		}
 	}
 	
