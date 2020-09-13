@@ -10,6 +10,7 @@
 class FSNode
 {
 	private $course = null,
+		$folder = null,
 		$parent = null;
 	public
 		$children = null,
@@ -44,15 +45,17 @@ class FSNode
 		usort($tree['children'], "FSNode::compareAssignments");
 		$node = new FSNode();
 		$node->course = $course;
+		$node->folder = "assignment_files";
 		$node->constructNode(null, $tree);
 		return $node;
 	}
 	
-	public static function constructTreeForCourse($course)
+	public static function constructTreeForCourse($course, $folder = 'assignment_files', $descriptionFileName = "assignments.json")
 	{
-		$fTree = FSNode::getUpdatedAssignmentsJson($course);
+		$fTree = FSNode::getUpdatedAssignmentsJson($course, $folder, $descriptionFileName);
 		$node = new FSNode();
 		$node->course = $course;
+		$node->folder = $folder;
 		$node->constructNode(null, $fTree);
 		return $node;
 	}
@@ -245,18 +248,18 @@ class FSNode
 		}
 	}
 	
-	public function addFolder($name, $displayName, $type = 'tutorial', $hidden = false, $homeworkId = null)
+	public function addFolder($name, $displayName, $type = 'tutorial', $hidden = false, $homeworkId = null, $id = null)
 	{
 		if ($this->isDirectory && $this->doesNotContainFiles()) {
 			$path = $this->getAbsolutePath() . '/' . $name;
 			$this->createFolder($path);
-			$this->children[] = FSNode::makeFolderNode($name, $displayName, $type, $hidden, $homeworkId, $this);
+			$this->children[] = FSNode::makeFolderNode($name, $displayName, $type, $hidden, $homeworkId, $this, $id);
 		}
 	}
 	
 	private function getAbsolutePath()
 	{
-		return $this->course->getPath() . '/assignment_files' . $this->path;
+		return $this->course->getPath() . "/$this->folder" . $this->path;
 	}
 	
 	private static function rRmdir($dir)
@@ -284,6 +287,7 @@ class FSNode
 				$this->children = [];
 				foreach ($fTree['children'] as $child) {
 					$node = new FSNode();
+					$node->folder = $this->folder;
 					$node->course = $this->course;
 					$node->constructNode($this, $child);
 					$this->children[] = $node;
@@ -608,11 +612,15 @@ class FSNode
 		}
 	}
 	
-	private static function makeFolderNode($name, $displayName, string $type, bool $hidden, $homeworkId, $parent)
+	private static function makeFolderNode($name, $displayName, string $type, bool $hidden, $homeworkId, $parent, $id = null)
 	{
 		$maxId = FSNode::getMaxId($parent);
 		$child = new FSNode();
-		$child->id = $maxId + 1;
+		if ($id === null) {
+			$child->id = $maxId + 1;
+		} else {
+			$child->id = $id;
+		}
 		$child->parent = $parent;
 		$child->path = $parent->path . '/' . $name;
 		$child->isDirectory = true;
@@ -657,11 +665,12 @@ class FSNode
 	
 	/**
 	 * @param Course $course
+	 * @param $folder
 	 * @return mixed
 	 */
-	private static function getAssignmentFilesystemTree($course)
+	private static function getAssignmentFilesystemTree($course, $folder)
 	{
-		$path = $course->getPath() . '/assignment_files';
+		$path = $course->getPath() . '/' . $folder . '';
 		$files = scandir($course->getPath() . '/files');
 		$tree = FSNode::sniffFolder($path, $path);
 		if ($files) {
@@ -697,11 +706,11 @@ class FSNode
 		uksort($a, 'FSNode::sortKeys');
 	}
 	
-	private static function getUpdatedAssignmentsJson(Course $course)
+	private static function getUpdatedAssignmentsJson(Course $course, $folder, $descriptionFileName)
 	{
-		$path = $course->getPath() . '/assignments.json';
+		$path = $course->getPath() . '/' . $descriptionFileName;
 		$tree = json_decode(file_get_contents($path), true);
-		$fTree = FSNode::getAssignmentFilesystemTree($course);
+		$fTree = FSNode::getAssignmentFilesystemTree($course, $folder);
 		FSNode::mergeTreesIntoFirst($fTree, $tree);
 		return $fTree;
 	}
