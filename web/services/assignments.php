@@ -81,8 +81,9 @@ function create_file($course)
 				error("400", $exception->getMessage());
 			}
 		}
+	} else {
+		error("400", "Missing body!");
 	}
-	
 }
 
 /**
@@ -126,6 +127,8 @@ function edit_file($course)
 		$node->editFile($content, $show, $binary);
 		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
 		message("File $node->name edited. " . $message);
+	} else {
+		error("400", "Missing body!");
 	}
 }
 
@@ -156,6 +159,8 @@ function delete_file($course)
 		}
 		file_put_contents($course->getPath() . '/assignments.json', $content);
 		message("Successfully deleted file $node->path");
+	} else {
+		error("400", "Missing body!");
 	}
 }
 
@@ -167,7 +172,6 @@ function get_file_content($course)
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		validateRequired(['path'], $input);
-		
 		$path = $input["path"];
 		$path = str_replace('/../', '/', $path);
 		$path = str_replace('../', '/', $path);
@@ -182,6 +186,8 @@ function get_file_content($course)
 		} catch (Exception $exception) {
 			error("500", $exception->getMessage());
 		}
+	} else {
+		error("400", "Missing body!");
 	}
 }
 
@@ -243,6 +249,8 @@ function create_assignment($course)
 		} catch (Exception $exception) {
 			error("400", $exception->getMessage());
 		}
+	} else {
+		error("400", "Missing body!");
 	}
 }
 
@@ -287,6 +295,8 @@ function edit_assignment($course)
 		}
 		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
 		message("Successfully updated assignment $path");
+	} else {
+		error("400", "Missing body!");
 	}
 }
 
@@ -311,6 +321,8 @@ function delete_assignment($course)
 		}
 		file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
 		message("Successfully deleted assignment $path");
+	} else {
+		error("400", "Missing body!");
 	}
 }
 

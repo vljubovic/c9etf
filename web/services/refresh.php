@@ -21,7 +21,7 @@ if (isset($_SESSION['login'])) {
 }
 header('Content-type:application/json;charset=utf-8');
 if (!$logged_in) {
-	$result = array('success' => "false", "message" => "You're not logged in");
+	$result = array('success' => false, "message" => "You're not logged in");
 	print json_encode($result);
 	return 0;
 }
@@ -31,6 +31,8 @@ $error = "";
 global $conf_sysadmins, $conf_admin_users;
 $result['success'] = true;
 $result['message'] = 'You are logged in';
+$result['username'] = $login;
+$result['sid'] = $session_id;
 if (in_array($login,$conf_sysadmins)) {
 	$result['role'] = "sysadmin";
 } else if (in_array($login,$conf_admin_users)) {

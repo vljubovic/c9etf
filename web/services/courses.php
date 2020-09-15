@@ -20,7 +20,7 @@ if (isset($_SESSION['login'])) {
 }
 
 if (!$logged_in) {
-	$result = array('success' => "false", "message" => "You're not logged in");
+	$result = array('success' => false, "message" => "You're not logged in");
 	print json_encode($result);
 	return 0;
 }

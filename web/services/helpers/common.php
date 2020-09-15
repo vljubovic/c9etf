@@ -10,7 +10,7 @@ function error($code, $message)
 function message_and_data($message, $data)
 {
 	header('Content-type:application/json;charset=utf-8');
-	print json_encode(array('success' => true, 'message' => $message, 'data' => $data));
+	print json_encode(array('success' => true, 'message' => $message, 'data' => $data),JSON_UNESCAPED_UNICODE);
 	exit();
 }
 
