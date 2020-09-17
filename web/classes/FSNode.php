@@ -311,6 +311,7 @@ class FSNode
 					$node['children'][] = array(
 						'name' => $item,
 						'path' => $node['path'] . '/' . $item,
+						'isTemplate' => true,
 						'isDirectory' => false,
 						'show' => true,
 						'binary' => false

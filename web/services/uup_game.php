@@ -87,10 +87,19 @@ global $conf_sysadmins;
 $action = $_REQUEST["action"];
 
 if ($action == "getAssignments") {
-	$request = curl_init("$game_server_url/uup-game/assignments/all");
-	curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
-	$response = curl_exec($request);
-	message_and_data("getAssignments endpoint",json_decode($response,true));
+	message("Not yet implemented");
+//	$request = curl_init("$game_server_url/uup-game/assignments/all");
+//	curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
+//	$response = curl_exec($request);
+//	message_and_data("getAssignments endpoint",json_decode($response,true));
+} else if($action == "isGameCourse") {
+	if ($course->isAdmin($login)) {
+		if ($course->abbrev === "UUP" || $course->abbrev === "OR") {
+			message("Yes");
+		} else {
+			error("503","No");
+		}
+	}
 } else if($action == "getTasksForAssignment"){
 	message("Not yet implemented");
 } else {
