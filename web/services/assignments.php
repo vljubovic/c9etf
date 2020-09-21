@@ -252,6 +252,17 @@ function create_assignment($course, $contentFolder = "assignment_files", $descri
 		}
 		try {
 			$id = null; // TODO: Get ID from game server if it's a game
+//			if ($contentFolder === "game_files") {
+//				$request = curl_init("$conf_game_url/uup-game/assignments/create");
+//				curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
+//				curl_setopt($request, CURLOPT_POST, true);
+//				$body = array("name"=>$displayName, "active"=>true, "points"=>3,"challenge_pts"=>5);
+//				curl_setopt($request, CURLOPT_POSTFIELDS, json_encode($body));
+//				curl_setopt($request, CURLOPT_HTTPHEADER, array(
+//					'Content-Type: application/json'
+//				));
+//				$response = curl_exec($request);
+//			}
 			$node->addFolder($name, $displayName, $type, $hidden, $homeworkId, $id);
 			$content = $fsNode->getJson();
 			if ($content == null) {
@@ -362,13 +373,13 @@ if (isset($_REQUEST["year"])) {
 /**
  * THIS PART IS FOR THE GAME
  */
-if (isset($_REQUEST["game"])) {
-	$folder = "game_files";
-	$descriptor = "game.json";
-} else {
-	$folder = "assignment_files";
-	$descriptor = "assignments.json";
-}
+//if (isset($_REQUEST["game"])) {
+//	$folder = "game_files";
+//	$descriptor = "game.json";
+//} else {
+$folder = "assignment_files";
+$descriptor = "assignments.json";
+//}
 /**
  * TILL HERE
  */

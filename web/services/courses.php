@@ -90,11 +90,17 @@ if (isset($_REQUEST['course_id']) || isset($_REQUEST['course'])) {
 	} else {
 		$year = $conf_current_year;
 	}
+	
 	try {
 		$response_data = Course::forAdmin($login, $year);
 	} catch (Exception $e) {
 		$error = $e->getMessage();
 	}
+	
+	if (isset($_REQUEST['student'])) {
+		$response_data = Course::forStudent($login, $year);
+	}
+	
 	function course_cmp($a, $b)
 	{
 		return $a->name > $b->name;
