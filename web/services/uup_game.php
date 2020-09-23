@@ -1,26 +1,5 @@
 <?php
 $game_server_url = "http://localhost:8183";
-//$request = curl_init("http://localhost:8183/uup-game/assignments/all");
-//curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
-//$response = curl_exec($request);
-//$request = curl_init("http://localhost:8183/uup-game/assignments/2/mmesihovic1/start");
-//curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
-//curl_setopt($request, CURLOPT_POST, 1);
-//$response = curl_exec($request);
-//
-//
-//
-//header('Content-type:application/json;charset=utf-8');
-//
-//if ($response == false) {
-//	$data = array('success'=> false, 'message'=> 'Ne radi');
-//	print(json_encode($data, JSON_PRETTY_PRINT));
-//} else {
-//	$response = json_decode($response,true);
-//	print(json_encode($response, JSON_PRETTY_PRINT));
-//}
-//return;
-
 
 session_start();
 require_once("../../lib/config.php");
@@ -34,6 +13,7 @@ require_once("./helpers/assignment.php");
 require_once("./helpers/common.php");
 require_once("./../classes/FSNode.php");
 require_once("./../classes/GameNode.php");
+require_once("./../classes/RequestBuilder.php");
 
 eval(file_get_contents("../../users"));
 
@@ -91,8 +71,9 @@ function get_assignments($course, $contentFolder = "game_files", $descriptionFil
  */
 function create_assignment($course, $contentFolder = "game_files", $descriptionFile = "game.json")
 {
-	$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
-	message_and_data("AssignmentRoot", json_decode($fsNode->getJson()));
+
+//	$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
+//	message_and_data("AssignmentRoot", json_decode($fsNode->getJson()));
 }
 
 

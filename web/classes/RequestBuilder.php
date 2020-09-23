@@ -1,12 +1,81 @@
 <?php
 
+/**
+ * Class Response
+ * @property string $data
+ * @property integer $responseCode
+ * @property boolean $error
+ */
+class Response
+{
+	public $data, $responseCode, $error;
+	
+	/**
+	 * Response constructor.
+	 * @param string $data
+	 * @param int $responseCode
+	 * @param bool $error
+	 */
+	public function __construct(string $data, int $responseCode, bool $error)
+	{
+		$this->data = $data;
+		$this->responseCode = $responseCode;
+		$this->error = $error;
+	}
+	
+}
 
+/**
+ * Class RequestBuilder
+ */
 class RequestBuilder
 {
-	private $url, $headers, $params, $body;
+	private $request;
 	
-	public function setUrl()
+	public function __construct()
 	{
+		$this->request = curl_init();
+		curl_setopt($this->request, CURLOPT_RETURNTRANSFER, true);
+	}
 	
+	public function setUrl(string $url)
+	{
+		curl_setopt($this->request, CURLOPT_URL, $url);
+		return $this;
+	}
+	
+	public function addHeaders(array $headers)
+	{
+		curl_setopt($this->request, CURLOPT_HTTPHEADER, $headers);
+		return $this;
+	}
+	
+	public function setMethod(string $method)
+	{
+		curl_setopt($this->request, CURLOPT_CUSTOMREQUEST, $method);
+		return $this;
+	}
+	
+	public function setBody(string $body)
+	{
+		curl_setopt($this->request, CURLOPT_POSTFIELDS, $body);
+		return $this;
+	}
+	
+	public function send()
+	{
+		$response = curl_exec($this->request);
+		if (curl_errno($this->request) !== 0) {
+			return new Response("", -1, true);
+		}
+		$code = curl_getinfo($this->request, CURLINFO_RESPONSE_CODE);
+		curl_close($this->request);
+		curl_init($this->request);
+		return new Response($response, $code, false);
+	}
+	
+	function __destruct()
+	{
+		curl_close($this->request);
 	}
 }
