@@ -3,23 +3,23 @@
 /**
  * Class Response
  * @property string $data
- * @property integer $responseCode
+ * @property integer $code
  * @property boolean $error
  */
 class Response
 {
-	public $data, $responseCode, $error;
+	public $data, $code, $error;
 	
 	/**
 	 * Response constructor.
 	 * @param string $data
-	 * @param int $responseCode
+	 * @param int $code
 	 * @param bool $error
 	 */
-	public function __construct(string $data, int $responseCode, bool $error)
+	public function __construct(string $data, int $code, bool $error)
 	{
 		$this->data = $data;
-		$this->responseCode = $responseCode;
+		$this->code = $code;
 		$this->error = $error;
 	}
 	
@@ -44,7 +44,7 @@ class RequestBuilder
 		return $this;
 	}
 	
-	public function addHeaders(array $headers)
+	public function setHeaders(array $headers)
 	{
 		curl_setopt($this->request, CURLOPT_HTTPHEADER, $headers);
 		return $this;
@@ -66,7 +66,7 @@ class RequestBuilder
 	{
 		$response = curl_exec($this->request);
 		if (curl_errno($this->request) !== 0) {
-			return new Response("", -1, true);
+			return new Response("", curl_errno($this->request), true);
 		}
 		$code = curl_getinfo($this->request, CURLINFO_RESPONSE_CODE);
 		curl_close($this->request);

@@ -32,8 +32,32 @@ class GameNode
 		$node->isDirectory = true;
 		$node->folder = "game_files";
 		$node->course = $course;
-		$node->constructNode(null,$json);
+		$node->constructNode(null, $json);
 		return $node;
+	}
+	
+	public static function findAssignmentById($id, $course)
+	{
+		$root = self::constructGameForCourse($course);
+		foreach ($root->children as $child) {
+			if ($child->id == $id) {
+				return $child;
+			}
+		}
+		return null;
+	}
+	
+	public static function findTaskById($id, $course)
+	{
+		$root = self::constructGameForCourse($course);
+		foreach ($root->children as $child) {
+			foreach ($child->children as $grandchild) {
+				if ($grandchild->id == $id) {
+					return $grandchild;
+				}
+			}
+		}
+		return null;
 	}
 	
 	protected function constructNode($parent, $fTree)
@@ -54,6 +78,54 @@ class GameNode
 		}
 	}
 	
+	private function orderJsonKeys($json)
+	{
+		uksort($json, 'self::sortKeys');
+		if (is_array($json)) {
+			if (array_key_exists('children', $json)) {
+				if ($json['children'] !== null) {
+					foreach ($json['children'] as &$child) {
+						self::orderJsonKeys($child);
+					}
+				}
+			}
+		}
+	}
+	
+	protected function sortKeys($a, $b)
+	{
+		if ($a == 'id') {
+			return -1;
+		} elseif ($a == 'name') {
+			if ($b == 'id') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'path') {
+			if ($b == 'id' || $b == 'name') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'type') {
+			if ($b == 'id' || $b == 'name' || $b == 'path') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'isDirectory') {
+			if ($b == 'id' || $b == 'name' || $b == 'path' || $b == 'type' || $b == 'hidden') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} else {
+			return 1;
+		}
+	}
+	
+	
 	public function addGameAssignment($name, $displayName, $active, $points, $challengePoints, $id)
 	{
 		$node = new GameNode();
@@ -62,7 +134,6 @@ class GameNode
 		$node->parent = $this;
 		
 		$node->path = "/$name";
-		
 		$this->createFolder($this->getAbsolutePath() . $node->path);
 		
 		$node->id = $id;
@@ -77,7 +148,7 @@ class GameNode
 		$this->children[] = $node;
 	}
 	
-	public function addAssignmentTask($name, $displayName, $id, $category)
+	public function addAssignmentTask($id, $name, $displayName, $category, $hint)
 	{
 		if ($this->type === "assignment") {
 			$node = $this->constructChild();
@@ -91,6 +162,13 @@ class GameNode
 			$node->isDirectory = true;
 			$node->type = 'task';
 			$node->data['category'] = $category;
+			$node->data['hint'] = $hint;
+			$filename = "task.html";
+			$content = $this->extractContentFromTemplateFile($filename);
+			$node->addFileToTask($filename,$content);
+			$filename = "main.c";
+			$content = $this->extractContentFromTemplateFile($filename);
+			$node->addFileToTask($filename,$content);
 			
 			$this->children[] = $node;
 		} else {
@@ -135,7 +213,25 @@ class GameNode
 		}
 	}
 	
-//	public function editAssignment
+	public function editAssignment($name, $active, $points, $challenge_pts)
+	{
+		$this->name = $name;
+		$this->data['active'] = $active;
+		$this->data['points'] = $points;
+		$this->data['challengePoints'] = $challenge_pts;
+	}
+	
+	public function getFileContent()
+	{
+		return file_get_contents($this->getAbsolutePath());
+	}
+	
+	public function editTask($name, $category, $hint)
+	{
+		$this->name = $name;
+		$this->data['category'] = $category;
+		$this->data['hint'] = $hint;
+	}
 	
 	public function deleteFile()
 	{
@@ -162,6 +258,21 @@ class GameNode
 		if ($this->type === "assignment") {
 			self::rRmdir($this->getAbsolutePath());
 			$this->unlinkChildFromParent();
+		}
+	}
+	
+	public function getJson()
+	{
+		$json = json_encode($this->getRootNode());
+		$json = json_decode($json, true);
+		self::orderJsonKeys($json);
+		$json = json_encode($json);
+		$json = preg_replace('/,\s*"[^"]+":null|"[^"]+":null,?/', '', $json);
+		$json = json_decode($json, true);
+		if (defined(JSON_PRETTY_PRINT)) {
+			return json_encode($json, JSON_PRETTY_PRINT);
+		} else {
+			return json_encode($json);
 		}
 	}
 	
@@ -211,7 +322,7 @@ class GameNode
 		return $node;
 	}
 	
-	private function getAbsolutePath()
+	public function getAbsolutePath()
 	{
 		return $this->course->getPath() . "/$this->folder" . $this->path;
 	}
@@ -246,5 +357,18 @@ class GameNode
 				break;
 			}
 		}
+	}
+	
+	/**
+	 * @param string $filename
+	 * @return false|string
+	 */
+	private function extractContentFromTemplateFile(string $filename)
+	{
+		$content = file_get_contents($this->course->getPath() . '/templates/' . $filename);
+		if ($content == false) {
+			$content = "";
+		}
+		return $content;
 	}
 }

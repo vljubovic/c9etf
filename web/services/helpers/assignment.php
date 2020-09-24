@@ -2,20 +2,7 @@
 
 require_once "common.php";
 
-/**
- * @param Course $course
- * @param string $login
- */
-function check_admin_access($course, $login): void
-{
-	try {
-		if (!$course->isAdmin($login)) {
-			error("403", "You are not an admin on this course");
-		}
-	} catch (Exception $e) {
-		error("500", $e->getMessage());
-	}
-}
+
 
 function check_filename($filename)
 {
