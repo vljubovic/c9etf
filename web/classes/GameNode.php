@@ -169,6 +169,9 @@ class GameNode
 			$filename = "main.c";
 			$content = $this->extractContentFromTemplateFile($filename);
 			$node->addFileToTask($filename,$content);
+			$filename = ".autotest";
+			$content = $this->extractContentFromTemplateFile($filename);
+			$node->addFileToTask($filename,$content);
 			
 			$this->children[] = $node;
 		} else {

@@ -4,7 +4,7 @@ function validateRequired($keys, $array)
 {
 	foreach ($keys as $key) {
 		if (!array_key_exists($key, $array)) {
-			error("400", "Required field $key not present in body!");
+			error(400, "Required field $key not present in body!");
 		}
 	}
 }
