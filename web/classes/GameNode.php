@@ -188,6 +188,7 @@ class GameNode
 			$node->type = "file";
 			$node->data["binary"] = $binary;
 			$node->data["show"] = $show;
+			$this->children[] = $node;
 			
 			touch($node->getAbsolutePath());
 			file_put_contents($node->getAbsolutePath(), $content);

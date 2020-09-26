@@ -75,7 +75,7 @@ function createAssignment(Course $course): void
 	global $game_server_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
-		validateRequired(["name", "displayName", "active", "points", "challenge_pts"], $input);
+		validateRequired(["name", "displayName", "active", "points", "challengePoints"], $input);
 		$name = $input["name"];
 		$name = str_replace("..", "", $name);
 		$name = str_replace("/", "", $name);
@@ -83,8 +83,8 @@ function createAssignment(Course $course): void
 		$payload = array(
 			"name" => $displayName,
 			"active" => boolval($input["active"]),
-			"points" => $input["points"],
-			"challenge_pts" => $input["challenge_pts"]
+			"points" => floatval($input["points"]),
+			"challenge_pts" => floatval($input["challengePoints"])
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -98,7 +98,6 @@ function createAssignment(Course $course): void
 			->setBody($payload)
 			->send();
 		
-		$data = json_decode($response->data, true);
 		$data = json_decode($response->data, true);
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
@@ -122,7 +121,7 @@ function editAssignment(Course $course): void
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		if (isset($_REQUEST['assignmentId'])) {
-			$id = $_REQUEST['assignmentId'];
+			$id = intval($_REQUEST['assignmentId']);
 		} else {
 			jsonResponse(false, 400, array("message" => "Parameter assignmentId not set"));
 		}
@@ -156,9 +155,9 @@ function editAssignment(Course $course): void
 		
 		$payload = array(
 			"name" => $name,
-			"active" => $active,
-			"points" => $points,
-			"challenge_pts" => $challengePoints
+			"active" => boolval($active),
+			"points" => floatval($points),
+			"challenge_pts" => floatval($challengePoints)
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -205,9 +204,9 @@ function createTask(Course $course)
 		$displayName = $input["displayName"];
 		$payload = array(
 			"task_name" => $displayName,
-			"category_id" => $input["category"],
+			"category_id" => intval($input["category"]),
 			"hint" => $input["hint"],
-			"assignment_id" => $assignmentId
+			"assignment_id" => intval($assignmentId)
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -257,9 +256,9 @@ function editTask(Course $course)
 		
 		$payload = array(
 			"task_name" => $name,
-			"category_id" => $category,
+			"category_id" => intval($category),
 			"hint" => $hint,
-			"assignment_id" => $task->parent->id
+			"assignment_id" => intval($task->parent->id)
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -319,6 +318,39 @@ function deleteTask(Course $course)
 	$task->deleteTask();
 	updateGameJson($course, $node);
 	jsonResponse(true, 200, array("data" => $data));
+}
+
+function getFileContent(Course $course)
+{
+	if (isset($_REQUEST["taskId"])) {
+		$taskId = $_REQUEST["taskId"];
+	} else {
+		jsonResponse(false, 400, array("message" => "taskId field not set"));
+	}
+	if (isset($_REQUEST["name"])) {
+		$name = $_REQUEST["name"];
+	} else {
+		jsonResponse(false, 400, array("message" => "taskId field not set"));
+	}
+	$task = GameNode::findTaskById($taskId, $course);
+	$file = null;
+	foreach ($task->children as $child) {
+		if ($child->name == $name) {
+			$file = $child;
+		}
+	}
+	if ($file === null) {
+		jsonResponse(false, 404, array("message"=>"File not found"));
+	}
+	$content = $file->getFileContent();
+	if ($content == false) {
+		$content = "";
+	}
+	if ($file !== null) {
+		jsonResponse(true, 200, array('data'=>array('content' => $content)));
+	} else {
+		jsonResponse(false, 404, array("message"=>"File not found"));
+	}
 }
 
 function createTaskFile(Course $course)
