@@ -255,8 +255,14 @@ if ($action == "getAssignments") {
 	}
 } else if ($action === "initialize") {
 	initializeGame($course);
+} else if($action === "check"){
+	if ($course->isAdmin($login)) {
+		jsonResponse(true, 200, array("message" => "Ok"));
+	} else {
+		jsonResponse(false, 400, array("message" => "Not ok"));
+	}
 } else {
-	error("422", "Unknown action");
+	jsonResponse(false, 422, array("message" => "Invalid action"));
 }
 
 // /uup-game/assignments/all - All assignments - all - get
