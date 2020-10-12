@@ -30,15 +30,6 @@ if (!$logged_in) {
 
 session_write_close();
 
-function validateRequired($keys, $array)
-{
-	foreach ($keys as $key) {
-		if (!array_key_exists($key, $array)) {
-			jsonResponse(false, 400, array("message" => "Required field $key not present in body!"));
-		}
-	}
-}
-
 /**
  * @param Course $course
  * @param string $contentFolder
