@@ -61,20 +61,6 @@ class FSNode
 		return $node;
 	}
 	
-	protected function __construct()
-	{
-	}
-	
-	public function __get($name)
-	{
-		return $this->$name;
-	}
-	
-	public function __set($name, $value)
-	{
-		$this->$name = $value;
-	}
-	
 	public function getRootNode()
 	{
 		$node = $this;
@@ -100,21 +86,6 @@ class FSNode
 		}
 	}
 	
-	protected static function orderJsonKeys(&$json)
-	{
-		uksort($json, 'FSNode::sortKeys');
-		if (is_array($json)) {
-			if (array_key_exists('children', $json)) {
-				if ($json['children'] !== null) {
-					foreach ($json['children'] as &$child) {
-						self::orderJsonKeys($child);
-					}
-				}
-			}
-		}
-	}
-	
-	
 	public function isTemplateFile()
 	{
 		if (file_exists($this->getAbsolutePath())) {
@@ -137,33 +108,6 @@ class FSNode
 			}
 		}
 		return null;
-	}
-	
-	public function addFile($file, $content)
-	{
-		if ($this->isDirectory && $this->isLeafFolder()) {
-			$path = $this->getAbsolutePath() . "/" . $file['name'];
-			$this->createFile($path, $content);
-			$relativePath = $this->path . '/' . $file['name'];
-			$this->children[] = FSNode::makeFileNode($file, $relativePath, $this);
-		}
-	}
-	
-	protected function getReplacedTemplatePlaceholders($code){
-		$parent = $this->parent;
-		$grand = $this->parent;
-		if ($grand->parent !== null) {
-			$grand = $grand->parent;
-		}
-		$title = $grand->name . ", " . $parent->name;
-		$code = str_replace("===TITLE===", $title, $code);
-		$code = str_replace("===COURSE===", $this->course->name, $code);
-		
-		foreach (Cache::getFile("years.json") as $year)
-			if ($year['id'] == $this->course->year)
-				$year_name = $year['name'];
-		$code = str_replace("===YEAR===", $year_name, $code);
-		return $code;
 	}
 	
 	public function getFileContent()
@@ -189,6 +133,16 @@ class FSNode
 		throw new Exception("Server error on getFileContent in FSNode");
 	}
 	
+	public function addFile($file, $content)
+	{
+		if ($this->isDirectory && $this->isLeafFolder()) {
+			$path = $this->getAbsolutePath() . "/" . $file['name'];
+			$this->createFile($path, $content);
+			$relativePath = $this->path . '/' . $file['name'];
+			$this->children[] = FSNode::makeFileNode($file, $relativePath, $this);
+		}
+	}
+	
 	public function editFile($content, $show = null, $binary = null)
 	{
 		if (file_exists($this->getAbsolutePath())) {
@@ -201,6 +155,31 @@ class FSNode
 			if ($binary !== null) {
 				$this->binary = $binary;
 			}
+		}
+	}
+	
+	public function deleteFile()
+	{
+		if (file_exists($this->getAbsolutePath())) {
+			unlink($this->getAbsolutePath());
+		}
+		$parent = $this->parent;
+		for ($i = 0; $i < $parent->children; $i++) {
+			if ($parent->children[$i]->path == $this->path) {
+				unset($parent->children[$i]);
+				break;
+			}
+		}
+	}
+	
+	public function addFolder(
+		$name, $displayName, $type = 'tutorial', $hidden = false, $homeworkId = null, $id = null
+	)
+	{
+		if ($this->isDirectory && $this->doesNotContainFiles()) {
+			$path = $this->getAbsolutePath() . '/' . $name;
+			$this->createFolder($path);
+			$this->children[] = FSNode::makeFolderNode($name, $displayName, $type, $hidden, $homeworkId, $this, $id);
 		}
 	}
 	
@@ -222,20 +201,6 @@ class FSNode
 		}
 	}
 	
-	public function deleteFile()
-	{
-		if (file_exists($this->getAbsolutePath())) {
-			unlink($this->getAbsolutePath());
-		}
-		$parent = $this->parent;
-		for ($i = 0; $i < $parent->children; $i++) {
-			if ($parent->children[$i]->path == $this->path) {
-				unset($parent->children[$i]);
-				break;
-			}
-		}
-	}
-	
 	public function deleteFolder()
 	{
 		FSNode::rRmdir($this->getAbsolutePath());
@@ -249,13 +214,47 @@ class FSNode
 		}
 	}
 	
-	public function addFolder($name, $displayName, $type = 'tutorial', $hidden = false, $homeworkId = null, $id = null)
+	protected function __construct()
 	{
-		if ($this->isDirectory && $this->doesNotContainFiles()) {
-			$path = $this->getAbsolutePath() . '/' . $name;
-			$this->createFolder($path);
-			$this->children[] = FSNode::makeFolderNode($name, $displayName, $type, $hidden, $homeworkId, $this, $id);
+	}
+	
+	public function __get($name)
+	{
+		return $this->$name;
+	}
+	
+	public function __set($name, $value)
+	{
+		$this->$name = $value;
+	}
+	protected static function orderJsonKeys(&$json)
+	{
+		uksort($json, 'FSNode::sortKeys');
+		if (is_array($json)) {
+			if (array_key_exists('children', $json)) {
+				if ($json['children'] !== null) {
+					foreach ($json['children'] as &$child) {
+						self::orderJsonKeys($child);
+					}
+				}
+			}
 		}
+	}
+	protected function getReplacedTemplatePlaceholders($code){
+		$parent = $this->parent;
+		$grand = $this->parent;
+		if ($grand->parent !== null) {
+			$grand = $grand->parent;
+		}
+		$title = $grand->name . ", " . $parent->name;
+		$code = str_replace("===TITLE===", $title, $code);
+		$code = str_replace("===COURSE===", $this->course->name, $code);
+		
+		foreach (Cache::getFile("years.json") as $year)
+			if ($year['id'] == $this->course->year)
+				$year_name = $year['name'];
+		$code = str_replace("===YEAR===", $year_name, $code);
+		return $code;
 	}
 	
 	protected function getAbsolutePath()
@@ -296,7 +295,6 @@ class FSNode
 			}
 		}
 	}
-	
 	
 	protected static function addItemsToLeaves(&$node, $items)
 	{
