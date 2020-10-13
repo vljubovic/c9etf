@@ -40,7 +40,7 @@ case $action in
 			exit 3
 		fi
     rm -rf "$dest/*"
-    cp -R "$src" "$dest"
+    cp -R "$src/*" "$dest"
     chown "$user" "$dest" -R
     ;;
   from-history-to-student)
