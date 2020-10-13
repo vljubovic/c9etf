@@ -6,7 +6,7 @@ require_once("./helpers/common.php");
 
 
 if (!($_SERVER['REMOTE_ADDR'] === '127.0.0.1')) {
-	jsonResponse(false, 403, array("message"=>"Permission denied"));
+	jsonResponse(false, 403, array("message"=>"Nisi localhost, jarane!"));
 }
 
 function replaceKeys(array $pairs, $code)
