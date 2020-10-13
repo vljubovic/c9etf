@@ -39,12 +39,6 @@ try {
 	jsonResponse(false, 500, array("message" => $exception->getMessage()));
 }
 
-$serverKey = file_get_contents("/usr/local/webide/data/__gameServerKey");
-
-if ($serverKey === false || $serverKey === "-" || $serverKey === "" || $serverKey !== $key) {
-	jsonResponse(false, 400, array("message" => "Server key is not valid"));
-}
-
 if ($newTaskId < 0 && $oldTaskId > 0) {
 	$oldTaskNode = GameNode::findTaskById($oldTaskId, $course);
 	
