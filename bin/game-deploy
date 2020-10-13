@@ -18,7 +18,7 @@ slovo=$(echo $user | cut -c 1)
 game_files="/usr/local/webide/data/$course/game_files"
 history="/usr/local/webide/data/$course/task_history"
 
-workspace="/rhome/$slovo/$user/workspace"
+workspace="/home/$slovo/$user/workspace"
 
 if [ ! -d "$workspace" ]
 then
