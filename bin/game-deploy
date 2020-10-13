@@ -44,7 +44,7 @@ case $action in
     chown "$user" "$dest" -R
     ;;
   from-history-to-student)
-    src="$history/$assignment/$task"
+    src="$history/$user/$assignment/$task"
     dest="$workspace/UUP_GAME/$assignmentName"
     if [ ! -e "$src" ]
 		then
@@ -61,7 +61,7 @@ case $action in
     ;;
   from-student-to-history)
     src="$workspace/UUP_GAME/$assignmentName"
-    dest="$history/$assignment/$task"
+    dest="$history/$user/$assignment/$task"
     if [ ! -e "$src" ]
 		then
 			echo "ERROR: source $src does not exist"
