@@ -1,4 +1,5 @@
 <?php
+require_once("./../../lib/config.php");
 require_once("./../classes/Course.php");
 require_once("./../classes/GameNode.php");
 require_once("./helpers/common.php");
