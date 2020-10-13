@@ -3,7 +3,9 @@ require_once("./../classes/Course.php");
 require_once("./../classes/GameNode.php");
 require_once("./helpers/common.php");
 
-if (!$_SERVER['REMOTE_ADDR'] === '127.0.0.1') {
+
+
+if (!($_SERVER['REMOTE_ADDR'] === '127.0.0.1')) {
 	jsonResponse(false, 403, array("message"=>"Permission denied"));
 }
 
