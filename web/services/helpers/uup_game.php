@@ -30,7 +30,7 @@ function initializeGame($course)
 	mkdir($course->getPath() . '/game_files');
 	touch($course->getPath() . '/game.json');
 	file_put_contents($course->getPath() . '/game.json', "{}");
-	jsonResponse(true, 200, array("message"=> "Game initialized"));
+	jsonResponse(true, 200, array("message" => "Game initialized"));
 }
 
 /**
@@ -53,7 +53,7 @@ function getStudentAssignments(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, $response->code, array("data" => $data));
 }
@@ -96,7 +96,7 @@ function createAssignment(Course $course): void
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$node = GameNode::constructGameForCourse($course);
 		$payload = json_decode($payload, true);
@@ -169,7 +169,7 @@ function editAssignment(Course $course): void
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$payload = json_decode($payload, true);
 		$assignment->editAssignment($name, $payload['active'], $payload['points'], $payload['challenge_pts']);
@@ -218,7 +218,7 @@ function createTask(Course $course)
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$node = GameNode::findAssignmentById($assignmentId, $course);
 		try {
@@ -270,7 +270,7 @@ function editTask(Course $course)
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		
 		try {
@@ -303,7 +303,7 @@ function deleteTask(Course $course)
 	}
 	
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	
 	$node = $task->parent;
@@ -332,16 +332,16 @@ function getFileContent(Course $course)
 		}
 	}
 	if ($file === null) {
-		jsonResponse(false, 404, array("message"=>"File not found"));
+		jsonResponse(false, 404, array("message" => "File not found"));
 	}
 	$content = $file->getFileContent();
 	if ($content == false) {
 		$content = "";
 	}
 	if ($file !== null) {
-		jsonResponse(true, 200, array('data'=>array('content' => $content)));
+		jsonResponse(true, 200, array('data' => array('content' => $content)));
 	} else {
-		jsonResponse(false, 404, array("message"=>"File not found"));
+		jsonResponse(false, 404, array("message" => "File not found"));
 	}
 }
 
@@ -425,10 +425,10 @@ function deleteTaskFile(Course $course)
 				$child->deleteFile();
 			}
 		}
-		updateGameJson($course,$task);
-		jsonResponse(true, 200, array("message"=>"File deleted"));
+		updateGameJson($course, $task);
+		jsonResponse(true, 200, array("message" => "File deleted"));
 	} catch (Exception $exception) {
-		jsonResponse(false,500,array("message" => $exception->getMessage()));
+		jsonResponse(false, 500, array("message" => $exception->getMessage()));
 	}
 }
 
@@ -443,7 +443,7 @@ function getTaskCategories(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("data" => $data));
 }
@@ -471,7 +471,7 @@ function buyPowerUp($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -496,7 +496,7 @@ function getTasksForAssignment(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -515,7 +515,7 @@ function getPowerUpTypes(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -534,7 +534,7 @@ function getChallengeConfig(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -554,7 +554,7 @@ function getStudentData($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -570,7 +570,7 @@ function startAssignment($login): void
 		error(400, "Set the assignment_id field");
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url//uup-game/assignments/$assignmentId/$login/start")
+		->setUrl("$game_server_url/uup-game/assignments/$assignmentId/$login/start")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
@@ -579,7 +579,7 @@ function startAssignment($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -608,7 +608,7 @@ function turnTaskIn($login): void
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		jsonResponse(true, 200, array("data" => $data));
 	}
@@ -632,7 +632,7 @@ function swapTask($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -655,7 +655,7 @@ function hint($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -678,7 +678,7 @@ function getAvailableTasks($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -708,7 +708,7 @@ function secondChance($login): void
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 	}
@@ -734,7 +734,7 @@ function getUsedHint($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
@@ -759,7 +759,7 @@ function getTaskPreviousPoints($login): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }
