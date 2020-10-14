@@ -592,16 +592,17 @@ function turnTaskIn($login): void
 	global $game_server_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
+		$payload = json_encode($input);
 		$assignmentId = $_REQUEST['assignment_id'];
 		$headers = array(
 			'Content-Type: application/json',
-			'Content-Length: ' . strlen($input)
+			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
 			->setUrl("$game_server_url/uup-game/tasks/turn_in/$login/$assignmentId")
 			->setMethod('POST')
 			->setHeaders($headers)
-			->setBody($input)
+			->setBody($payload)
 			->send();
 		$data = json_decode($response->data, true);
 		if ($response->error) {
@@ -692,15 +693,16 @@ function secondChance($login): void
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		$assignmentId = $_REQUEST['assignment_id'];
+		$payload = json_encode($input);
 		$headers = array(
 			'Content-Type: application/json',
-			'Content-Length: ' . strlen($input)
+			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
 			->setUrl("$game_server_url/uup-game/tasks/second_chance/$login/$assignmentId")
 			->setMethod('PUT')
 			->setHeaders($headers)
-			->setBody($input)
+			->setBody($payload)
 			->send();
 		$data = json_decode($response->data, true);
 		
