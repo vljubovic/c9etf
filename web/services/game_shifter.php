@@ -4,7 +4,7 @@ require_once("./../classes/Course.php");
 require_once("./../classes/GameNode.php");
 require_once("./helpers/common.php");
 
-
+$url = "/usr/local/webide/data/log";
 
 if (!($_SERVER['REMOTE_ADDR'] === '127.0.0.1')) {
 	jsonResponse(false, 403, array("message"=>"Nisi localhost, jarane!"));
@@ -18,7 +18,8 @@ function replaceKeys(array $pairs, $code)
 	return $code;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
+$json = file_get_contents('php://input');
+$input = json_decode($json, true);
 if (!$input) {
 	jsonResponse(false, 400, array("message" => "No body"));
 }
@@ -38,7 +39,6 @@ try {
 } catch (Exception $exception) {
 	jsonResponse(false, 500, array("message" => $exception->getMessage()));
 }
-
 if ($newTaskId < 0 && $oldTaskId > 0) {
 	$oldTaskNode = GameNode::findTaskById($oldTaskId, $course);
 	
@@ -65,7 +65,6 @@ if ($newTaskId < 0 && $oldTaskId > 0) {
 	proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
 	jsonResponse(true, 200, array("message" => "Assignment turned in"));
 }
-
 if ($redo === false) {
 	if ($oldTaskId < 0) {
 		// just add the files from game to student
@@ -83,12 +82,8 @@ if ($redo === false) {
 		
 		$pathArray = explode('/', $taskNode->path);
 		$task = end($pathArray);
-		//user="$1"
-		//action="$2"
-		//course="$3"
-		//assignment="$4"
-		//assignmentName="$5"
-		//task="$6"
+		
+		file_put_contents($url, "Line 99 $task $assignment\n", FILE_APPEND);
 		if ($task === false || $assignment === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
@@ -108,20 +103,15 @@ if ($redo === false) {
 			"===ASSIGNMENT===" => $taskNode->parent->name,
 			"===TASK===" => $taskNode->name
 		);
-		foreach ($taskNode->children as $fileNode) {
-			if (!$fileNode->data['binary']) {
-				$filePairs[$fileNode->path] = $fileNode->getFileContent();
-				$replacedContent = replaceKeys($replacementPairs, $fileNode->getFileContent());
-				file_put_contents($fileNode->getAbsolutePath(), $replacedContent);
-			}
+		$sedovi = "$conf_base_path/data/sedovi";
+		file_put_contents($sedovi, "");
+		foreach ($replacementPairs as $key => $value) {
+			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
-		foreach ($taskNode->children as $fileNode) {
-			if (!$fileNode->data['binary']) {
-				$replacedContent = $filePairs[$fileNode->path];
-				file_put_contents($fileNode->getAbsolutePath(), $replacedContent);
-			}
-		}
+
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		proc_close(proc_open($cmd, array(), $foo));
+
 		jsonResponse(true, 200, array("message" => "Deployed from game to student"));
 	} else {
 		// save student files to history and add files from game to student
@@ -159,12 +149,7 @@ if ($redo === false) {
 		
 		$pathArray = explode('/', $taskNode->path);
 		$task = end($pathArray);
-		//user="$1"
-		//action="$2"
-		//course="$3"
-		//assignment="$4"
-		//assignmentName="$5"
-		//task="$6"
+		
 		if ($task === false || $assignment === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
@@ -184,20 +169,13 @@ if ($redo === false) {
 			"===ASSIGNMENT===" => $taskNode->parent->name,
 			"===TASK===" => $taskNode->name
 		);
-		foreach ($taskNode->children as $fileNode) {
-			if (!$fileNode->data['binary']) {
-				$filePairs[$fileNode->path] = $fileNode->getFileContent();
-				$replacedContent = replaceKeys($replacementPairs, $fileNode->getFileContent());
-				file_put_contents($fileNode->getAbsolutePath(), $replacedContent);
-			}
+		$sedovi = "$conf_base_path/data/sedovi";
+		file_put_contents($sedovi, "");
+		foreach ($replacementPairs as $key => $value) {
+			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
-		foreach ($taskNode->children as $fileNode) {
-			if (!$fileNode->data['binary']) {
-				$replacedContent = $filePairs[$fileNode->path];
-				file_put_contents($fileNode->getAbsolutePath(), $replacedContent);
-			}
-		}
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		proc_close(proc_open($cmd, array(), $foo));
 		jsonResponse(true, 200, array("message" => "Deployed from student to history and from game to student"));
 	}
 } else {

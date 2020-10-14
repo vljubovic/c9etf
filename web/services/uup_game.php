@@ -35,7 +35,7 @@ $error = "";
 //if (!isset($_REQUEST["course_id"])) {
 //	error(400, "You need to specify course_id request parameter");
 //}
-//
+// 2234
 //$course = extractCourseFromRequest();
 
 $course = Course::find(1, true);
