@@ -62,7 +62,7 @@ if ($newTaskId < 0 && $oldTaskId > 0) {
 		$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 		jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
 	}
-	proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
+	proc_close(proc_open("sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &", array(), $foo));
 	jsonResponse(true, 200, array("message" => "Assignment turned in"));
 }
 if ($redo === false) {
@@ -138,7 +138,9 @@ if ($redo === false) {
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" ";
+//		proc_close(proc_open($cmd, array(), $foo));
+		$commandOne = $cmd;
 		$pathArray = explode('/', $taskNode->parent->path);
 		$taskPath = $taskNode->getAbsolutePath();
 		
@@ -174,7 +176,7 @@ if ($redo === false) {
 		foreach ($replacementPairs as $key => $value) {
 			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
-		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
 		proc_close(proc_open($cmd, array(), $foo));
 		jsonResponse(true, 200, array("message" => "Deployed from student to history and from game to student"));
 	}
@@ -201,7 +203,8 @@ if ($redo === false) {
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		proc_close(proc_open($cmd, array(), $foo));
 		jsonResponse(true, 200, array("message" => "Deployed from history to student"));
 	} else {
 		// save student files to history and add files from history to student
@@ -228,7 +231,9 @@ if ($redo === false) {
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" ";
+//		proc_close(proc_open($cmd, array(), $foo));
+		$commandOne = $cmd;
 		$pathArray = explode('/', $taskNode->parent->path);
 		$oldTaskPath = $oldTaskNode->getAbsolutePath();
 		
@@ -245,7 +250,8 @@ if ($redo === false) {
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
 		}
-		proc_close(proc_open("sudo $conf_base_path/bin/game-deploy $username $action $courseString $assignment $assignmentName $task &", array(), $foo));
+		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		proc_close(proc_open($cmd, array(), $foo));
 		jsonResponse(true, 200, array("message" => "Deployed from student to history and from history to student"));
 	}
 }

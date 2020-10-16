@@ -671,7 +671,7 @@ function getAvailableTasks($login): void
 	$typeId = $_REQUEST['type_id'];
 	
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/turned_id/$login/$assignmentId/$typeId")
+		->setUrl("$game_server_url/uup-game/tasks/turned_in/$login/$assignmentId/$typeId")
 		->send();
 	$data = json_decode($response->data, true);
 	
@@ -753,7 +753,7 @@ function getTaskPreviousPoints($login): void
 		jsonResponse(false, 400, array("message" => "Set assignment_id and task_number field"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/previousTask/get/$login/$assignmentId/$taskNumber")
+		->setUrl("$game_server_url/uup-game/tasks/previousTask/points/get/$login/$assignmentId/$taskNumber")
 		->send();
 	$data = json_decode($response->data, true);
 	

@@ -36,18 +36,17 @@ case $action in
 		fi
     if [ ! -d "$dest" ]
 		then
-			echo ERROR: Not a directory or path doesn\'t exist "$dest" > /usr/local/webide/data/log
+			echo ERROR: Not a directory or path doesn\'t exist "$dest"
 			exit 3
 		fi
     rm -rf "$dest"/*
-    cp -R "$src"/* "$dest"
+    cp -Rp "$src"/. "$dest"
     chown "$user" "$dest" -R
     chmod 664 "$dest" -R
     while read -r p; do
-      outer=$p
       for entry in "$dest"/*
       do
-        komanda="${outer} '${entry}'"
+        komanda="${p} '${entry}'"
         if [ -n "$p" ]
         then
           eval "$komanda"
@@ -69,7 +68,7 @@ case $action in
 			mkdir -p "$dest"
 		fi
 		rm -rf "$dest"/*
-    cp -R "$src"/* "$dest"
+    cp -Rp "$src"/. "$dest"
     chown "$user" "$dest" -R
     ;;
   from-student-to-history)
@@ -85,7 +84,7 @@ case $action in
 			mkdir -p "$dest"
 		fi
 		rm -rf "$dest"/*
-    cp -R "$src"/* "$dest"
+    cp -Rp "$src"/. "$dest"
     rm -rf "$src"/*
     ;;
   *)

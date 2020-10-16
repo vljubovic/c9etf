@@ -319,12 +319,12 @@ function delete_assignment($course, $contentFolder = "assignment_files", $descri
 		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("400", "Invalid path");
+			jsonResponse(false,400,array("message"=>"Invalid path"));
 		}
 		$node->deleteFolder();
 		$content = $fsNode->getJson();
 		if ($content == null) {
-			error("500", "Contact your administrator. Delete assignment service endpoint problem");
+			jsonResponse(false,500,array("message"=>"Contact your administrator. Delete assignment service endpoint problem"));
 		}
 		file_put_contents($course->getPath() . '/' . $descriptionFile, $fsNode->getJson());
 		jsonResponse(true, 200, array("message" => "Successfully deleted assignment $path"));
@@ -423,6 +423,5 @@ if ($action == "createFile") {
 	check_admin_access($course, $login);
 	delete_assignment($course, $folder, $descriptor);
 } else {
-	error("422", "Unknown action");
 	jsonResponse(false, 422, array("message" => "Unknown action"));
 }
