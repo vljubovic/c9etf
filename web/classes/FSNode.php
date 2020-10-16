@@ -145,6 +145,9 @@ class FSNode
 	
 	public function editFile($content, $show = null, $binary = null)
 	{
+		if(!file_exists($this->getAbsolutePath())) {
+			$this->createFile($this->getAbsolutePath(),"");
+		}
 		if (file_exists($this->getAbsolutePath())) {
 			if ($content !== null) {
 				file_put_contents($this->getAbsolutePath(), $content);
@@ -155,6 +158,8 @@ class FSNode
 			if ($binary !== null) {
 				$this->binary = $binary;
 			}
+		} else {
+			throw new Exception("File cannot be saved");
 		}
 	}
 	
@@ -533,6 +538,7 @@ class FSNode
 			throw new Exception("File already exists");
 		} else {
 			touch($path);
+			chmod($path,0664);
 			file_put_contents($path, $content);
 		}
 	}

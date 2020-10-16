@@ -117,7 +117,11 @@ function edit_file($course, $contentFolder = "assignment_files", $descriptionFil
 		if ($node->isTemplateFile()) {
 			$message = "You edited a template file. That means that you created a file in this folder and it is no longer part of the template.";
 		}
-		$node->editFile($content, $show, $binary);
+		try {
+			$node->editFile($content, $show, $binary);
+		} catch (Exception $e) {
+			jsonResponse(false, 500, array("message" => $e->getMessage()));
+		}
 		file_put_contents($course->getPath() . '/' . $descriptionFile, $fsNode->getJson());
 		jsonResponse(true, 200, array("message" => "File $node->name edited. " . $message));
 	} else {
