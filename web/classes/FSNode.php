@@ -538,7 +538,6 @@ class FSNode
 			throw new Exception("File already exists");
 		} else {
 			touch($path);
-			chmod($path,0664);
 			file_put_contents($path, $content);
 		}
 	}

@@ -31,12 +31,6 @@ if (!$logged_in) {
 session_write_close();
 
 $error = "";
-//
-//if (!isset($_REQUEST["course_id"])) {
-//	error(400, "You need to specify course_id request parameter");
-//}
-// 2234
-//$course = extractCourseFromRequest();
 
 try {
 	$or = Course::find(1, true);
@@ -178,7 +172,6 @@ if ($action == "getAssignments") {
 		$roles[] = "student";
 	}
 	jsonResponse(true, 200, array("message" => "Ok", "roles" => $roles));
-	
 } else {
 	jsonResponse(false, 422, array("message" => "Invalid action"));
 }
