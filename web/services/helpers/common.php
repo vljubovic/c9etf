@@ -107,3 +107,13 @@ function check_admin_access($course, $login): void
 		error("500", $e->getMessage());
 	}
 }
+
+
+function validateRequired($keys, $array)
+{
+	foreach ($keys as $key) {
+		if (!array_key_exists($key, $array)) {
+			jsonResponse(false, 400, array("message" => "Required field $key not present in body!"));
+		}
+	}
+}

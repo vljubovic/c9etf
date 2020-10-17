@@ -1,0 +1,94 @@
+#!/bin/bash
+
+
+if [ $# -lt 6 ]
+then
+	echo ERROR: Insufficient parameters
+	exit 1
+fi
+
+user="$1"
+action="$2"
+course="$3"
+assignment="$4"
+assignmentName="$5"
+task="$6"
+
+slovo=$(echo $user | cut -c 1)
+
+game_files="/usr/local/webide/data/$course/game_files"
+history="/usr/local/webide/data/$course/task_history"
+
+workspace="/home/$slovo/$user/workspace"
+
+if [ ! -d "$workspace" ]
+then
+	echo ERROR: Workspace doesn\'t exist
+	exit 1
+fi
+case $action in
+  from-uup-to-student)
+    src="$game_files/$assignment/$task"
+    dest="$workspace/UUP_GAME/$assignmentName"
+    if [ ! -e "$dest" ]
+		then
+			mkdir -p "$dest"
+		fi
+    if [ ! -d "$dest" ]
+		then
+			echo ERROR: Not a directory or path doesn\'t exist "$dest"
+			exit 3
+		fi
+    rm -rf "$dest"/*
+    cp -Rp "$src"/. "$dest"
+    chown "$user" "$dest" -R
+    chmod 664 "$dest" -R
+    while read -r p; do
+      for entry in "$dest"/*
+      do
+        komanda="${p} '${entry}'"
+        if [ -n "$p" ]
+        then
+          eval "$komanda"
+        fi
+      done
+    done </usr/local/webide/data/sedovi
+    echo "" > /usr/local/webide/data/sedovi
+    ;;
+  from-history-to-student)
+    src="$history/$user/$assignment/$task"
+    dest="$workspace/UUP_GAME/$assignmentName"
+    if [ ! -e "$src" ]
+		then
+			echo "ERROR: source $src does not exist"
+			exit 3
+		fi
+		if [ ! -e "$dest" ]
+		then
+			mkdir -p "$dest"
+		fi
+		rm -rf "$dest"/*
+    cp -Rp "$src"/. "$dest"
+    chown "$user" "$dest" -R
+    ;;
+  from-student-to-history)
+    src="$workspace/UUP_GAME/$assignmentName"
+    dest="$history/$user/$assignment/$task"
+    if [ ! -e "$src" ]
+		then
+			echo "ERROR: source $src does not exist"
+			exit 3
+		fi
+		if [ ! -e "$dest" ]
+		then
+			mkdir -p "$dest"
+		fi
+		rm -rf "$dest"/*
+    cp -Rp "$src"/. "$dest"
+    rm -rf "$src"/*
+    ;;
+  *)
+    echo "unknown action"
+    exit 4
+    ;;
+esac

@@ -60,72 +60,6 @@ class GameNode
 		return null;
 	}
 	
-	protected function constructNode($parent, $fTree)
-	{
-		if (is_array($fTree)) {
-			$this->parent = $parent;
-			$this->takeKeyValues($fTree, ['id', 'name', 'type', 'path', 'isDirectory', 'data']);
-			if (array_key_exists('children', $fTree)) {
-				$this->children = [];
-				foreach ($fTree['children'] as $child) {
-					$node = new GameNode();
-					$node->folder = $this->folder;
-					$node->course = $this->course;
-					$node->constructNode($this, $child);
-					$this->children[] = $node;
-				}
-			}
-		}
-	}
-	
-	private function orderJsonKeys($json)
-	{
-		uksort($json, 'self::sortKeys');
-		if (is_array($json)) {
-			if (array_key_exists('children', $json)) {
-				if ($json['children'] !== null) {
-					foreach ($json['children'] as &$child) {
-						self::orderJsonKeys($child);
-					}
-				}
-			}
-		}
-	}
-	
-	protected function sortKeys($a, $b)
-	{
-		if ($a == 'id') {
-			return -1;
-		} elseif ($a == 'name') {
-			if ($b == 'id') {
-				return 1;
-			} else {
-				return -1;
-			}
-		} elseif ($a == 'path') {
-			if ($b == 'id' || $b == 'name') {
-				return 1;
-			} else {
-				return -1;
-			}
-		} elseif ($a == 'type') {
-			if ($b == 'id' || $b == 'name' || $b == 'path') {
-				return 1;
-			} else {
-				return -1;
-			}
-		} elseif ($a == 'isDirectory') {
-			if ($b == 'id' || $b == 'name' || $b == 'path' || $b == 'type' || $b == 'hidden') {
-				return 1;
-			} else {
-				return -1;
-			}
-		} else {
-			return 1;
-		}
-	}
-	
-	
 	public function addGameAssignment($name, $displayName, $active, $points, $challengePoints, $id)
 	{
 		$node = new GameNode();
@@ -165,13 +99,13 @@ class GameNode
 			$node->data['hint'] = $hint;
 			$filename = "task.html";
 			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename,$content);
+			$node->addFileToTask($filename, $content);
 			$filename = "main.c";
 			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename,$content);
+			$node->addFileToTask($filename, $content);
 			$filename = ".autotest";
 			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename,$content);
+			$node->addFileToTask($filename, $content);
 			
 			$this->children[] = $node;
 		} else {
@@ -277,6 +211,71 @@ class GameNode
 			return json_encode($json, JSON_PRETTY_PRINT);
 		} else {
 			return json_encode($json);
+		}
+	}
+	
+	protected function constructNode($parent, $fTree)
+	{
+		if (is_array($fTree)) {
+			$this->parent = $parent;
+			$this->takeKeyValues($fTree, ['id', 'name', 'type', 'path', 'isDirectory', 'data']);
+			if (array_key_exists('children', $fTree)) {
+				$this->children = [];
+				foreach ($fTree['children'] as $child) {
+					$node = new GameNode();
+					$node->folder = $this->folder;
+					$node->course = $this->course;
+					$node->constructNode($this, $child);
+					$this->children[] = $node;
+				}
+			}
+		}
+	}
+	
+	private function orderJsonKeys($json)
+	{
+		uksort($json, 'self::sortKeys');
+		if (is_array($json)) {
+			if (array_key_exists('children', $json)) {
+				if ($json['children'] !== null) {
+					foreach ($json['children'] as &$child) {
+						self::orderJsonKeys($child);
+					}
+				}
+			}
+		}
+	}
+	
+	protected function sortKeys($a, $b)
+	{
+		if ($a == 'id') {
+			return -1;
+		} elseif ($a == 'name') {
+			if ($b == 'id') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'path') {
+			if ($b == 'id' || $b == 'name') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'type') {
+			if ($b == 'id' || $b == 'name' || $b == 'path') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} elseif ($a == 'isDirectory') {
+			if ($b == 'id' || $b == 'name' || $b == 'path' || $b == 'type' || $b == 'hidden') {
+				return 1;
+			} else {
+				return -1;
+			}
+		} else {
+			return 1;
 		}
 	}
 	

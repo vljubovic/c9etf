@@ -1,14 +1,5 @@
 <?php
 
-function validateRequired($keys, $array)
-{
-	foreach ($keys as $key) {
-		if (!array_key_exists($key, $array)) {
-			error(400, "Required field $key not present in body!");
-		}
-	}
-}
-
 function extractOptionals($keys, $data)
 {
 	$result = array();
@@ -39,6 +30,7 @@ function initializeGame($course)
 	mkdir($course->getPath() . '/game_files');
 	touch($course->getPath() . '/game.json');
 	file_put_contents($course->getPath() . '/game.json', "{}");
+	jsonResponse(true, 200, array("message" => "Game initialized"));
 }
 
 /**
@@ -61,7 +53,7 @@ function getStudentAssignments(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, $response->code, array("data" => $data));
 }
@@ -104,7 +96,7 @@ function createAssignment(Course $course): void
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$node = GameNode::constructGameForCourse($course);
 		$payload = json_decode($payload, true);
@@ -177,7 +169,7 @@ function editAssignment(Course $course): void
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$payload = json_decode($payload, true);
 		$assignment->editAssignment($name, $payload['active'], $payload['points'], $payload['challenge_pts']);
@@ -226,7 +218,7 @@ function createTask(Course $course)
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$node = GameNode::findAssignmentById($assignmentId, $course);
 		try {
@@ -278,7 +270,7 @@ function editTask(Course $course)
 		}
 		
 		if ($response->code >= 400) {
-			jsonResponse(false, $response->code, $data);
+			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		
 		try {
@@ -311,7 +303,7 @@ function deleteTask(Course $course)
 	}
 	
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	
 	$node = $task->parent;
@@ -340,16 +332,16 @@ function getFileContent(Course $course)
 		}
 	}
 	if ($file === null) {
-		jsonResponse(false, 404, array("message"=>"File not found"));
+		jsonResponse(false, 404, array("message" => "File not found"));
 	}
 	$content = $file->getFileContent();
 	if ($content == false) {
 		$content = "";
 	}
 	if ($file !== null) {
-		jsonResponse(true, 200, array('data'=>array('content' => $content)));
+		jsonResponse(true, 200, array('data' => array('content' => $content)));
 	} else {
-		jsonResponse(false, 404, array("message"=>"File not found"));
+		jsonResponse(false, 404, array("message" => "File not found"));
 	}
 }
 
@@ -433,10 +425,10 @@ function deleteTaskFile(Course $course)
 				$child->deleteFile();
 			}
 		}
-		updateGameJson($course,$task);
-		jsonResponse(true, 200, array("message"=>"File deleted"));
+		updateGameJson($course, $task);
+		jsonResponse(true, 200, array("message" => "File deleted"));
 	} catch (Exception $exception) {
-		jsonResponse(false,500,array("message" => $exception->getMessage()));
+		jsonResponse(false, 500, array("message" => $exception->getMessage()));
 	}
 }
 
@@ -451,7 +443,325 @@ function getTaskCategories(): void
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
 	if ($response->code >= 400) {
-		jsonResponse(false, $response->code, $data);
+		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	jsonResponse(true, 200, array("data" => $data));
+}
+
+
+/**
+ * @param $login
+ */
+function buyPowerUp($login): void
+{
+	global $game_server_url;
+	
+	$powerUpType = $_REQUEST["type_id"];
+	if ($powerUpType === null) {
+		jsonResponse(false, 400, array("message" => "Set the type_id field"));
+	}
+	
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/powerups/buy/$login/$powerUpType")
+		->setMethod('POST')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ */
+function getTasksForAssignment(): void
+{
+	global $game_server_url;
+	$assignment_id = null;
+	if (isset($_REQUEST['assignment_id'])) {
+		$assignment_id = $_REQUEST['assignment_id'];
+	} else {
+		jsonResponse(false, 400, array('message' => "Assignment id is not set in query"));
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/assignments/$assignment_id/tasks")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ */
+function getPowerUpTypes(): void
+{
+	global $game_server_url;
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/powerups/types")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ */
+function getChallengeConfig(): void
+{
+	global $game_server_url;
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/challenge/config")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function getStudentData($login): void
+{
+	global $game_server_url;
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/$login")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function startAssignment($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST["assignment_id"];
+	if ($assignmentId === null) {
+		error(400, "Set the assignment_id field");
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/assignments/$assignmentId/$login/start")
+		->setMethod('POST')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function turnTaskIn($login): void
+{
+	global $game_server_url;
+	$input = json_decode(file_get_contents('php://input'), true);
+	if ($input) {
+		$payload = json_encode($input);
+		$assignmentId = $_REQUEST['assignment_id'];
+		$headers = array(
+			'Content-Type: application/json',
+			'Content-Length: ' . strlen($payload)
+		);
+		$response = (new RequestBuilder())
+			->setUrl("$game_server_url/uup-game/tasks/turn_in/$login/$assignmentId")
+			->setMethod('POST')
+			->setHeaders($headers)
+			->setBody($payload)
+			->send();
+		$data = json_decode($response->data, true);
+		if ($response->error) {
+			jsonResponse(false, 500, array("message" => "Game Server not responding"));
+		}
+		if ($response->code >= 400) {
+			jsonResponse(false, $response->code, array("data" => $data));
+		}
+		jsonResponse(true, 200, array("data" => $data));
+	}
+}
+
+/**
+ * @param $login
+ */
+function swapTask($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST['assignment_id'];
+	
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/tasks/swap/$login/$assignmentId")
+		->setMethod('POST')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function hint($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST['assignment_id'];
+	
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/tasks/hint/$login/$assignmentId")
+		->setMethod('POST')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function getAvailableTasks($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST['assignment_id'];
+	$typeId = $_REQUEST['type_id'];
+	
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/tasks/turned_in/$login/$assignmentId/$typeId")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function secondChance($login): void
+{
+	global $game_server_url;
+	$input = json_decode(file_get_contents('php://input'), true);
+	if ($input) {
+		$assignmentId = $_REQUEST['assignment_id'];
+		$payload = json_encode($input);
+		$headers = array(
+			'Content-Type: application/json',
+			'Content-Length: ' . strlen($payload)
+		);
+		$response = (new RequestBuilder())
+			->setUrl("$game_server_url/uup-game/tasks/second_chance/$login/$assignmentId")
+			->setMethod('PUT')
+			->setHeaders($headers)
+			->setBody($payload)
+			->send();
+		$data = json_decode($response->data, true);
+		
+		if ($response->error) {
+			jsonResponse(false, 500, array("message" => "Game Server not responding"));
+		}
+		if ($response->code >= 400) {
+			jsonResponse(false, $response->code, array("data" => $data));
+		}
+		jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+	}
+}
+
+/**
+ * @param $login
+ */
+function getUsedHint($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST["assignment_id"];
+	$taskNumber = $_REQUEST["task_number"];
+	if ($assignmentId === null || $taskNumber === null) {
+		jsonResponse(false, 400, array("message" => "Set assignment_id and task_number field"));
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/powerups/hints/used/$login/$assignmentId/$taskNumber")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function getTaskPreviousPoints($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST["assignment_id"];
+	$taskNumber = $_REQUEST["task_number"];
+	if ($assignmentId === null || $taskNumber === null) {
+		jsonResponse(false, 400, array("message" => "Set assignment_id and task_number field"));
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/tasks/previousTask/points/get/$login/$assignmentId/$taskNumber")
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }

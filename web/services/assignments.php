@@ -25,21 +25,10 @@ if (isset($_SESSION['login'])) {
 }
 
 if (!$logged_in) {
-	$result = array('success' => "false", "message" => "You're not logged in");
-	print json_encode($result);
-	return 0;
+	jsonResponse(false, 400, array("message" => "You're not logged in"));
 }
 
 session_write_close();
-
-function validateRequired($keys, $array)
-{
-	foreach ($keys as $key) {
-		if (!array_key_exists($key, $array)) {
-			error("400", "Required field $key not present in body!");
-		}
-	}
-}
 
 /**
  * @param Course $course
@@ -72,19 +61,19 @@ function create_file($course, $contentFolder = "assignment_files", $descriptionF
 		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$folder = $fsNode->getNodeByPath($path);
 		if ($folder == null) {
-			error("400", "Invalid path to folder");
+			jsonResponse(false, 400, array("message" => "Invalid path to folder $path"));
 		}
 		if ($name && check_filename($name)) {
 			try {
 				$folder->addFile(['name' => $name, 'show' => $show, 'binary' => $binary], $content);
 				file_put_contents($course->getPath() . '/assignments.json', $fsNode->getJson());
-				message("Successfully created file $name");
+				jsonResponse(true, 200, array("message" => "Successfully created file $name"));
 			} catch (Exception $exception) {
-				error("400", $exception->getMessage());
+				jsonResponse(false, 400, array("message" => $exception->getMessage()));
 			}
 		}
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body"));
 	}
 }
 
@@ -119,20 +108,24 @@ function edit_file($course, $contentFolder = "assignment_files", $descriptionFil
 		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("404", "File not found");
+			jsonResponse(false, 404, array("message" => "File not found"));
 		}
 		if ($node->isDirectory) {
-			error("400", "This is a folder, not a file");
+			jsonResponse(false, 400, array("message" => "This is a folder, not a file"));
 		}
 		$message = "";
 		if ($node->isTemplateFile()) {
 			$message = "You edited a template file. That means that you created a file in this folder and it is no longer part of the template.";
 		}
-		$node->editFile($content, $show, $binary);
+		try {
+			$node->editFile($content, $show, $binary);
+		} catch (Exception $e) {
+			jsonResponse(false, 500, array("message" => $e->getMessage()));
+		}
 		file_put_contents($course->getPath() . '/' . $descriptionFile, $fsNode->getJson());
-		message("File $node->name edited. " . $message);
+		jsonResponse(true, 200, array("message" => "File $node->name edited. " . $message));
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -153,20 +146,20 @@ function delete_file($course, $contentFolder = "assignment_files", $descriptionF
 		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("422", "File does not exist");
+			jsonResponse(false, 422, array("message" => "File does not exist"));
 		}
 		if ($node->isDirectory) {
-			error("400", "This is a folder...");
+			jsonResponse(false, 400, array("message" => "This is a folder..."));
 		}
 		$node->deleteFile();
 		$content = $fsNode->getJson();
 		if ($content == false) {
-			error("500", "Contact your administrator!");
+			jsonResponse(false, 500, array("message" => "Contact your administrator!"));
 		}
 		file_put_contents($course->getPath() . '/' . $descriptionFile, $content);
-		message("Successfully deleted file $node->path");
+		jsonResponse(true, 200, array("message" => "Successfully deleted file $node->path"));
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -186,16 +179,16 @@ function get_file_content($course, $contentFolder = "assignment_files", $descrip
 		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("404", "File not found");
+			jsonResponse(false, 404, array("message" => "File not found"));
 		}
 		try {
 			$content = $node->getFileContent();
-			message_and_data("Content of file: $node->name", array('content' => $content, 'isFromGlobalTemplate' => $node->isTemplateFile()));
+			jsonResponse(true, 200, array("message" => "Content of file: $node->name", "data" => array("content" => $content, "isFromGlobalTemplate" => $node->isTemplateFile())));
 		} catch (Exception $exception) {
-			error("500", $exception->getMessage());
+			jsonResponse(false, 500, array("message" => $exception->getMessage()));
 		}
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -205,13 +198,13 @@ function convert_to_new_format(Course $course)
 	$fsNode = FSNode::constructTreeForCourseFromOldTree($course);
 	$content = $fsNode->getJson();
 	if ($content == null) {
-		error("500", "Json is null. Check if everything is ok with the old file.");
+		jsonResponse(false, 500, array("message" => "Json is null. Check if everything is ok with the old file."));
 	}
 	$result = file_put_contents($course->getPath() . '/assignments.json', $content);
 	if ($result == false) {
-		error("500", "Could not write to " . $course->getPath() . '/assignments.json');
+		jsonResponse(false, 500, array("message" => "Could not write to " . $course->getPath() . '/assignments.json'));
 	}
-	message("Successfully converted to new format");
+	jsonResponse(true, 200, array("message" => "Successfully converted to new format"));
 }
 
 /**
@@ -222,7 +215,8 @@ function convert_to_new_format(Course $course)
 function get_assignments($course, $contentFolder = "assignment_files", $descriptionFile = "assignments.json")
 {
 	$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
-	message_and_data("AssignmentRoot", json_decode($fsNode->getJson()));
+	$node = json_decode($fsNode->getJson());
+	jsonResponse(true, 200, array("message" => "AssignmentRoot", "data" => $node));
 }
 
 
@@ -245,36 +239,25 @@ function create_assignment($course, $contentFolder = "assignment_files", $descri
 		if (array_key_exists('homeworkId', $input)) {
 			$homeworkId = $input['homeworkId'];
 		}
-		$fsNode = FSNode::constructTreeForCourse($course,$contentFolder,$descriptionFile);
+		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("400", "Invalid path. Path must point to the parent folder for the new assignment");
+			jsonResponse(false, 400, array("message" => "Invalid path. Path must point to the parent folder for the new assignment"));
 		}
 		try {
-			$id = null; // TODO: Get ID from game server if it's a game
-//			if ($contentFolder === "game_files") {
-//				$request = curl_init("$conf_game_url/uup-game/assignments/create");
-//				curl_setopt($request, CURLOPT_RETURNTRANSFER, true);
-//				curl_setopt($request, CURLOPT_POST, true);
-//				$body = array("name"=>$displayName, "active"=>true, "points"=>3,"challenge_pts"=>5);
-//				curl_setopt($request, CURLOPT_POSTFIELDS, json_encode($body));
-//				curl_setopt($request, CURLOPT_HTTPHEADER, array(
-//					'Content-Type: application/json'
-//				));
-//				$response = curl_exec($request);
-//			}
+			$id = null;
 			$node->addFolder($name, $displayName, $type, $hidden, $homeworkId, $id);
 			$content = $fsNode->getJson();
 			if ($content == null) {
-				error("500", "Please send this to your administrator. Add assignments is not working properly.");
+				jsonResponse(false, 500, array("message" => "Please send this to your administrator. Add assignments is not working properly."));
 			}
-			file_put_contents($course->getPath() . '/'.$descriptionFile, $content);
-			message("Successfully added folder $name with display name $displayName to path: $path");
+			file_put_contents($course->getPath() . '/' . $descriptionFile, $content);
+			jsonResponse(true, 200, array("message" => "Successfully added folder $name with display name $displayName to path: $path"));
 		} catch (Exception $exception) {
-			error("400", $exception->getMessage());
+			jsonResponse(false, 400, array("message" => $exception->getMessage()));
 		}
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -289,10 +272,10 @@ function edit_assignment($course, $contentFolder = "assignment_files", $descript
 	if ($input) {
 		validateRequired(['path'], $input);
 		$path = $input['path'];
-		$fsNode = FSNode::constructTreeForCourse($course,$contentFolder,$descriptionFile);
+		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("400", "Invalid path");
+			jsonResponse(false, 400, array("message" => "Invalid path"));
 		}
 		if (!array_key_exists('displayName', $input)) {
 			$displayName = null;
@@ -317,12 +300,12 @@ function edit_assignment($course, $contentFolder = "assignment_files", $descript
 		$node->editFolder($displayName, $type, $hidden, $homeworkId);
 		$content = $fsNode->getJson();
 		if ($content == null) {
-			error("500", "Contact your administrator. Edit assignment service endpoint problem");
+			jsonResponse(false, 500, array("message" => "Contact your administrator. Edit assignment service endpoint problem"));
 		}
-		file_put_contents($course->getPath() . '/'.$descriptionFile, $fsNode->getJson());
-		message("Successfully updated assignment $path");
+		file_put_contents($course->getPath() . '/' . $descriptionFile, $fsNode->getJson());
+		jsonResponse(true, 200, array("message" => "Successfully updated assignment $path"));
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -337,20 +320,20 @@ function delete_assignment($course, $contentFolder = "assignment_files", $descri
 	if ($input) {
 		validateRequired(['path'], $input);
 		$path = $input['path'];
-		$fsNode = FSNode::constructTreeForCourse($course,$contentFolder,$descriptionFile);
+		$fsNode = FSNode::constructTreeForCourse($course, $contentFolder, $descriptionFile);
 		$node = $fsNode->getNodeByPath($path);
 		if ($node == null) {
-			error("400", "Invalid path");
+			jsonResponse(false,400,array("message"=>"Invalid path"));
 		}
 		$node->deleteFolder();
 		$content = $fsNode->getJson();
 		if ($content == null) {
-			error("500", "Contact your administrator. Delete assignment service endpoint problem");
+			jsonResponse(false,500,array("message"=>"Contact your administrator. Delete assignment service endpoint problem"));
 		}
-		file_put_contents($course->getPath() . '/'.$descriptionFile, $fsNode->getJson());
-		message("Successfully deleted assignment $path");
+		file_put_contents($course->getPath() . '/' . $descriptionFile, $fsNode->getJson());
+		jsonResponse(true, 200, array("message" => "Successfully deleted assignment $path"));
 	} else {
-		error("400", "Missing body!");
+		jsonResponse(false, 400, array("message" => "Missing body!"));
 	}
 }
 
@@ -370,13 +353,6 @@ if (isset($_REQUEST["year"])) {
 	$year = intval($_REQUEST["year"]);
 }
 
-/**
- * THIS PART IS FOR THE GAME
- */
-//if (isset($_REQUEST["game"])) {
-//	$folder = "game_files";
-//	$descriptor = "game.json";
-//} else {
 $folder = "assignment_files";
 $descriptor = "assignments.json";
 //}
@@ -400,56 +376,56 @@ global $conf_sysadmins;
 $action = $_REQUEST["action"];
 
 if ($action == "createFile") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	create_file($course,$folder,$descriptor);
+	create_file($course, $folder, $descriptor);
 } else if ($action == "editFile") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	edit_file($course,$folder,$descriptor);
+	edit_file($course, $folder, $descriptor);
 } else if ($action == "deleteFile") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	delete_file($course,$folder,$descriptor);
+	delete_file($course, $folder, $descriptor);
 } else if ($action == "getFileContent") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
-	get_file_content($course,$folder,$descriptor);
+	get_file_content($course, $folder, $descriptor);
 } else if ($action == "getAssignments") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
-	get_assignments($course,$folder,$descriptor);
+	get_assignments($course, $folder, $descriptor);
 } else if ($action == "updateAssignments") {
 	if (!in_array($login, $conf_sysadmins)) {
-		error("403", "You are not the system admin");
+		jsonResponse(false, 403, array("message" => "You are not the system admin!"));
 	}
 	convert_to_new_format($course);
 } else if ($action == "createAssignment") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	create_assignment($course,$folder,$descriptor);
+	create_assignment($course, $folder, $descriptor);
 } else if ($action == "editAssignment") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	edit_assignment($course,$folder,$descriptor);
+	edit_assignment($course, $folder, $descriptor);
 } else if ($action == "deleteAssignment") {
-	if (!file_exists($course->getPath() . '/'.$descriptor)) {
-		error("404", "Assignments not configured. Contact your administrator!");
+	if (!file_exists($course->getPath() . '/' . $descriptor)) {
+		jsonResponse(false, 404, array("message" => "Assignments not configured for $course->name. Contact your administrator!"));
 	}
 	check_admin_access($course, $login);
-	delete_assignment($course,$folder,$descriptor);
+	delete_assignment($course, $folder, $descriptor);
 } else {
-	error("422", "Unknown action");
+	jsonResponse(false, 422, array("message" => "Unknown action"));
 }
