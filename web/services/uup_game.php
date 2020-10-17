@@ -52,12 +52,16 @@ try {
 $courses = [$or, $uup];
 $isPartOfGame = false;
 $isAdmin = false;
+$isStudent = false;
 foreach ($courses as $course) {
 	if ($course->isAdmin($login) || $course->isStudent($login)) {
 		$isPartOfGame = true;
 	}
 	if ($course->isAdmin($login)) {
 		$isAdmin = true;
+	}
+	if ($course->isStudent($login)) {
+		$isStudent = true;
 	}
 }
 
@@ -163,11 +167,15 @@ if ($action == "getAssignments") {
 } else if ($action === "initialize") {
 	initializeGame($course);
 } else if ($action === "check") {
+	$roles = [];
 	if ($isAdmin) {
-		jsonResponse(true, 200, array("message" => "Ok"));
-	} else {
-		jsonResponse(false, 400, array("message" => "Not ok"));
+		$roles[] = "admin";
 	}
+	if ($isStudent) {
+		$roles[] = "student";
+	}
+	jsonResponse(true, 200, array("message" => "Ok", "roles" => $roles));
+	
 } else {
 	jsonResponse(false, 422, array("message" => "Invalid action"));
 }
