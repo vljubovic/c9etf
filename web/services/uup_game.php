@@ -38,11 +38,34 @@ $error = "";
 // 2234
 //$course = extractCourseFromRequest();
 
-$course = Course::find(1, true);
+try {
+	$or = Course::find(1, true);
+} catch (Exception $exception) {
 
-if (!$course->isAdmin($login) && !$course->isStudent($login)) {
+}
+try {
+	$uup = Course::find(2234, true);
+} catch (Exception $exception) {
+
+}
+
+$courses = [$or, $uup];
+$isPartOfGame = false;
+$isAdmin = false;
+foreach ($courses as $course) {
+	if ($course->isAdmin($login) || $course->isStudent($login)) {
+		$isPartOfGame = true;
+	}
+	if ($course->isAdmin($login)) {
+		$isAdmin = true;
+	}
+}
+
+if(!$isPartOfGame) {
 	jsonResponse(false, 403, array('message' => "You are neither a student nor an admin on this course"));
 }
+
+$course = $or;
 
 global $conf_sysadmins;
 $action = $_REQUEST["action"];
@@ -56,58 +79,58 @@ if (!$canInitialize && !$resourcesExist) {
 }
 
 if ($action == "getAssignments") {
-	if ($course->isStudent($login)) {
+	if (!$isAdmin) {
 		getStudentAssignments();
 	} elseif ($course->isAdmin($login)) {
 		getAdminAssignments($course);
 	}
 } else if ($action == "createAssignment") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	createAssignment($course);
 } else if ($action == "editAssignment") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	editAssignment($course);
 } else if ($action == "createTask") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	createTask($course);
 } else if ($action == "editTask") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		error(403, "Permišn dinajd");
 	}
 	editTask($course);
 } else if ($action == "deleteTask") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	deleteTask($course);
 } else if ($action == "getTaskFileContent") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	getFileContent($course);
 } else if ($action == "createTaskFile") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	createTaskFile($course);
 } else if ($action == "editTaskFile") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	editTaskFile($course);
 } else if ($action == "deleteTaskFile") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	deleteTaskFile($course);
 } else if ($action === "getTasksForAssignment") {
-	if (!$course->isAdmin($login)) {
+	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	getTasksForAssignment();
@@ -140,7 +163,7 @@ if ($action == "getAssignments") {
 } else if ($action === "initialize") {
 	initializeGame($course);
 } else if ($action === "check") {
-	if ($course->isAdmin($login)) {
+	if ($isAdmin) {
 		jsonResponse(true, 200, array("message" => "Ok"));
 	} else {
 		jsonResponse(false, 400, array("message" => "Not ok"));
