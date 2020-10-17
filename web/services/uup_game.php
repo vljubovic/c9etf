@@ -54,6 +54,9 @@ $isPartOfGame = false;
 $isAdmin = false;
 $isStudent = false;
 foreach ($courses as $course) {
+	if ($course === null) {
+		continue;
+	}
 	if ($course->isAdmin($login) || $course->isStudent($login)) {
 		$isPartOfGame = true;
 	}
