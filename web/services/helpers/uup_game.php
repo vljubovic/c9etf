@@ -42,7 +42,10 @@ function getAdminAssignments($course)
 	jsonResponse(true, 200, array("data" => json_decode($node->getJson(), true)));
 }
 
-function getStudentAssignments(): void
+/**
+ * @param Course $course
+ */
+function getStudentAssignments($course): void
 {
 	global $game_server_url;
 	$response = (new RequestBuilder())
@@ -54,6 +57,12 @@ function getStudentAssignments(): void
 	}
 	if ($response->code >= 400) {
 		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	foreach ($data as &$lesson) {
+		$node = GameNode::findAssignmentById($lesson["id"],$course);
+		if ($node !== null) {
+			$lesson["path"] = $node->path;
+		}
 	}
 	jsonResponse(true, $response->code, array("data" => $data));
 }

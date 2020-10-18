@@ -88,7 +88,7 @@ if ($action == "getAssignments") {
 	if ($isAdmin && $adminParam) {
 		getAdminAssignments($course);
 	} elseif ($isStudent) {
-		getStudentAssignments();
+		getStudentAssignments($course);
 	}
 } else if ($action == "createAssignment") {
 	if (!$isAdmin) {
