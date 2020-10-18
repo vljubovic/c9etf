@@ -97,16 +97,13 @@ class GameNode
 			$node->type = 'task';
 			$node->data['category'] = $category;
 			$node->data['hint'] = $hint;
-			$filename = "task.html";
-			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename, $content);
-			$filename = "main.c";
-			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename, $content);
-			$filename = ".autotest";
-			$content = $this->extractContentFromTemplateFile($filename);
-			$node->addFileToTask($filename, $content);
-			
+			$items = scandir($this->course->getPath() . '/templates');
+			foreach ($items as $item) {
+				if ($item !== '.' && $item !== '..') {
+					$content = $this->extractContentFromTemplateFile($item);
+					$node->addFileToTask($item, $content);
+				}
+			}
 			$this->children[] = $node;
 		} else {
 			throw new Exception("You cannot add a Task here. This is not an Assignment.");
