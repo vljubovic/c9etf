@@ -84,7 +84,7 @@ class GameNode
 	
 	public function addAssignmentTask($id, $name, $displayName, $category, $hint)
 	{
-		if ($this->type === "assignment") {
+		if ($this->type === "assignment") {https://meet.google.com/rdo-ayzr-koe
 			$node = $this->constructChild();
 			
 			$node->path = $this->path . "/$name";
