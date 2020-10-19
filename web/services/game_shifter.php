@@ -97,6 +97,7 @@ if ($redo === false) {
 			jsonResponse(false, 500, array("message" => $e->getMessage()));
 		}
 		$replacementPairs = array(
+			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
 			"===COURSE===" => $taskNode->course->name,
 			"===STUDENT-FULL-NAME===" => $user->realname,
 			"===STUDENT-USERNAME===" => $user->login,
@@ -165,6 +166,7 @@ if ($redo === false) {
 			jsonResponse(false, 500, array("message" => $e->getMessage()));
 		}
 		$replacementPairs = array(
+			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
 			"===COURSE===" => $taskNode->course->name,
 			"===STUDENT-FULL-NAME===" => $user->realname,
 			"===STUDENT-USERNAME===" => $user->login,
