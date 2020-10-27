@@ -168,6 +168,16 @@ if ($action == "getAssignments") {
 	getTaskPreviousPoints($login);
 } else if ($action === "initialize") {
 	initializeGame($course);
+} else if ($action == "resetRetard") {
+	if (!$isAdmin) {
+		error(403, "Permišn dinajd");
+	}
+	resetRetard($login);
+} else if ($action == "setTokens") {
+	if (!$isAdmin) {
+		error(403, "Permišn dinajd");
+	}
+	setTokens($login);
 } else if ($action === "check") {
 	$roles = [];
 	if ($isAdmin) {
