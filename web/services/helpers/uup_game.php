@@ -59,7 +59,7 @@ function getStudentAssignments($course): void
 		jsonResponse(false, $response->code, array("data" => $data));
 	}
 	foreach ($data as &$lesson) {
-		$node = GameNode::findAssignmentById($lesson["id"],$course);
+		$node = GameNode::findAssignmentById($lesson["id"], $course);
 		if ($node !== null) {
 			$lesson["path"] = $node->path;
 		}
@@ -81,6 +81,9 @@ function createAssignment(Course $course): void
 		$name = str_replace("..", "", $name);
 		$name = str_replace("/", "", $name);
 		$displayName = $input["displayName"];
+		if (file_exists($course->getPath() . "/game_files/$name")) {
+			jsonResponse(false, 400, array("message" => "Folder already exists!"));
+		}
 		$payload = array(
 			"name" => $displayName,
 			"active" => boolval($input["active"]),
@@ -203,6 +206,10 @@ function createTask(Course $course)
 		$name = str_replace("..", "", $name);
 		$name = str_replace("/", "", $name);
 		$displayName = $input["displayName"];
+		$node = GameNode::findAssignmentById($assignmentId, $course);
+		if (file_exists($node->getAbsolutePath() . "/$name")) {
+			jsonResponse(false, 400, array("message" => "Folder already exists"));
+		}
 		$payload = array(
 			"task_name" => $displayName,
 			"category_id" => intval($input["category"]),
@@ -229,7 +236,6 @@ function createTask(Course $course)
 		if ($response->code >= 400) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
-		$node = GameNode::findAssignmentById($assignmentId, $course);
 		try {
 			$node->addAssignmentTask($data["id"], $input["name"], $input["displayName"], $input["category"], $input["hint"]);
 			updateGameJson($course, $node);
