@@ -602,6 +602,53 @@ function startAssignment($login): void
 /**
  * @param $login
  */
+function resetRetard($login): void
+{
+	global $game_server_url;
+	$assignmentId = $_REQUEST["assignment_id"];
+	if ($assignmentId === null) {
+		error(400, "Set the assignment_id field");
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/assignments/reset/$login/$assignmentId")
+		->setMethod('GET')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
+function setTokens($login): void
+{
+	global $game_server_url;
+	$tokens = intval($_REQUEST["amount"]);
+	$response = (new RequestBuilder())
+		->setUrl("$game_server_url/uup-game/powerups/tokens/set/$login/$tokens")
+		->setMethod('GET')
+		->send();
+	$data = json_decode($response->data, true);
+	
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
+}
+
+/**
+ * @param $login
+ */
 function turnTaskIn($login): void
 {
 	global $game_server_url;
