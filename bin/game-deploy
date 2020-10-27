@@ -19,7 +19,7 @@ slovo=$(echo $user | cut -c 1)
 game_files="/usr/local/webide/data/$course/game_files"
 history="/usr/local/webide/data/$course/task_history"
 
-workspace="/home/$slovo/$user/workspace"
+workspace="/rhome/$slovo/$user/workspace"
 
 if [ ! -d "$workspace" ]
 then
@@ -40,20 +40,31 @@ case $action in
 			exit 3
 		fi
     rm -rf "$dest"/*
+    rm "$dest"/.*
     cp -Rp "$src"/. "$dest"
     chown "$user" "$dest" -R
-    chmod 664 "$dest" -R
+    if [ -f "$dest"/".autotest2" ]; then
+        chown root "$dest"/".autotest2"
+        chmod 644 "$dest"/".autotest2"
+    fi
     while read -r p; do
       for entry in "$dest"/*
       do
         komanda="${p} '${entry}'"
-        if [ -n "$p" ]
+        if [ -n "$p" ] && [ -f "$entry" ]
+        then
+          eval "$komanda"
+        fi
+      done
+      for entry in "$dest"/.*
+      do
+        komanda="${p} '${entry}'"
+        if [ -n "$p" ] && [ -f "$entry" ]
         then
           eval "$komanda"
         fi
       done
     done </usr/local/webide/data/sedovi
-    echo "" > /usr/local/webide/data/sedovi
     ;;
   from-history-to-student)
     src="$history/$user/$assignment/$task"
@@ -67,9 +78,14 @@ case $action in
 		then
 			mkdir -p "$dest"
 		fi
-		rm -rf "$dest"/*
+	rm -rf "$dest"/*
+    rm "$dest"/.*
     cp -Rp "$src"/. "$dest"
     chown "$user" "$dest" -R
+    if [ -f "$dest"/".autotest2" ]; then
+        chown root "$dest"/".autotest2"
+        chmod 644 "$dest"/".autotest2"
+    fi
     ;;
   from-student-to-history)
     src="$workspace/UUP_GAME/$assignment"
@@ -83,7 +99,8 @@ case $action in
 		then
 			mkdir -p "$dest"
 		fi
-		rm -rf "$dest"/*
+	rm -rf "$dest"/*
+    rm "$dest"/.*
     cp -Rp "$src"/. "$dest"
     rm -rf "$src"/*
     ;;
