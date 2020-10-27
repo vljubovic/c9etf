@@ -29,7 +29,7 @@ fi
 case $action in
   from-uup-to-student)
     src="$game_files/$assignment/$task"
-    dest="$workspace/UUP_GAME/$assignmentName"
+    dest="$workspace/UUP_GAME/$assignment"
     if [ ! -e "$dest" ]
 		then
 			mkdir -p "$dest"
@@ -57,7 +57,7 @@ case $action in
     ;;
   from-history-to-student)
     src="$history/$user/$assignment/$task"
-    dest="$workspace/UUP_GAME/$assignmentName"
+    dest="$workspace/UUP_GAME/$assignment"
     if [ ! -e "$src" ]
 		then
 			echo "ERROR: source $src does not exist"
@@ -72,7 +72,7 @@ case $action in
     chown "$user" "$dest" -R
     ;;
   from-student-to-history)
-    src="$workspace/UUP_GAME/$assignmentName"
+    src="$workspace/UUP_GAME/$assignment"
     dest="$history/$user/$assignment/$task"
     if [ ! -e "$src" ]
 		then

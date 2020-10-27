@@ -79,11 +79,16 @@ if (!$canInitialize && !$resourcesExist) {
 	jsonResponse(false, 500, array('message' => "Game not established"));
 }
 
+$adminParam = false;
+if (isset($_REQUEST["A"])) {
+	$adminParam = true;
+}
+
 if ($action == "getAssignments") {
-	if (!$isAdmin) {
-		getStudentAssignments();
-	} elseif ($course->isAdmin($login)) {
+	if ($isAdmin && $adminParam) {
 		getAdminAssignments($course);
+	} elseif ($isStudent) {
+		getStudentAssignments($course);
 	}
 } else if ($action == "createAssignment") {
 	if (!$isAdmin) {
