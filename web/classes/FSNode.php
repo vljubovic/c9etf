@@ -36,12 +36,6 @@ class FSNode
 		usort($assignments, "FSNode::compareAssignments");
 		$path = $course->getPath() . '/assignment_files';
 		$tree = FSNode::sniffFolder($path, $path);
-		$files = scandir($course->getPath() . '/files');
-		if ($files) {
-			$files = array_filter($files, "FSNode::notDotDotAndDot");
-			FSNode::addItemsToLeaves($tree, $files);
-			FSNode::addItemsToLeaves($tree, $files);
-		}
 		FSNode::extractInfoFromOldAssignments($tree['children'], $assignments, $course);
 		usort($tree['children'], "FSNode::compareAssignments");
 		$node = new FSNode();
@@ -145,8 +139,8 @@ class FSNode
 	
 	public function editFile($content, $show = null, $binary = null)
 	{
-		if(!file_exists($this->getAbsolutePath())) {
-			$this->createFile($this->getAbsolutePath(),"");
+		if (!file_exists($this->getAbsolutePath())) {
+			$this->createFile($this->getAbsolutePath(), "");
 		}
 		if (file_exists($this->getAbsolutePath())) {
 			if ($content !== null) {
@@ -232,6 +226,7 @@ class FSNode
 	{
 		$this->$name = $value;
 	}
+	
 	protected static function orderJsonKeys(&$json)
 	{
 		uksort($json, 'FSNode::sortKeys');
@@ -245,7 +240,9 @@ class FSNode
 			}
 		}
 	}
-	protected function getReplacedTemplatePlaceholders($code){
+	
+	protected function getReplacedTemplatePlaceholders($code)
+	{
 		$parent = $this->parent;
 		$grand = $this->parent;
 		if ($grand->parent !== null) {
@@ -304,12 +301,7 @@ class FSNode
 	protected static function addItemsToLeaves(&$node, $items)
 	{
 		if ($node['isDirectory']) {
-			$leaf = true;
-			foreach ($node['children'] as $child) {
-				if ($child['isDirectory']) {
-					$leaf = false;
-				}
-			}
+			$leaf = $node['type'] === 'task';
 			if ($leaf) {
 				foreach ($items as $key => $item) {
 					$node['children'][] = array(
@@ -362,6 +354,9 @@ class FSNode
 					}
 					if (!is_string($item) && array_key_exists('type', $item)) {
 						$assignment['type'] = $item['type'];
+						if ($assignment['type'] === 'zadatak') {
+							$assignment['type'] = 'task';
+						}
 					}
 					if (!is_string($item) && array_key_exists('name', $item)) {
 						$assignment['name'] = $item['name'];
@@ -385,7 +380,7 @@ class FSNode
 					if (array_key_exists('children', $assignment)) {
 						if (array_key_exists('items', $item) && count($item['items']) !== 0) {
 							FSNode::extractInfoFromOldAssignments($assignment['children'], $item['items'], $course);
-						} else {
+						} else if (array_key_exists('files', $item)) {
 							FSNode::extractInfoFromOldAssignments($assignment['children'], $item['files'], $course);
 						}
 					}
@@ -676,13 +671,7 @@ class FSNode
 	protected static function getAssignmentFilesystemTree($course, $folder)
 	{
 		$path = $course->getPath() . '/' . $folder . '';
-		$files = scandir($course->getPath() . '/files');
-		$tree = FSNode::sniffFolder($path, $path);
-		if ($files) {
-			$files = array_filter($files, "FSNode::notDotDotAndDot");
-			FSNode::addItemsToLeaves($tree, $files);
-		}
-		return $tree;
+		return FSNode::sniffFolder($path, $path);
 	}
 	
 	protected static function takeKeysIfTheyExist(&$a, $b, $keys)
@@ -699,11 +688,27 @@ class FSNode
 	protected static function mergeTreesIntoFirst(&$a, $b)
 	{
 		FSNode::takeKeysIfTheyExist($a, $b, ['id', 'name', 'type', 'hidden', 'show', 'binary', 'homeworkId']);
+		if ($a['hidden'] === "true") {
+			$a['hidden'] = true;
+		} else if ($a['hidden'] === "false"){
+			$a['hidden'] = false;
+		}
 		if (is_array($a) && is_array($b) && array_key_exists('children', $a) && array_key_exists('children', $b)) {
-			foreach ($a['children'] as &$child) {
-				foreach ($b['children'] as $c) {
+			foreach ($b['children'] as $c) {
+				$found = false;
+				foreach ($a['children'] as &$child) {
 					if ($child['path'] == $c['path']) {
+						$found = true;
 						FSNode::mergeTreesIntoFirst($child, $c);
+					}
+				}
+				if (!$found) {
+					$a['children'][] = array("path"=>$c['path'], "isDirectory"=>false);
+					
+					foreach ($a['children'] as &$child) {
+						if ($child['path'] == $c['path']) {
+							FSNode::mergeTreesIntoFirst($child, $c);
+						}
 					}
 				}
 			}
@@ -717,6 +722,9 @@ class FSNode
 		$tree = json_decode(file_get_contents($path), true);
 		$fTree = FSNode::getAssignmentFilesystemTree($course, $folder);
 		FSNode::mergeTreesIntoFirst($fTree, $tree);
+		$files = scandir($course->getPath() . '/files');
+		$files = array_filter($files, "FSNode::notDotDotAndDot");
+		FSNode::addItemsToLeaves($fTree,$files);
 		return $fTree;
 	}
 }

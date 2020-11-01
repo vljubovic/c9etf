@@ -372,6 +372,14 @@ try {
 }
 global $conf_sysadmins;
 
+if (!file_exists($course->getPath() . '/' . $descriptor)) {
+	$fsNode = FSNode::constructTreeForCourseFromOldTree($course);
+	$content = $fsNode->getJson();
+	if ($content == null) {
+		jsonResponse(false, 500, array("message" => "Json is null. Check if everything is ok with the old file."));
+	}
+	$result = file_put_contents($course->getPath() . '/assignments.json', $content);
+}
 
 $action = $_REQUEST["action"];
 
