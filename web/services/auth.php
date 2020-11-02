@@ -37,13 +37,19 @@ if ($error == "") {
 	$result['roles'] = [];
 	if (in_array($login,$conf_sysadmins)) {
 		$result['role'] = "sysadmin";
-		$result['roles'][] = 'sysadmin';
 	} else if (in_array($login,$conf_admin_users)) {
 		$result['role'] = "admin";
-		$result['roles'][] = 'admin';
 	} else {
 		$result['role'] = "student";
-		$result['roles'][] = 'student';
+	}
+	if (in_array($login,$conf_sysadmins)) {
+		$result['roles'][] = 'sysadmin';
+	}
+	if (in_array($login,$conf_admin_users)) {
+		$result['roles'][] = 'admin';
+	}
+	if (count($result['roles']) === 0) {
+		$result['roles'] = 'student';
 	}
 	if (in_array($login, $conf_game_spectators)) {
 		$result['roles'][] = 'game-spectator';
