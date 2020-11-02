@@ -150,6 +150,6 @@ $buildservice_git_url = "https://github.com/etf-sarajevo/buildservice";
 // =========================================
 
 $conf_game_url = "http://localhost:8183";
-
+$conf_game_spectators = array('vljubovic');
 
 ?>
