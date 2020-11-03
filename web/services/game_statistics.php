@@ -108,10 +108,47 @@ if ($action === "leaderboard") {
 				$totalPoints += $task["points"];
 			}
 		}
-		jsonResponse(true, 200, array("message" => "Student statistics","student"=>array("username"=>$profile->login,"realName"=>$profile->realname,"totalPoints"=>$totalPoints), "data" => $data));
+		jsonResponse(true, 200, array("message" => "Student statistics", "student" => array("username" => $profile->login, "realName" => $profile->realname, "totalPoints" => $totalPoints), "data" => $data));
 	} catch (Exception $e) {
 		jsonResponse(false, 404, array("message" => $e->getMessage()));
 	}
+} else if ($action === "groups") {
+	$courses = [];
+	try {
+		$uup = Course::find("1", true);
+		$courses[] = $uup;
+	} catch (Exception $e) {
+	}
+	
+	try {
+		$or = Course::find("2234", true);
+		$courses[] = $or;
+	} catch (Exception $e) {
+	}
+	$groups = [];
+	foreach ($courses as $course) {
+		$courseGroups = $course->getGroups();
+		foreach ($courseGroups as $courseGroup) {
+			$members = [];
+			try {
+				$groupMembers = $courseGroup->getMembers();
+				foreach ($groupMembers as $groupMember) {
+					$members[] = array(
+						"login" => $groupMember->login,
+						"realName" => $groupMember->realname,
+						"online" => $groupMember->online
+					);
+				}
+				$groups[] = array(
+					"id" => $courseGroup->id,
+					"name" => $courseGroup->name,
+					"members" => $members
+				);
+			} catch (Exception $e) {
+			}
+		}
+	}
+	jsonResponse(true, 200, array("data" => $groups));
 } else {
 	jsonResponse(false, 400, array("message" => "Unknown action"));
 }

@@ -36,23 +36,16 @@ if ($error == "") {
 	$result['message'] = "Welcome to c9";
 	$result['roles'] = [];
 	if (in_array($login,$conf_sysadmins)) {
-		$result['role'] = "sysadmin";
-	} else if (in_array($login,$conf_admin_users)) {
-		$result['role'] = "admin";
-	} else {
-		$result['role'] = "student";
-	}
-	if (in_array($login,$conf_sysadmins)) {
 		$result['roles'][] = 'sysadmin';
 	}
 	if (in_array($login,$conf_admin_users)) {
 		$result['roles'][] = 'admin';
 	}
-	if (count($result['roles']) === 0) {
-		$result['roles'] = 'student';
-	}
 	if (in_array($login, $conf_game_spectators)) {
 		$result['roles'][] = 'game-spectator';
+	}
+	if (count($result['roles']) === 0) {
+		$result['roles'] = 'student';
 	}
 } else {
 	$result['success'] = false;

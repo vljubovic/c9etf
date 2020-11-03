@@ -34,11 +34,16 @@ $result['message'] = 'You are logged in';
 $result['username'] = $login;
 $result['sid'] = $session_id;
 if (in_array($login,$conf_sysadmins)) {
-	$result['role'] = "sysadmin";
-} else if (in_array($login,$conf_admin_users)) {
-	$result['role'] = "admin";
-} else {
-	$result['role'] = "student";
+	$result['roles'][] = 'sysadmin';
+}
+if (in_array($login,$conf_admin_users)) {
+	$result['roles'][] = 'admin';
+}
+if (in_array($login, $conf_game_spectators)) {
+	$result['roles'][] = 'game-spectator';
+}
+if (count($result['roles']) === 0) {
+	$result['roles'] = 'student';
 }
 
 print json_encode($result);
