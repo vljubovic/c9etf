@@ -132,7 +132,8 @@ if ($action === "leaderboard") {
 			$members = [];
 			try {
 				$groupMembers = $courseGroup->getMembers();
-				foreach ($groupMembers as $groupMember) {
+				foreach ($groupMembers as $login=>$realname) {
+					$groupMember = new User($login);
 					$members[] = array(
 						"login" => $groupMember->login,
 						"realName" => $groupMember->realname,
