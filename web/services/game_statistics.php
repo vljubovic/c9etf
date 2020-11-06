@@ -210,6 +210,7 @@ if ($action === "leaderboard") {
 			$groups[] = array(
 				"id" => $courseGroup->id,
 				"name" => $courseGroup->name,
+				"course"=> $course->name
 			);
 		}
 	}
