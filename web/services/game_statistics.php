@@ -237,7 +237,7 @@ if ($action === "leaderboard") {
 		$courseGroups = $course->getGroups();
 		$found = false;
 		foreach ($courseGroups as $courseGroup) {
-			if ($courseGroup->id === $groupId) {
+			if ($courseGroup->id == $groupId) {
 				try {
 					$groupMembers = $courseGroup->getMembers();
 					$members = [];
