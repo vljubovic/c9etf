@@ -27,9 +27,29 @@ if (!$logged_in) {
 }
 
 session_write_close();
-global $conf_game_url, $conf_game_spectators;
+global $conf_game_url, $conf_game_spectators, $conf_base_path;
 
-if (!in_array($login, $conf_game_spectators)) {
+$courses = array();
+try {
+	$or = Course::find("1", true);
+	$courses[] = $or;
+} catch (Exception $e) {
+}
+try {
+	$uup = Course::find("2234", true);
+	$courses[] = $uup;
+} catch (Exception $e) {
+}
+$hasPermission = false;
+foreach ($courses as $course) {
+	try {
+		if ($course->isAdmin($login)) {
+			$hasPermission = true;
+		}
+	} catch (Exception $e) {
+	}
+}
+if (!in_array($login, $conf_game_spectators) && !$hasPermission) {
 	jsonResponse(false, 403, array("message" => "Permission denied"));
 }
 
@@ -130,26 +150,136 @@ if ($action === "leaderboard") {
 		$courseGroups = $course->getGroups();
 		foreach ($courseGroups as $courseGroup) {
 			$members = [];
-			try {
-				$groupMembers = $courseGroup->getMembers();
-				foreach ($groupMembers as $login=>$realname) {
-					$groupMember = new User($login);
-					$members[] = array(
-						"login" => $groupMember->login,
-						"realName" => $groupMember->realname,
-						"online" => $groupMember->online
-					);
-				}
-				$groups[] = array(
-					"id" => $courseGroup->id,
-					"name" => $courseGroup->name,
-					"members" => $members
-				);
-			} catch (Exception $e) {
-			}
+			$groups[] = array(
+				"id" => $courseGroup->id,
+				"name" => $courseGroup->name,
+			);
 		}
 	}
 	jsonResponse(true, 200, array("data" => $groups));
+} else if ($action === "groupMembers") {
+	if (!isset($_REQUEST['groupId'])) {
+		jsonResponse(false, 400, array("message" => "groupId is not set"));
+	}
+	$groupId = $_REQUEST['groupId'];
+	$courses = [];
+	try {
+		$or = Course::find("1", true);
+		$courses[] = $or;
+	} catch (Exception $e) {
+	}
+	
+	try {
+		$uup = Course::find("2234", true);
+		$courses[] = $uup;
+	} catch (Exception $e) {
+	}
+	$group = null;
+	foreach ($courses as $course) {
+		$courseGroups = $course->getGroups();
+		$found = false;
+		foreach ($courseGroups as $courseGroup) {
+			if ($courseGroup->id === $groupId) {
+				try {
+					$groupMembers = $courseGroup->getMembers();
+					$members = [];
+					foreach ($groupMembers as $key => $value) {
+						try {
+							$user = new User($key);
+							$members[] = array(
+								"login" => $user->login,
+								"realName" => $user->realname,
+								"online" => $user->online,
+							);
+						} catch (Exception $e) {
+						}
+					}
+					$group = array(
+						"id" => $courseGroup->id,
+						"name" => $courseGroup->name,
+						"members" => $members
+					);
+					$found = true;
+					break;
+				} catch (Exception $e) {
+				}
+			}
+		}
+		if ($found) {
+			break;
+		}
+	}
+	if ($group === null) {
+		jsonResponse(false, 404, array("message" => "Group with id $groupId not found"));
+	} else {
+		jsonResponse(true, 200, array("data" => $group));
+	}
+} else if ($action === "studentWorkTree") {
+	if (!isset($_REQUEST['student'])) {
+		jsonResponse(false, 400, array("message" => "No student specified"));
+	}
+	$username = $_REQUEST['student'];
+	header('Content-type:application/json;charset=utf-8');
+	$command = "sudo $conf_base_path/bin/game-sniffer $username tree";
+	$result = shell_exec("$command");
+	if ($result == null) {
+		jsonResponse(false,500,array("message"=>"$command"));
+	} else {
+		echo $result;
+		exit();
+	}
+} else if ($action === "studentWorkRead") {
+	if (!isset($_REQUEST['student'])) {
+		jsonResponse(false, 400, array("message" => "No student specified"));
+	}
+	if (!isset($_REQUEST['path'])) {
+		jsonResponse(false, 400, array("message" => "No path specified"));
+	}
+	$path = $_REQUEST['path'];
+	$username = $_REQUEST['student'];
+	$command = "sudo $conf_base_path/bin/game-sniffer $username read $path";
+	$content = shell_exec($command);
+	jsonResponse(true,200,array("data"=>array("content"=>$content)));
+} else if ($action === "studentHistoryTree") {
+	if (!isset($_REQUEST['student'])) {
+		jsonResponse(false, 400, array("message" => "No student specified"));
+	}
+	$or = null;
+	try {
+		$or = Course::find("1", true);
+	} catch (Exception $e) {
+		jsonResponse(false, 500, array("message" => $e->getMessage()));
+	}
+	$course = $or->toString();
+	$username = $_REQUEST['student'];
+	header('Content-type:application/json;charset=utf-8');
+	$command = "sudo tree -J $conf_base_path/data/$course/task_history/$username";
+	$result = shell_exec("$command");
+	if ($result == null) {
+		jsonResponse(false,500,array("message"=>"$command"));
+	} else {
+		echo $result;
+		exit();
+	}
+} else if ($action === "studentHistoryRead") {
+	if (!isset($_REQUEST['student'])) {
+		jsonResponse(false, 400, array("message" => "No student specified"));
+	}
+	if (!isset($_REQUEST['path'])) {
+		jsonResponse(false, 400, array("message" => "No path specified"));
+	}
+	$username = $_REQUEST['student'];
+	$path = $_REQUEST['path'];
+	$or = null;
+	try {
+		$or = Course::find("1", true);
+	} catch (Exception $e) {
+		jsonResponse(false, 500, array("message" => $e->getMessage()));
+	}
+	$course = $or->toString();
+	$command = "sudo cat $conf_base_path/data/$course/$username$path";
+	$content = shell_exec($command);
+	jsonResponse(true,200,array("data"=>array("content"=>$content)));
 } else {
 	jsonResponse(false, 400, array("message" => "Unknown action"));
 }
