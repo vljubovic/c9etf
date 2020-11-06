@@ -27,6 +27,63 @@ if (!$logged_in) {
 }
 
 session_write_close();
+
+
+function getHistoryEntries($path)
+{
+	$entries = scandir("$path");
+	if ($entries === false) {
+		return [];
+	}
+	$result = array();
+	foreach ($entries as $name) {
+		if ($name === "." || $name === ".." || $name === "") {
+			continue;
+		}
+		$isDirectory = is_dir($path . '/' . $name);
+		$element = array(
+			"name" => $name,
+			"isDirectory" => $isDirectory
+		);
+		if ($isDirectory) {
+			$element["children"] = getHistoryEntries($path . "/" . $name);
+		}
+		$result[] = $element;
+	}
+	return $result;
+}
+
+function getEntries($path, $username)
+{
+	global $conf_base_path;
+	$entries = `sudo $conf_base_path/bin/wsaccess $username list "$path"`;
+	if (strstr($entries, "ERROR")) {
+		jsonResponse(false, 500, array("message" => "Something is wrong with the command"));
+	}
+	$entries = explode("\n", $entries);
+	$result = array();
+	foreach ($entries as $entry) {
+		$name = str_replace("/", "", $entry);
+		if ($name === "." || $name === ".." || $name === "") {
+			continue;
+		}
+		$isDirectory = strpos($entry, "/");
+		if (!($isDirectory === false)) {
+			$isDirectory = true;
+		}
+		$element = array(
+			"name" => $name,
+			"isDirectory" => $isDirectory
+		);
+		if ($isDirectory) {
+			$element["children"] = getEntries($path . "/" . $name, $username);
+		}
+		$result[] = $element;
+	}
+	return $result;
+}
+
+
 global $conf_game_url, $conf_game_spectators, $conf_base_path;
 
 $courses = array();
@@ -219,15 +276,14 @@ if ($action === "leaderboard") {
 		jsonResponse(false, 400, array("message" => "No student specified"));
 	}
 	$username = $_REQUEST['student'];
-	header('Content-type:application/json;charset=utf-8');
-	$command = "sudo $conf_base_path/bin/game-sniffer $username tree";
-	$result = shell_exec("$command");
-	if ($result == null) {
-		jsonResponse(false,500,array("message"=>"$command"));
-	} else {
-		echo $result;
-		exit();
+	try {
+		$user = new User($username);
+	} catch (Exception $e) {
+		jsonResponse(false, 400, array("message" => "User not found"));
 	}
+	$path = "UUP_GAME";
+	$entries = getEntries($path, $username);
+	jsonResponse(true, 200, array("data" => $entries));
 } else if ($action === "studentWorkRead") {
 	if (!isset($_REQUEST['student'])) {
 		jsonResponse(false, 400, array("message" => "No student specified"));
@@ -236,10 +292,13 @@ if ($action === "leaderboard") {
 		jsonResponse(false, 400, array("message" => "No path specified"));
 	}
 	$path = $_REQUEST['path'];
+	$path = str_replace("/../", "/", $path);
 	$username = $_REQUEST['student'];
-	$command = "sudo $conf_base_path/bin/game-sniffer $username read $path";
-	$content = shell_exec($command);
-	jsonResponse(true,200,array("data"=>array("content"=>$content)));
+	$content = `sudo $conf_base_path/bin/wsaccess $username read "UUP_GAME$path"`;
+	if (strstr($content, "ERROR")) {
+		jsonResponse(false, 500, array("message" => "Something is wrong with the command"));
+	}
+	jsonResponse(true, 200, array("data" => array("content" => $content)));
 } else if ($action === "studentHistoryTree") {
 	if (!isset($_REQUEST['student'])) {
 		jsonResponse(false, 400, array("message" => "No student specified"));
@@ -252,15 +311,9 @@ if ($action === "leaderboard") {
 	}
 	$course = $or->toString();
 	$username = $_REQUEST['student'];
-	header('Content-type:application/json;charset=utf-8');
-	$command = "sudo tree -J $conf_base_path/data/$course/task_history/$username";
-	$result = shell_exec("$command");
-	if ($result == null) {
-		jsonResponse(false,500,array("message"=>"$command"));
-	} else {
-		echo $result;
-		exit();
-	}
+	$base_path = "$conf_base_path/data/$course/task_history/$username";
+	$entries = getHistoryEntries($base_path);
+	jsonResponse(true, 200, array("data" => $entries));
 } else if ($action === "studentHistoryRead") {
 	if (!isset($_REQUEST['student'])) {
 		jsonResponse(false, 400, array("message" => "No student specified"));
@@ -277,9 +330,11 @@ if ($action === "leaderboard") {
 		jsonResponse(false, 500, array("message" => $e->getMessage()));
 	}
 	$course = $or->toString();
-	$command = "sudo cat $conf_base_path/data/$course/$username$path";
-	$content = shell_exec($command);
-	jsonResponse(true,200,array("data"=>array("content"=>$content)));
+	$content = file_get_contents("$conf_base_path/data/$course/$username$path");
+	if ($content === false) {
+		jsonResponse(false, 500, array("message" => "Content not available or not readable"));
+	}
+	jsonResponse(true, 200, array("data" => array("content" => $content)));
 } else {
 	jsonResponse(false, 400, array("message" => "Unknown action"));
 }
