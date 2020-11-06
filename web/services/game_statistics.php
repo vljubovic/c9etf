@@ -331,7 +331,7 @@ if ($action === "leaderboard") {
 		jsonResponse(false, 500, array("message" => $e->getMessage()));
 	}
 	$course = $or->toString();
-	$content = file_get_contents("$conf_base_path/data/$course/$username$path");
+	$content = file_get_contents("$conf_base_path/data/$course/task_history/$username$path");
 	if ($content === false) {
 		jsonResponse(false, 500, array("message" => "Content not available or not readable"));
 	}
