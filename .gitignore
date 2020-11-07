@@ -16,6 +16,7 @@ users
 watch
 adminpanel
 web/autotester
+autotestGenerator
 
 web/static/mini_require.js
 web/static/static
