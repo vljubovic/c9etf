@@ -336,6 +336,16 @@ if ($action === "leaderboard") {
 		jsonResponse(false, 500, array("message" => "Content not available or not readable"));
 	}
 	jsonResponse(true, 200, array("data" => array("content" => $content)));
+} else if ($action==="getAssignments") {
+	if ($or !== null) {
+		$root = GameNode::constructGameForCourse($or);
+		$json = $root->getJson();
+		$object = json_decode($json, true);
+		if ($json === false) {
+			jsonResponse(false,500, array("message" => "Assignments not available"));
+		}
+		jsonResponse(true,200, array("data"=>$object));
+	}
 } else {
 	jsonResponse(false, 400, array("message" => "Unknown action"));
 }
