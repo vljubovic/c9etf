@@ -187,7 +187,7 @@ function editAssignment(Course $course): void
 		$assignment->editAssignment($name, $payload['active'], $payload['points'], $payload['challenge_pts']);
 		
 		updateGameJson($course, $assignment);
-		jsonResponse(false, 200, $data);
+		jsonResponse(true, 200, $data);
 	}
 }
 
