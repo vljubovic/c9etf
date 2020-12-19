@@ -14,6 +14,8 @@ assignment="$4"
 assignmentName="$5"
 task="$6"
 
+file=".autotest2"
+
 slovo=$(echo $user | cut -c 1)
 
 game_files="/usr/local/webide/data/$course/game_files"
@@ -107,5 +109,35 @@ case $action in
   *)
     echo "unknown action"
     exit 4
+    ;;
+  from-uup-to-student-file)
+    src="$game_files/$assignment/$task"
+    src_file="$src/$file"
+    dest="$workspace/UUP_GAME/$assignment"
+    dest_file="$dest/$file"
+    if [ ! -e "$dest" ]
+		then
+			mkdir -p "$dest"
+		fi
+    if [ ! -d "$dest" ]
+		then
+			echo ERROR: Not a directory or path doesn\'t exist "$dest"
+			exit 3
+		fi
+    rm -rf "$dest_file"
+    rm "$dest_file"
+    cp -Rp "$src_file" "$dest_file"
+    chown "$user" "$dest_file" -R
+    if [ -f "$dest"/".autotest2" ]; then
+        chown root "$dest"/".autotest2"
+        chmod 644 "$dest"/".autotest2"
+    fi
+    while read -r p; do  
+      komanda="${p} '${dest_file}'"
+      if [ -n "$p" ] && [ -f "$dest_file" ]
+      then
+        eval "$komanda"
+      fi
+    done </usr/local/webide/data/sedovi
     ;;
 esac
