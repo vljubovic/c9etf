@@ -120,6 +120,11 @@ if ($action == "getAssignments") {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	getFileContent($course);
+} else if ($action == "deployFile") {
+	if (!$isAdmin) {
+		jsonResponse(false, 403, array('message' => "Permission denied"));
+	}
+	deployFile($course);
 } else if ($action == "createTaskFile") {
 	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));

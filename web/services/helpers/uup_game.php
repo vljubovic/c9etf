@@ -1,5 +1,63 @@
 <?php
 
+function deployFile(Course $course) {
+	$url = "/usr/local/webide/data/log";
+	if (isset($_REQUEST['fileName']) && isset($_REQUEST['taskId'])){
+		$filePath = $_REQUEST['fileName'];
+		$taskId = $_REQUEST['taskId'];
+		$taskNode = GameNode::findTaskById($taskId, $course);
+		if ($taskNode === null) {
+			jsonResponse(false, 500, array("message" => "Task does not exist"));
+		}
+		$pathArray = explode('/', $taskNode->parent->path);
+		$taskPath = $taskNode->getAbsolutePath();
+		$action = "from-uup-to-student-file";
+		$courseString = $course->toString();
+		$assignment = end($pathArray);
+		$assignmentName = $taskNode->parent->name;
+		$pathArray = explode('/', $taskNode->path);
+		$task = end($pathArray);
+		file_put_contents($url, "Line 20 $task $assignment\n", FILE_APPEND);
+		if ($task === false || $assignment === false) {
+			$taskString = "Task found: " . ($task ? "True." : "False.");
+			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
+			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+		}
+
+		// get the users from uup game server
+		$usernames = array();
+		for($usernames as $username) {
+			$filePairs = array();
+			$user = null;
+			try {
+				$user = new User($username);
+			} catch (Exception $e) {
+				jsonResponse(false, 500, array("message" => $e->getMessage()));
+			}
+			$replacementPairs = array(
+				"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
+				"===COURSE===" => $taskNode->course->name,
+				"===STUDENT-FULL-NAME===" => $user->realname,
+				"===STUDENT-USERNAME===" => $user->login,
+				"===ASSIGNMENT===" => $taskNode->parent->name,
+				"===TASK===" => $taskNode->name
+			);
+			$sedovi = "$conf_base_path/data/sedovi";
+			file_put_contents($sedovi, "");
+			foreach ($replacementPairs as $key => $value) {
+				file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
+			}
+
+			$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+			proc_close(proc_open($cmd, array(), $foo));
+
+			jsonResponse(true, 200, array("message" => "Deployed from game to student"));
+		}
+	} else {
+		jsonResponse(false, 400, array("message" => "filePath parameter missing."));
+	}
+}
+
 function extractOptionals($keys, $data)
 {
 	$result = array();
@@ -101,19 +159,19 @@ function createAssignment(Course $course): void
 			->setMethod("POST")
 			->setBody($payload)
 			->send();
-		
+
 		$data = json_decode($response->data, true);
-		if ($response->error) {
+		if ($response->error) {$_REQUES
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
-		
+
 		if ($response->code >= 400) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$node = GameNode::constructGameForCourse($course);
 		$payload = json_decode($payload, true);
 		$node->addGameAssignment($name, $displayName, $payload['active'], $payload['points'], $payload['challenge_pts'], $data['id']);
-		
+
 		updateGameJson($course, $node);
 		jsonResponse(true, 200, $data);
 	}
@@ -153,10 +211,10 @@ function editAssignment(Course $course): void
 		} else {
 			$challengePoints = $assignment->data["challengePoints"];
 		}
-		
+
 		$name = str_replace("..", "", $name);
 		$name = str_replace("//", "/", $name);
-		
+
 		$payload = array(
 			"name" => $name,
 			"active" => boolval($active),
@@ -174,18 +232,18 @@ function editAssignment(Course $course): void
 			->setMethod("PUT")
 			->setBody($payload)
 			->send();
-		
+
 		$data = json_decode($response->data, true);
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
-		
+
 		if ($response->code >= 400) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$payload = json_decode($payload, true);
 		$assignment->editAssignment($name, $payload['active'], $payload['points'], $payload['challenge_pts']);
-		
+
 		updateGameJson($course, $assignment);
 		jsonResponse(true, 200, $data);
 	}
@@ -227,12 +285,12 @@ function createTask(Course $course)
 			->setMethod("POST")
 			->setBody($payload)
 			->send();
-		
+
 		$data = json_decode($response->data, true);
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
-		
+
 		if ($response->code >= 400) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
@@ -260,7 +318,7 @@ function editTask(Course $course)
 		$name = isset($input["name"]) ? $input["name"] : $task->name;
 		$category = isset($input["category"]) ? $input["category"] : $task->data['category'];
 		$hint = isset($input["hint"]) ? $input["hint"] : $task->data['hint'];
-		
+
 		$payload = array(
 			"task_name" => $name,
 			"category_id" => intval($category),
@@ -278,16 +336,16 @@ function editTask(Course $course)
 			->setMethod("PUT")
 			->setBody($payload)
 			->send();
-		
+
 		$data = json_decode($response->data, true);
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
-		
+
 		if ($response->code >= 400) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
-		
+
 		try {
 			$task->editTask($name, $category, $hint);
 			updateGameJson($course, $task);
@@ -311,16 +369,16 @@ function deleteTask(Course $course)
 		->setUrl("$game_server_url/uup-game/tasks/$taskId")
 		->setMethod("DELETE")
 		->send();
-	
+
 	$data = json_decode($response->data, true);
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
-	
+
 	if ($response->code >= 400) {
 		jsonResponse(false, $response->code, array("data" => $data));
 	}
-	
+
 	$node = $task->parent;
 	$task->deleteTask();
 	updateGameJson($course, $node);
@@ -402,7 +460,7 @@ function editTaskFile(Course $course)
 		validateRequired(["name"], $input);
 		$name = $input["name"];
 		list($binary, $show, $content) = extractOptionals(["binary", "show", "content"], $input);
-		
+
 		$task = GameNode::findTaskById($taskId, $course);
 		if ($task == null) {
 			jsonResponse(false, 404, array("message" => "Task with id " . $taskId . " not found."));
@@ -429,7 +487,7 @@ function deleteTaskFile(Course $course)
 	} else {
 		jsonResponse(false, 400, array("message" => "name field not set"));
 	}
-	
+
 	$task = GameNode::findTaskById($taskId, $course);
 	if ($task == null) {
 		jsonResponse(false, 404, array("message" => "Task with id " . $taskId . " not found."));
@@ -470,18 +528,18 @@ function getTaskCategories(): void
 function buyPowerUp($login): void
 {
 	global $game_server_url;
-	
+
 	$powerUpType = $_REQUEST["type_id"];
 	if ($powerUpType === null) {
 		jsonResponse(false, 400, array("message" => "Set the type_id field"));
 	}
-	
+
 	$response = (new RequestBuilder())
 		->setUrl("$game_server_url/uup-game/powerups/buy/$login/$powerUpType")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -506,7 +564,7 @@ function getTasksForAssignment(): void
 		->setUrl("$game_server_url/uup-game/assignments/$assignment_id/tasks")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -525,7 +583,7 @@ function getPowerUpTypes(): void
 		->setUrl("$game_server_url/uup-game/powerups/types")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -544,7 +602,7 @@ function getChallengeConfig(): void
 		->setUrl("$game_server_url/uup-game/challenge/config")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -564,7 +622,7 @@ function getStudentData($login): void
 		->setUrl("$game_server_url/uup-game/$login")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -589,7 +647,7 @@ function startAssignment($login): void
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -614,7 +672,7 @@ function resetRetard($login): void
 		->setMethod('GET')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -636,7 +694,7 @@ function setTokens($login): void
 		->setMethod('GET')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -684,13 +742,13 @@ function swapTask($login): void
 {
 	global $game_server_url;
 	$assignmentId = $_REQUEST['assignment_id'];
-	
+
 	$response = (new RequestBuilder())
 		->setUrl("$game_server_url/uup-game/tasks/swap/$login/$assignmentId")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -707,13 +765,13 @@ function hint($login): void
 {
 	global $game_server_url;
 	$assignmentId = $_REQUEST['assignment_id'];
-	
+
 	$response = (new RequestBuilder())
 		->setUrl("$game_server_url/uup-game/tasks/hint/$login/$assignmentId")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -731,12 +789,12 @@ function getAvailableTasks($login): void
 	global $game_server_url;
 	$assignmentId = $_REQUEST['assignment_id'];
 	$typeId = $_REQUEST['type_id'];
-	
+
 	$response = (new RequestBuilder())
 		->setUrl("$game_server_url/uup-game/tasks/turned_in/$login/$assignmentId/$typeId")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -767,7 +825,7 @@ function secondChance($login): void
 			->setBody($payload)
 			->send();
 		$data = json_decode($response->data, true);
-		
+
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
@@ -793,7 +851,7 @@ function getUsedHint($login): void
 		->setUrl("$game_server_url/uup-game/powerups/hints/used/$login/$assignmentId/$taskNumber")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
@@ -818,7 +876,7 @@ function getTaskPreviousPoints($login): void
 		->setUrl("$game_server_url/uup-game/tasks/previousTask/points/get/$login/$assignmentId/$taskNumber")
 		->send();
 	$data = json_decode($response->data, true);
-	
+
 	if ($response->error) {
 		jsonResponse(false, 500, array("message" => "Game Server not responding"));
 	}
