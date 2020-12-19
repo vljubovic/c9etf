@@ -2,6 +2,7 @@
 
 function deployFile(Course $course) {
 	$url = "/usr/local/webide/data/log";
+	global $conf_base_path;
 	if (isset($_REQUEST['fileName']) && isset($_REQUEST['taskId'])){
 		$filePath = $_REQUEST['fileName'];
 		$taskId = $_REQUEST['taskId'];
@@ -9,6 +10,7 @@ function deployFile(Course $course) {
 		if ($taskNode === null) {
 			jsonResponse(false, 500, array("message" => "Task does not exist"));
 		}
+		$assignmentId = $taskNode->parent->id;
 		$pathArray = explode('/', $taskNode->parent->path);
 		$taskPath = $taskNode->getAbsolutePath();
 		$action = "from-uup-to-student-file";
@@ -25,12 +27,23 @@ function deployFile(Course $course) {
 		}
 
 		// get the users from uup game server
-		$usernames = array();
-		for($usernames as $username) {
+		global $game_server_url;
+		$response = (new RequestBuilder())
+			->setUrl("$game_server_url/uup-game/tasks/students/$assignmentId/$taskId")
+			->send();
+		$data = json_decode($response->data, true);
+		if ($response->error) {
+			jsonResponse(false, 500, array("message" => "Game Server not responding"));
+		}
+		if ($response->code >= 400) {
+			jsonResponse(false, $response->code, array("data" => $data));
+		}
+		$users = $data;
+		for($users as $userWrapper) {
 			$filePairs = array();
 			$user = null;
 			try {
-				$user = new User($username);
+				$user = new User($userWrapper["student"]);
 			} catch (Exception $e) {
 				jsonResponse(false, 500, array("message" => $e->getMessage()));
 			}
