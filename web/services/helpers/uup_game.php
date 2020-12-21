@@ -63,10 +63,10 @@ function deployFile(Course $course) {
 			$cmd = "sudo $conf_base_path/bin/game-deploy \"$user->login\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
 			proc_close(proc_open($cmd, array(), $foo));
 
-			jsonResponse(true, 200, array("message" => "Deployed from game to student"));
+			jsonResponse(true, 200, array("message" => "Deployed from game to student", "students" => $users));
 		}
 	} else {
-		jsonResponse(false, 400, array("message" => "filePath parameter missing."));
+		jsonResponse(false, 400, array("message" => "taskId/fileName parameter missing."));
 	}
 }
 
