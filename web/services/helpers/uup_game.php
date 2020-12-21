@@ -12,7 +12,6 @@ function deployFile(Course $course) {
 		}
 		$assignmentId = $taskNode->parent->id;
 		$pathArray = explode('/', $taskNode->parent->path);
-		$taskPath = $taskNode->getAbsolutePath();
 		$action = "from-uup-to-student-file";
 		$courseString = $course->toString();
 		$assignment = end($pathArray);
@@ -39,7 +38,7 @@ function deployFile(Course $course) {
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		$users = $data;
-		for($users as $userWrapper) {
+		foreach($users as $userWrapper) {
 			$filePairs = array();
 			$user = null;
 			try {
@@ -61,7 +60,7 @@ function deployFile(Course $course) {
 				file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 			}
 
-			$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+			$cmd = "sudo $conf_base_path/bin/game-deploy \"$user->login\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
 			proc_close(proc_open($cmd, array(), $foo));
 
 			jsonResponse(true, 200, array("message" => "Deployed from game to student"));
@@ -174,7 +173,7 @@ function createAssignment(Course $course): void
 			->send();
 
 		$data = json_decode($response->data, true);
-		if ($response->error) {$_REQUES
+		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
 
