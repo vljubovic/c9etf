@@ -137,3 +137,45 @@ function assignmentFromPath(task_path, callback_function) {
 	xmlhttp.send();
 }
 
+
+function doOpenAutotestGenV2(course, year, external, assignment, task, path) {
+	var url = "/assignment/ws.php?action=getFile&"
+		+ assignmentBuildUrl(course, year, external, assignment, task, path);
+	
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			window.localStorage.setItem('.autotest-content', xmlhttp.responseText);
+			const newWindow = Helpers.openGenerator('static/js/autotest-genv2/html/index.html','', true);
+			
+			newWindow.addEventListener('load', () => {
+				const button = newWindow.document.getElementById('export-button');
+				button.addEventListener("click", () => {
+					updateAutotestFile(course, year, external, assignment, task, path);
+				});
+			}, false);
+		}
+	}
+	xmlhttp.open("GET", url, true);
+	xmlhttp.send();
+	return false;
+}
+
+
+function updateAutotestFile(course, year, external, assignment, task, path) {
+	var url = "/assignment/ws.php?action=updateFile&"
+		+ assignmentBuildUrl(course, year, external, assignment, task, path);
+	
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			console.log(xmlhttp.responseText);
+		}
+	}
+	
+	var data = "data=" + encodeURIComponent(window.localStorage.getItem('.autotest-content'));
+	
+	xmlhttp.open("POST", url, true);
+	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	xmlhttp.send(data);
+}
