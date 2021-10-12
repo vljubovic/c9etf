@@ -82,7 +82,7 @@ class GameNode
 		$this->children[] = $node;
 	}
 	
-	public function addAssignmentTask($id, $name, $displayName, $category, $hint)
+	public function addAssignmentTask($id, $name, $displayName, $category, $hint, $disabled)
 	{
 		if ($this->type === "assignment") {
 			$node = $this->constructChild();
@@ -97,6 +97,7 @@ class GameNode
 			$node->type = 'task';
 			$node->data['category'] = $category;
 			$node->data['hint'] = $hint;
+            $node->data['disabled'] = $disabled;
 			$items = scandir($this->course->getPath() . '/templates');
 			foreach ($items as $item) {
 				if ($item !== '.' && $item !== '..') {
@@ -161,11 +162,12 @@ class GameNode
 		return file_get_contents($this->getAbsolutePath());
 	}
 	
-	public function editTask($name, $category, $hint)
+	public function editTask($name, $category, $hint, $disabled)
 	{
 		$this->name = $name;
 		$this->data['category'] = $category;
 		$this->data['hint'] = $hint;
+        $this->data['disabled'] = $disabled;
 	}
 	
 	public function deleteFile()

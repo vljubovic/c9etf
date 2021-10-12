@@ -271,7 +271,7 @@ function createTask(Course $course)
 	}
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
-		validateRequired(["name", "displayName", "category", "hint"], $input);
+		validateRequired(["name", "displayName", "category", "hint", "disabled"], $input);
 		$name = $input["name"];
 		$name = str_replace("..", "", $name);
 		$name = str_replace("/", "", $name);
@@ -284,7 +284,8 @@ function createTask(Course $course)
 			"task_name" => $displayName,
 			"category_id" => intval($input["category"]),
 			"hint" => $input["hint"],
-			"assignment_id" => intval($assignmentId)
+			"assignment_id" => intval($assignmentId),
+            "disabled" => boolval($input["disabled"])
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -307,7 +308,7 @@ function createTask(Course $course)
 			jsonResponse(false, $response->code, array("data" => $data));
 		}
 		try {
-			$node->addAssignmentTask($data["id"], $input["name"], $input["displayName"], $input["category"], $input["hint"]);
+			$node->addAssignmentTask($data["id"], $input["name"], $input["displayName"], $input["category"], $input["hint"], $input["disabled"]);
 			updateGameJson($course, $node);
 		} catch (Exception $exception) {
 			jsonResponse(false, 400, array("message" => $exception->getMessage()));
@@ -327,15 +328,17 @@ function editTask(Course $course)
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		$task = GameNode::findTaskById($taskId, $course);
-		$name = isset($input["name"]) ? $input["name"] : $task->name;
-		$category = isset($input["category"]) ? $input["category"] : $task->data['category'];
-		$hint = isset($input["hint"]) ? $input["hint"] : $task->data['hint'];
+		$name = $input["name"] ?? $task->name;
+		$category = $input["category"] ?? $task->data['category'];
+		$hint = $input["hint"] ?? $task->data['hint'];
+        $disabled = $input["disabled"] ?? $task->data['disabled'];
 
 		$payload = array(
 			"task_name" => $name,
 			"category_id" => intval($category),
 			"hint" => $hint,
-			"assignment_id" => intval($task->parent->id)
+			"assignment_id" => intval($task->parent->id),
+            "disabled" => boolval($disabled)
 		);
 		$payload = json_encode($payload);
 		$headers = array(
@@ -359,7 +362,7 @@ function editTask(Course $course)
 		}
 
 		try {
-			$task->editTask($name, $category, $hint);
+			$task->editTask($name, $category, $hint, $disabled);
 			updateGameJson($course, $task);
 		} catch (Exception $exception) {
 			jsonResponse(false, 400, array("message" => $exception->getMessage()));
