@@ -2,9 +2,8 @@
 
 function deployFile(Course $course) {
 	$url = "/usr/local/webide/data/log";
-	global $conf_base_path;
 	if (isset($_REQUEST['fileName']) && isset($_REQUEST['taskId'])){
-		$filePath = $_REQUEST['fileName'];
+		$fileName = $_REQUEST['fileName'];
 		$taskId = $_REQUEST['taskId'];
 		$taskNode = GameNode::findTaskById($taskId, $course);
 		if ($taskNode === null) {
@@ -12,7 +11,6 @@ function deployFile(Course $course) {
 		}
 		$assignmentId = $taskNode->parent->id;
 		$pathArray = explode('/', $taskNode->parent->path);
-		$action = "from-uup-to-student-file";
 		$courseString = $course->toString();
 		$assignment = end($pathArray);
 		$assignmentName = $taskNode->parent->name;
@@ -39,35 +37,72 @@ function deployFile(Course $course) {
 		}
 		$users = $data;
 		foreach($users as $userWrapper) {
-			$filePairs = array();
-			$user = null;
-			try {
-				$user = new User($userWrapper["student"]);
-			} catch (Exception $e) {
-				jsonResponse(false, 500, array("message" => $e->getMessage()));
-			}
-			$replacementPairs = array(
-				"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
-				"===COURSE===" => $taskNode->course->name,
-				"===STUDENT-FULL-NAME===" => $user->realname,
-				"===STUDENT-USERNAME===" => $user->login,
-				"===ASSIGNMENT===" => $taskNode->parent->name,
-				"===TASK===" => $taskNode->name
-			);
-			$sedovi = "$conf_base_path/data/sedovi";
-			file_put_contents($sedovi, "");
-			foreach ($replacementPairs as $key => $value) {
-				file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
-			}
-
-			$cmd = "sudo $conf_base_path/bin/game-deploy \"$user->login\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
-			proc_close(proc_open($cmd, array(), $foo));
-
-			jsonResponse(true, 200, array("message" => "Deployed from game to student", "students" => $users));
+			deployTaskFileToStudent($userWrapper["student"], $taskNode, $courseString, $assignment, $assignmentName, $task, $fileName);
 		}
+		jsonResponse(true, 200, array("message" => "Deployed from game to student", "students" => $users));
 	} else {
 		jsonResponse(false, 400, array("message" => "taskId/fileName parameter missing."));
 	}
+}
+
+function deployFileToStudent(string $username, Course $course) {
+	if (!isset($_REQUEST["taskId"])) {
+		jsonResponse(false, 400, array('message' => "taskId not set"));
+	}
+	$taskId = $_REQUEST["taskId"];
+	$taskNode = GameNode::findTaskById($taskId,$course);
+	$assignmentName = $taskNode->parent->name;
+	$pathParts = explode("/",$taskNode->parent->path);
+	$assignmentFolderName = end($pathParts);
+	$pathParts = explode("/",$taskNode->path);
+	$taskFolderName = end($pathParts);
+	if ($taskFolderName === false || $assignmentFolderName === false) {
+		$taskString = "Task found: " . ($taskFolderName ? "True." : "False.");
+		$assignmentString = "Assignment found: " . ($assignmentFolderName ? "True." : "False.");
+		jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+	}
+	if (!isset($_REQUEST["fileName"])) {
+		jsonResponse(false, 400, array("message" => "fileName not set"));
+	}
+	$fileName = $_REQUEST["fileName"];
+	deployTaskFileToStudent($username, $taskNode, $course->toString(), $assignmentFolderName, $assignmentName, $taskFolderName, $fileName);
+	jsonResponse(true, 200, array("message" => "Successfully deployed $fileName to $username in $assignmentFolderName/$taskFolderName"));
+}
+
+/**
+ * @param $student
+ * @param GameNode $taskNode
+ * @param string $courseString
+ * @param string $assignmentFolderName
+ * @param string $assignmentName
+ * @param string $taskFolderName
+ * @param string $fileName
+ */
+function deployTaskFileToStudent($student, GameNode $taskNode, string $courseString, string $assignmentFolderName, string $assignmentName, string $taskFolderName, string $fileName)
+{
+	global $conf_base_path;
+	$user = null;
+	try {
+		$user = new User($student);
+	} catch (Exception $e) {
+		jsonResponse(false, 500, array("message" => $e->getMessage()));
+	}
+	$replacementPairs = array(
+		"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name,
+		"===COURSE===" => $taskNode->course->name,
+		"===STUDENT-FULL-NAME===" => $user->realname,
+		"===STUDENT-USERNAME===" => $user->login,
+		"===ASSIGNMENT===" => $taskNode->parent->name,
+		"===TASK===" => $taskNode->name
+	);
+	$sedovi = "$conf_base_path/data/sedovi";
+	file_put_contents($sedovi, "");
+	foreach ($replacementPairs as $key => $value) {
+		file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
+	}
+
+	$cmd = "sudo $conf_base_path/bin/game-deploy \"$user->login\" \"from-uup-to-student-file\" \"$courseString\" \"$assignmentFolderName\" \"$assignmentName\" \"$taskFolderName\" \"$fileName\"&";
+	proc_close(proc_open($cmd, array(), $foo));
 }
 
 function extractOptionals($keys, $data)
@@ -655,7 +690,7 @@ function startAssignment($login): void
 	global $game_server_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	if ($assignmentId === null) {
-		error(400, "Set the assignment_id field");
+		jsonResponse(false,400, array("message" => "Set the assignment_id field"));
 	}
 	$response = (new RequestBuilder())
 		->setUrl("$game_server_url/uup-game/assignments/$assignmentId/$login/start")
@@ -673,17 +708,19 @@ function startAssignment($login): void
 }
 
 /**
- * @param $login
+ * @param string $username
+ * @param Course course
  */
-function resetRetard($login): void
+function resetRetard(string $username,Course $course): void
 {
 	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	if ($assignmentId === null) {
-		error(400, "Set the assignment_id field");
+		jsonResponse(false, 400, array("message" => "assignment_id field not set"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/assignments/reset/$login/$assignmentId")
+		->setUrl("$game_server_url/uup-game/assignments/reset/$username/$assignmentId")
 		->setMethod('GET')
 		->send();
 	$data = json_decode($response->data, true);
@@ -693,6 +730,40 @@ function resetRetard($login): void
 	}
 	if ($response->code >= 400) {
 		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	$response = (new RequestBuilder())
+		->setUrl("$conf_game_url/uup-game/statistics/students/$username")
+		->send();
+	$data = json_decode($response->data, true);
+	if ($response->error) {
+		jsonResponse(false, 500, array("message" => "Game Server not responding"));
+	}
+	if ($response->code >= 400) {
+		jsonResponse(false, $response->code, array("data" => $data));
+	}
+	$tasks = $data[$assignmentId];
+	$currentTaskId = null;
+	foreach ($tasks as $task) {
+		if ($task["status"] === "CURRENT TASK") {
+			$currentTaskId = $task["task_id"];
+		}
+	}
+	if ($currentTaskId !== null) {
+		$taskNode = GameNode::findTaskById($currentTaskId, $course);
+		$files = $taskNode->children;
+		$assignmentName = $taskNode->parent->name;
+		$pathParts = explode("/",$taskNode->parent->path);
+		$assignmentFolderName = end($pathParts);
+		$pathParts = explode("/",$taskNode->path);
+		$taskFolderName = end($pathParts);
+		if ($taskFolderName === false || $assignmentFolderName === false) {
+			$taskString = "Task found: " . ($taskFolderName ? "True." : "False.");
+			$assignmentString = "Assignment found: " . ($assignmentFolderName ? "True." : "False.");
+			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+		}
+		foreach ($files as $file) {
+			deployTaskFileToStudent($username,$taskNode,$course->toString(),$assignmentFolderName,$assignmentName,$taskFolderName,$file->name);
+		}
 	}
 	jsonResponse(true, 200, array("message" => "OK", "data" => $data));
 }

@@ -107,7 +107,7 @@ if ($action == "getAssignments") {
 	createTask($course);
 } else if ($action == "editTask") {
 	if (!$isAdmin) {
-		error(403, "Permišn dinajd");
+		jsonResponse(false,403, array("message" => "Permišn dinajd"));
 	}
 	editTask($course);
 } else if ($action == "deleteTask") {
@@ -120,6 +120,15 @@ if ($action == "getAssignments") {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
 	}
 	getFileContent($course);
+} else if ($action == "deployFileToStudent") {
+	if (!$isAdmin) {
+		jsonResponse(false, 403, array('message' => "Permission denied"));
+	}
+	if (!isset($_REQUEST["username"])) {
+		jsonResponse(false, 400, array('message' => "username not set"));
+	}
+	$username = $_REQUEST["username"];
+	deployFileToStudent($username,$course);
 } else if ($action == "deployFile") {
 	if (!$isAdmin) {
 		jsonResponse(false, 403, array('message' => "Permission denied"));
@@ -175,12 +184,16 @@ if ($action == "getAssignments") {
 	initializeGame($course);
 } else if ($action == "resetRetard") {
 	if (!$isAdmin) {
-		error(403, "Permišn dinajd");
+		jsonResponse(false,403, array("message" => "Permišn dinajd"));
 	}
-	resetRetard($login);
+	if (isset($_REQUEST["username"])) {
+		resetRetard($_REQUEST["username"],$course);
+	} else {
+		jsonResponse(false,400, array("message" => "username field not set"));
+	}
 } else if ($action == "setTokens") {
 	if (!$isAdmin) {
-		error(403, "Permišn dinajd");
+		jsonResponse(false,403, array("message" => "Permišn dinajd"));
 	}
 	setTokens($login);
 } else if ($action === "check") {

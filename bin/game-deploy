@@ -15,6 +15,7 @@ assignmentName="$5"
 task="$6"
 
 file=".autotest2"
+deployFile="$7"
 
 slovo=$(echo $user | cut -c 1)
 
@@ -80,7 +81,7 @@ case $action in
 		then
 			mkdir -p "$dest"
 		fi
-	rm -rf "$dest"/*
+	  rm -rf "$dest"/*
     rm "$dest"/.*
     cp -Rp "$src"/. "$dest"
     chown "$user" "$dest" -R
@@ -101,20 +102,16 @@ case $action in
 		then
 			mkdir -p "$dest"
 		fi
-	rm -rf "$dest"/*
+	  rm -rf "$dest"/*
     rm "$dest"/.*
     cp -Rp "$src"/. "$dest"
     rm -rf "$src"/*
     ;;
-  *)
-    echo "unknown action"
-    exit 4
-    ;;
   from-uup-to-student-file)
     src="$game_files/$assignment/$task"
-    src_file="$src/$file"
+    src_file="$src/$deployFile"
     dest="$workspace/UUP_GAME/$assignment"
-    dest_file="$dest/$file"
+    dest_file="$dest/$deployFile"
     if [ ! -e "$dest" ]
 		then
 			mkdir -p "$dest"
@@ -139,5 +136,9 @@ case $action in
         eval "$komanda"
       fi
     done </usr/local/webide/data/sedovi
+    ;;
+  *)
+    echo "unknown action"
+    exit 4
     ;;
 esac
