@@ -326,8 +326,8 @@ function zamger_update_group($group_id, $force) {
 	);
 	
 	foreach ($group_data['members'] as $member) {
-		$id = $member['Person']['login'];
-		$name = $member['Person']['name'] . " " . $member['Person']['surname'];
+		$id = $member['student']['login'];
+		$name = $member['student']['name'] . " " . $member['student']['surname'];
 		
 		$group['members'][$id] = $name;
 	}
