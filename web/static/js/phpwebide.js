@@ -336,9 +336,36 @@ function pwi_toolbar_test_button() {
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText == "ERROR: File doesn't exist\n") {
-				pwi_tests_total = pwi_tests_passed = false;
-				document.getElementById('phpwebide_test_button').style.display = "none";
-				document.getElementById('phpwebide_test_results').style.display = "none";
+				var autotest_file = pwi_current_path.substr(0,x+1) + ".autotest2";
+				var xmlhttp2 = new XMLHttpRequest();
+				var url = "services/file.php?user="+pwi_current_user+"&path="+autotest_file;
+				xmlhttp2.onreadystatechange = function() {
+					if (xmlhttp2.readyState == 4 && xmlhttp2.status == 200) {
+						if (xmlhttp2.responseText == "ERROR: File doesn't exist\n") {
+							pwi_tests_total = pwi_tests_passed = false;
+							document.getElementById('phpwebide_test_button').style.display = "none";
+							document.getElementById('phpwebide_test_results').style.display = "none";
+						} else {
+							var tests;
+							try {
+								tests = JSON.parse(xmlhttp2.responseText);
+								pwi_tests_total = tests.tests.length-1; // HACK za invisible test
+								pwi_tests_passed = 0;
+								document.getElementById('phpwebide_test_button').style.display = "inline";
+								document.getElementById('phpwebide_test_results').style.display = "none";
+							
+								pwi_toolbar_is_tested(tests);
+							} catch(e) {
+								pwi_tests_total = pwi_tests_passed = false;
+								document.getElementById('phpwebide_test_button').style.display = "none";
+								document.getElementById('phpwebide_test_results').style.display = "none";
+							}
+						}
+						pwi_clear_task("pwi_test_button");
+					}
+				};
+				xmlhttp2.open("GET", url, true);
+				xmlhttp2.send();
 			} else {
 				var tests;
 				try {
@@ -418,10 +445,18 @@ function pwi_toolbar_is_tested(tests) {
 
 				
 				// Iterate through test results
-				for (var i=0; i<tests.test_specifications.length; i++) {
+				var test_specifications;
+				if (tests.hasOwnProperty('tests'))
+					test_specifications = tests.tests;
+				if (tests.hasOwnProperty('test_specifications'))
+					test_specifications = tests.test_specifications;
+				for (var i=0; i<test_specifications.length; i++) {
+					if (!test_specifications[i].hasOwnProperty('id')) continue;
+					if (test_specifications[i].hasOwnProperty('options') && test_specifications[i].options.includes('silent')) continue;
+					
 					var found_result = false;
-					if (results.test_results.hasOwnProperty(tests.test_specifications[i].id))
-						found_result = results.test_results[tests.test_specifications[i].id];
+					if (results.test_results.hasOwnProperty(test_specifications[i].id))
+						found_result = results.test_results[test_specifications[i].id];
 					
 					// Test statistics
 					if (found_result && found_result.status == 1)
@@ -433,7 +468,7 @@ function pwi_toolbar_is_tested(tests) {
 					
 					// Temporary scope hack
 					(function(i){
-						element.onclick = function() { pwi_render_test_result(tests, results, tests.test_specifications[i].id); }
+						element.onclick = function() { pwi_render_test_result(tests, results, test_specifications[i].id); }
 					})(i);
 					
 					if (!found_result) {
@@ -636,7 +671,7 @@ function pwi_populate_deploy_menu() {
 				// Temporary scope hack
 				(function(t,i){
 					element.onclick = function() { 
-						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, this.filename, pwi_current_user);
+						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, this.filename, pwi_current_user); 
 						setTimeout( function() { 
 							pwi_editor_load(pwi_current_path,'file');
 						}, 3000);
@@ -654,9 +689,9 @@ function pwi_populate_deploy_menu() {
 // Check if there's something to deploy
 function pwi_render_test_result(tests, results, test) {
 	var form = document.getElementById('pwi_test_results_form');
-	form.tests.value = JSON.stringify(tests);
-	form.test_results.value = JSON.stringify(results);
-	form.test_id.value = test;
+	form.task.value = JSON.stringify(tests);
+	form.result.value = JSON.stringify(results);
+	form.test.value = test;
 	
 	var w = window.open('about:blank','Popup_Window','toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=0,width=700,height=700,left=312,top=234');
 	form.target = 'Popup_Window';
@@ -696,7 +731,7 @@ function pwi_editor_load(path, type, rev) {
 	var xmlhttp = new XMLHttpRequest();
 	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(path) + "&type=" + type;
 	if (rev) url += "&rev=" + rev;
-
+	
 	if (pwi_image != false) {
 		document.body.removeChild(pwi_image)
 		pwi_image = false;
@@ -713,7 +748,7 @@ function pwi_editor_load(path, type, rev) {
 		pwi_clear_task("pwi_editor_load "+path);
 		return;
 	}
-
+	
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
@@ -723,7 +758,7 @@ function pwi_editor_load(path, type, rev) {
 				pwi_clear_task("pwi_editor_load "+path);
 				return;
 			}
-
+			
 			var editor = ace.edit("editor");
 			editor.setValue(xmlhttp.responseText);
 			editor.getSession().setMode("ace/mode/c_cpp"); // FIXME hardcodirano
