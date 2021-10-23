@@ -167,10 +167,10 @@ function pwi_tree_load(final_callback) {
 				if (!pwi_tree_show_hidden && item[0] == ".") continue;
 				
 				var lastchr = item[item.length-1];
-				if (lastchr == "*" || lastchr == "=" || lastchr == ">" || lastchr == "@" || lastchr == "|") continue;
+				if (lastchr == "=" || lastchr == ">" || lastchr == "@" || lastchr == "|") continue;
 				
 				// Prepare item name
-				if (lastchr == "/") item = item.substr(0, item.length-1);
+				if (lastchr == "*" || lastchr == "/") item = item.substr(0, item.length-1);
 				
 				// Create element
 				var element = document.createElement('h2');
