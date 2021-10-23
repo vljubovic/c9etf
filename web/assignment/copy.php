@@ -2,13 +2,39 @@
 
 
 function assignment_copy_files($old, $new) {
-	foreach($old->files as $file)
-		copy ($old->filesPath() . "/" . $file['filename'], $new->filesPath() . "/" . $file['filename']);
+	global $conf_base_path;
+	foreach($old->files as $file) {
+		$old_path = $old->filesPath() . "/" . $file['filename'];
+		$new_path = $new->filesPath() . "/" . $file['filename'];
+		
+		if ($file['filename'] == ".autotest") {
+			// Call convert.php script
+			$target = $new->filesPath() . "/.autotest2";
+			`php $conf_base_path/web/autotester/convert.php $old_path > $target`;
+			
+			// Add .autotest2 to new files list
+			$newFile = $file;
+			$newFile['filename'] = ".autotest2";
+			$new->files[] = $newFile;
+			
+			// Remove .autotest from files list
+			for($i=0; $i<count($new->files); $i++)
+				if ($new->files[$i]['filename'] == ".autotest")
+					unset ($new->files[$i]);
+		}
+		else
+			copy ($old->filesPath() . "/" . $file['filename'], $new->filesPath() . "/" . $file['filename']);
+	}
+	
+	$new->files = array_values($new->files);
 	
 	foreach($old->getItems() as $oldItem) {
-		foreach($new->getItems() as $newItem)
-			if ($oldItem->id == $newItem->id)
+		foreach($new->getItems() as $newItem) {
+			if ($oldItem->id == $newItem->id) {
 				assignment_copy_files($oldItem, $newItem);
+				break;
+			}
+		}
 	}
 }
 
@@ -31,6 +57,7 @@ function assignment_copy($course, $asgn) {
 		return;
 	}
 	
+	$asgn->getItems();
 	$new_asgn = $root->addItem($asgn);
 	
 	// Copy data files
@@ -40,7 +67,7 @@ function assignment_copy($course, $asgn) {
 	
 	admin_log("assignment copied - " . $asgn->id . " (" . $course->toString() . ")");
 	nicemessage("Assignment " . $asgn->name . " (" . $asgn->id . ") successfully copied from last year");
-	print "<p><a href=\"admin.php?" . $course->urlPart() . "\">Go back</a></p>\n";
+	print "<p><a href=\"/admin.php?" . $course->urlPart() . "\">Go back</a></p>\n";
 }
 
 
@@ -93,7 +120,7 @@ $assignments = $root->getItems();
 // Initialize various variables related to course/assignment data for the
 // previous year of same course
 $previous_year = Course::find($course->id, $course->external);
-$previous_year->year--;
+$previous_year->year = $course->year - 1;
 $prev_assignments = $previous_year->getAssignments()->getItems();
 
 if (empty($prev_assignments)) {
