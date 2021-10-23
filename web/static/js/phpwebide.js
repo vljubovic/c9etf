@@ -52,6 +52,8 @@ var pwi_reconstruct_path = "";
 var pwi_reconstruct_has_more = false;
 var pwi_reconstruct_realtime = false;
 
+var pwi_image = false;
+
 
 // ------------ TREE FUNCTIONS ----------------
 
@@ -689,7 +691,24 @@ function pwi_editor_load(path, type, rev) {
 	var xmlhttp = new XMLHttpRequest();
 	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(path) + "&type=" + type;
 	if (rev) url += "&rev=" + rev;
-	
+
+	if (pwi_image != false) {
+		document.body.removeChild(pwi_image)
+		pwi_image = false;
+	}
+	if (path.endsWith(".png") || path.endsWith(".jpg") || path.endsWith(".jpeg") || path.endsWith(".gif")) {
+		pwi_image = document.createElement("img");
+		pwi_image.src = url;
+		pwi_image.style.position = "absolute";
+		var rect = document.getElementById("editor").getBoundingClientRect();
+		pwi_image.style.left = rect.left +  window.scrollX + "px";
+		pwi_image.style.top = rect.top +  window.scrollY + "px";
+		pwi_image.style.zIndex = 1000;
+		document.body.appendChild(pwi_image);
+		pwi_clear_task("pwi_editor_load "+path);
+		return;
+	}
+
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
@@ -699,6 +718,7 @@ function pwi_editor_load(path, type, rev) {
 				pwi_clear_task("pwi_editor_load "+path);
 				return;
 			}
+
 			var editor = ace.edit("editor");
 			editor.setValue(xmlhttp.responseText);
 			editor.getSession().setMode("ace/mode/c_cpp"); // FIXME hardcodirano
