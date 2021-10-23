@@ -42,9 +42,10 @@ if ($users[$username]['status'] == 'active') {
 
 
 // Perform the following actions
-fixsvn("ls */*core* | xargs -I {} svn remove --force {}");
-fixsvn("ls */*/*core* | xargs -I {} svn remove --force {}");
-fixsvn("ls */*/*/*core* | xargs -I {} svn remove --force {}");
+fixsvn("ls *core* | xargs -I {} svn remove --force {} 2>&1");
+fixsvn("ls */*core* | xargs -I {} svn remove --force {} 2>&1");
+fixsvn("ls */*/*core* | xargs -I {} svn remove --force {} 2>&1");
+fixsvn("ls */*/*/*core* | xargs -I {} svn remove --force {} 2>&1");
 fixsvn("svn ci -m fixsvn .");
 fixsvn("svn add *");
 fixsvn("svn add */*");
