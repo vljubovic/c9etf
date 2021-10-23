@@ -369,7 +369,20 @@ switch($action) {
 			print "$username $nice_period\n";
 		}
 		break;
-
+	
+	// Test if user is online and give last time of access
+	case "is-online":
+		if ($users[$username]['status'] == "active") print "YES\n"; else print "NO\n";
+		$last = last_access($username);
+		$last_date_time = date ("d. m. Y H:i:s", last_access($username));
+		$last = time() - $last;
+		if ($last < 60) $last = "$last seconds ($last_date_time)";
+		else if ($last < 60*60) $last = round($last/60, 2) . " minutes ($last_date_time)";
+		else if ($last < 24*60*60) $last = round($last/3600, 2) . " hours ($last_date_time)";
+		else $last = $last_date_time;
+		print "Last access: $last\n";
+		break;
+	
 	// Logout all users and kill all processes that look related
 	case "clear-server":
 		clear_server();
@@ -796,6 +809,7 @@ User management commands:
 
 User administration commands:
 	is-node-up username	- check if webide is running for user
+	is-online username	- check if user is currently online
 	stop-node username 	- stop webide without logging out user
 				  can be called even if user is not logged in
 	verify-user username	- restart webide for user if not running
