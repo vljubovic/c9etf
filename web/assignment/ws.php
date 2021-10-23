@@ -250,9 +250,13 @@ function ws_getfile() {
 	if (empty($assignments))
 		json(error("ERR003", "No assignments for this course"));
 	
-	if (!isset($_REQUEST['task_direct']))
+	if (isset($_REQUEST['task_direct']))
+		$taskId = intval($_REQUEST['task_direct']);
+	else if (isset($_REQUEST['task']))
+		$taskId = intval($_REQUEST['task']);
+	else
 		json(error("ERR005", "Unknown task"));
-	$task = $root->findById( intval($_REQUEST['task_direct']) );
+	$task = $root->findById( $taskId );
 	if ($task === false)
 		json(error("ERR005", "Unknown task"));
 	
@@ -280,6 +284,7 @@ function ws_getfile() {
 		
 		$ok = ok("Copying on server $destination_path");
 		$ok['code'] = "STA001";
+		$ok['data'] = "sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &";
 		// Sadly downloading file from service doesn't work as apparently ws.writeFile doesn't support binary files
 		proc_close(proc_open("sudo $conf_base_path/bin/wsaccess $login deploy \"$destination_path\" \"$found_file_path\" &", array(), $foo));
 		json($ok);
