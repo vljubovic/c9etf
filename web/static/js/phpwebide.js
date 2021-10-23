@@ -251,7 +251,9 @@ function pwi_tree_ondblclick(path) {
 	pwi_was_doubleclick = 2;
 	
 	userTableClear();
-	userTableLoad(pwi_current_user, path)
+	userTableLoad(pwi_current_user, path);
+	pwi_editor_load(path, "file");
+	pwi_tree_select(path);
 }
 
 // Show/hide hidden files
@@ -605,9 +607,11 @@ function pwi_populate_deploy_menu() {
 	// If path didn't change, that's it
 	if (menu.hasOwnProperty('pwi_path') && menu.pwi_path == pwi_current_path)
 		return;
+	var path = pwi_current_path;
+	if (path.split("/").length < 4) path += "/";
 		
 	// Contact web service to get a list of files in menu
-	assignmentFromPath(pwi_current_path, function(t) {
+	assignmentFromPath(path, function(t) {
 		console.log("assignmentFromPath");
 		listAssignmentFiles(t.course, t.year, t.external, t.assignment, t.task, function(files) {
 			console.log("LENGTH "+files.length);
@@ -627,11 +631,12 @@ function pwi_populate_deploy_menu() {
 				
 				var file = files[i];
 				if (typeof file === 'object') file = files[i].filename;
+				element.filename = file;
 				
 				// Temporary scope hack
 				(function(t,i){
 					element.onclick = function() { 
-						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, file, pwi_current_user); 
+						deployAssignmentFile(t.course, t.year, t.external, t.assignment, t.task, this.filename, pwi_current_user);
 						setTimeout( function() { 
 							pwi_editor_load(pwi_current_path,'file');
 						}, 3000);
