@@ -116,9 +116,14 @@ if ($logged_in) {
 		// Logout user
 		if ($_REQUEST['action'] == "logout") {
 			$user = escapeshellarg($_REQUEST['user']);
-			$msg = "User $user is logged out from system.";
+			$output = exec("sudo $conf_base_path/bin/webidectl logout $user");
+			if (strstr($output, "ERROR")) {
+				$error = "There was an error!<br>$output";
+			} else {
+				$msg = "User $user is logged out from system.";
+				admin_log("logout $user");
+			}
 			admin_log("logout $user");
-			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $user &", array(), $foo));
 		}
 		
 		// Reset config for user
@@ -426,7 +431,7 @@ if ($logged_in) {
 		if (!$course->isAdmin($login)) {
 			admin_log("course " . $course->toString() . " access denied");
 			niceerror("You are not allowed to access this course");
-			print "<p>If this is a mistake, please contact administrator</p>\n";
+			print "<p>If this is a mistake, please contact the administrator</p>\n";
 			print "</body></html>\n";
 			return 0;
 		}
@@ -600,7 +605,7 @@ if ($logged_in) {
         <div class="form__field">
           <input type="submit" value="Go">
         </div>
-	<!--p><a href="https://zamger.etf.unsa.ba">Zamger</a></p-->
+          <p><a href="uputstva-c9-nastavnici.pdf">Uputstva za nastavnike</a></p>
 
       </form>
 
