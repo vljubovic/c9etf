@@ -1935,7 +1935,7 @@ function clear_server() {
 	}
 	
 	// Force restart, since deactivate will just reload... this kills some hanging connections
-	exec("service nginx restart");
+	//exec("service nginx restart"); // Broken with latest ubuntu
 	
 	// Clear other servers
 	foreach($conf_nodes as $node) {
@@ -2390,10 +2390,11 @@ function write_nginx_config() {
 	
 	file_put_contents($conf_nginx_conf_path, $nginx_final_config);
 	$retval = 0; $output = "";
-	exec("service nginx reload", $output, $retval);
+	//exec("service nginx reload", $output, $retval);
+	exec("nginx -s reload", $output, $retval);
 	if ($retval > 0 ) {
 		echo "ERROR: nginx reload failed\n";
-		exit(1);
+		//exit(1);
 	}
 }
 
