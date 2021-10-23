@@ -151,7 +151,7 @@ function zamger_update_groups($course_id, $force) {
 
 // Update the "all students" group
 function zamger_update_allstudents($course_id, $force) {
-	global $conf_data_path, $conf_current_year, $conf_zamger_update_interval;
+	global $conf_data_path, $conf_current_year, $conf_zamger_update_interval, $conf_base_path;
 
 	// Get course
 	$courses_path = $conf_data_path . "/courses.json";
@@ -207,6 +207,9 @@ function zamger_update_allstudents($course_id, $force) {
 			json(ok("All students not updated for course $course_id $time_since_update $all_students_id"));
 	}
 	
+	// Update users file
+	eval(file_get_contents("$conf_base_path/users"));
+	
 	// Get all students
 	require_once(__DIR__."/groups.php");
 	$allStudents = zamger_all_students($course['id'], $academic_year);
@@ -258,7 +261,16 @@ function zamger_update_allstudents($course_id, $force) {
 			$user_courses['student'][] = $course_id;
 		
 		file_put_contents($user_courses_path_current, json_encode($user_courses, JSON_PRETTY_PRINT));
+		
+		if (array_key_exists($id, $users)) {
+			$users[$id]['realname'] = $name;
+			if (!array_key_exists('email', $users[$id]) || empty($users[$id]['email']))
+				$users[$id]['email'] = $id . '@' . $conf_zamger_email_domain;
+		}
 	}
+	
+	// Write users file
+	file_put_contents( "$conf_base_path/users", "\$users = ". var_export($users, true) . ";" );
 	
 	// Write group files
 	file_put_contents($as_group_file, json_encode($asgroup, JSON_PRETTY_PRINT));
