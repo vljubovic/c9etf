@@ -2,7 +2,7 @@
 
 // =========================================
 // WEBIDECTL.PHP
-// C9@ETF project (c) 2015-2020
+// C9@ETF project (c) 2015-2021
 //
 // Master control script
 // =========================================
@@ -332,12 +332,6 @@ switch($action) {
 
 	// Rewrite nginx config and restart (useful in case of corruption)
 	case "reset-nginx":
-		/*foreach ($active_users as $username => $act) {
-			if (array_key_exists($username, $inactive_users)) {
-				unset($inactive_users[$username]);
-				write_files();
-			}
-		}*/
 		bfl_lock("users file");
 		read_files();
 		if ($is_control_node)
@@ -382,6 +376,7 @@ switch($action) {
 		break;
 
 	// Update stats for a user or a list of users (listed in a plaintext file)
+	// TODO: never used - REMOVE?
 	case "update-stats":
 		// Single user
 		if (array_key_exists($username, $users)) {
@@ -392,6 +387,7 @@ switch($action) {
 			}
 			else if ($is_control_node)
 				run_on($svn_node_addr, "$conf_base_path/bin/userstats " . $userdata['esa']);
+			break;
 		}
 			
 		// Here second param is actually a file with list of users for statistics update
@@ -412,6 +408,7 @@ switch($action) {
 		break;
 
 	// Update SVN stats for all users (quite long)
+	// TODO: never used - REMOVE?
 	case "update-all-stats":
 		foreach ($users as $username => $options) {
 			// We can safely update stats for logged-in users
@@ -451,6 +448,7 @@ switch($action) {
 		break;
 
 	// (Attempt to) fix SVN conflicts for all users
+	// TODO: never used directly - REMOVE?
 	case "fix-svn":
 		if ($is_svn_node) {
 			foreach($users as $username => $options) {
@@ -504,6 +502,7 @@ switch($action) {
 		break;
 	
 	// Call user_reset_svn if inode count goes big (which can be a huge problem if all inodes are used)
+	// TODO: moved to maintenance - REMOVE?
 	case "clean-inodes":
 		if (!$is_svn_node) {
 			run_on($svn_node_addr, "$conf_base_path/bin/webidectl clean-inodes");
@@ -668,6 +667,7 @@ switch($action) {
 		break;
 
 	// Remove backup files if disk sppace is low
+	// TODO: moved to maintenance - REMOVE?
 	case "disk-cleanup":
 		$home_usage = -1; $root_usage = -1;
 		foreach(explode("\n", shell_exec("df")) as $line) {
@@ -723,8 +723,8 @@ switch($action) {
 		}
 		
 		break;
-
-	// Revert to older revision on svn
+	
+	// Check if node for user is running
 	case "is-node-up":
 		if ($users[$username]["status"] != "active")
 			print "false\n";
@@ -748,6 +748,7 @@ switch($action) {
 		break;
 		
 	// Nightly tasks for storage node
+	// TODO: moved to maintenance - REMOVE?
 	case "storage-nightly":
 		if ($argc > 2 && $argv[2] == "all-stats")
 			$all_stats = true;
@@ -777,7 +778,7 @@ switch($action) {
 	case "help":
 print <<<END
 WEBIDECTL.PHP
-C9@ETF project (c) 2015-2020
+C9@ETF project (c) 2015-2021
 
 Master control script for C9@ETF
 
@@ -886,8 +887,8 @@ function activate_user($username, $ip_address) {
 				return; 
 			}
 			
-			if ($is_svn_node)
-				$cmd = "$conf_base_path/bin/webidectl sync-local " . $userdata['esa'];
+			if ($is_svn_node) // If control node is also svn node, run locally
+				$cmd = "$conf_base_path/bin/webidectl sync-local " . $userdata['esa']; // call function sync_local ?
 			else
 				$cmd = "ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-local " . $userdata['esa'] . "\"";
 			
@@ -1243,7 +1244,8 @@ function deactivate_user($username, $skip_svn = false) {
 		$script .= "echo USER: $username >> $conf_svn_problems_log; ";
 		$script .= "svn ci -m deactivate_user . 2>&1 >> $conf_svn_problems_log";
 		run_as($username, $script);
-		fixsvn($username);
+		$time = time() + 60 + rand(0, 100);
+		file_put_contents("$conf_base_path/data/maintenance_tasks", "fixsvn $username,$time\n", FILE_APPEND);
 	}
 	else if ($is_control_node) {
 //		run_on($svn_node_addr, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
@@ -1255,9 +1257,9 @@ function deactivate_user($username, $skip_svn = false) {
 		// Sync locally changed files to remote
 		if (array_key_exists("volatile-remote", $users[$username])) {
 			if ($is_svn_node)
-				proc_close(proc_open("$conf_base_path/bin/webidectl sync-remote " . $userdata['esa'] . " 2>&1 &", array(), $foo));
+				file_put_contents("$conf_base_path/data/maintenance_tasks", "sync_remote $username,$now\n", FILE_APPEND);
 			else
-				proc_close(proc_open("ssh $svn_node_addr \"$conf_base_path/bin/webidectl sync-remote " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
+				run_on($svn_node_addr, "echo sync_remote $username,$now >> $conf_base_path/data/maintenance_tasks");
 			debug_log("sync-remote $username");
 		}
 	}
@@ -1765,12 +1767,14 @@ function kill_idle($minutes, $output, $sleep) {
 			$conf_nodes2[$key] = $conf_nodes[$key];
 	foreach($conf_nodes2 as $node) {
 		if (!in_array("compute", $node['type'])) continue;
+		$processed = [];
 		foreach(ps_ax($node['address']) as $process) {
 			if (!strstr($process['cmd'], "node ") && !strstr($process['cmd'], "nodejs "))
 				continue;
 				
 			// User possibly logged out in the meantime
 			$username = $process['user'];
+			if (in_array($username, $processed)) continue;
 			if ($users[$username]['status'] == "inactive") continue;
 			
 			$time = last_access($username);
@@ -1779,12 +1783,12 @@ function kill_idle($minutes, $output, $sleep) {
 			if (time() - $time > $minutes*60) {
 				$server = $users[$username]['server'];
 				if ($output) print "Stopping node on $server\n";
-				if (is_local($server)) {
-					bfl_lock("user $username");
-					stop_node($username, false);
-					bfl_unlock("user $username");
-				} else
-					proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl stop-node " . escapeshellarg($username) . " &\" 2>&1 &", array(), $foo));
+				$now = time();
+				if (is_local($server))
+					file_put_contents("$conf_base_path/data/maintenance_tasks", "stop_node $username,$now\n", FILE_APPEND);
+				else
+					run_on($server, "echo stop_node $username,$now >> $conf_base_path/data/maintenance_tasks");
+				$processed[] = $username;
 				
 				if ($sleep > 0) {
 					sleep($sleep);
@@ -1798,7 +1802,7 @@ function kill_idle($minutes, $output, $sleep) {
 
 // kill "hard" means logout inactive users
 function kill_idle_logout($minutes, $output, $sleep) {
-	global $users;
+	global $users, $conf_base_path;
 	
 	foreach ($users as $username => $options) {
 		if ($options['status'] == "inactive") continue;
@@ -1807,7 +1811,8 @@ function kill_idle_logout($minutes, $output, $sleep) {
 		if ($output)
 			print "Username $username inactive ".round((time()-$time)/60, 2)." minutes\n";
 		if (time() - $time > $minutes*60) {
-			deactivate_user($username);
+			$now = time();
+			file_put_contents("$conf_base_path/data/maintenance_tasks", "logout $username,$now\n", FILE_APPEND);
 			
 			if ($sleep > 0) {
 				sleep($sleep);
@@ -1935,7 +1940,9 @@ function clear_server() {
 function storage_nightly($all_stats) {
 	global $users, $conf_base_path, $conf_home_path;
 	global $conf_max_user_inodes, $conf_max_user_svn_disk_usage, $conf_limit_diskspace, $conf_diskspace_cleanup;
-
+	
+	$skip_users = array( );
+	
 	$total = count($users);
 	$current=1;
 	$total_usage_stats = array();
@@ -1946,268 +1953,23 @@ function storage_nightly($all_stats) {
 	$users_shuffled = array();
 	foreach ($keys as $key)
 		$users_shuffled[$key] = $users[$key];
-
-	// First pass - update stats, reinstall svn if neccessary
+	
 	foreach ($users_shuffled as $username => $options) {
 		if (file_exists("/tmp/storage_nightly_skip")) break;
 		if ($username == "") continue;
-		
-		// We can safely update stats for logged-in users
-		print "$username ($current/$total) - ".date("d.m.Y H:i:s")."\n";
-		$current++;
-		$userdata = setup_paths($username);
-		$username_esa = $userdata['esa'];
-		$workspace = $userdata['workspace'];
-		if (!file_exists($workspace)) {
-			print "Workspace not found for $username...\n";
-			continue;
-		}
-		
-		$total_usage_stats[$username]['svn'] = false;
-		$total_usage_stats[$username]['inodes'] = false;
-		$total_usage_stats[$username]['ws.old'] = false;
-		$total_usage_stats[$username]['svn.old'] = false;
-		$total_usage_stats[$username]['old.inodes'] = false;
 		
 		$last = last_access($username);
 		if (time() - $last > 24*60*60) {
 			print "Inactive for >24h, skipping.\n";
 			continue;
 		}
+		$time = time();
 		
-		// Clean core files
-		print run_as($username, "cd $workspace; find . -name \"*core*\" -exec svn delete {} \; ; svn ci -m corovi .");
-		print run_as($username, "cd $workspace; find . -name \"*core*\" -delete");
-
-		print shell_exec("$conf_base_path/bin/userstats $username_esa");
-		
-		// Git commit
-		$msg = date("d.m.Y", time() - 60*60*24);
-		if (!file_exists($workspace . "/.git")) {
-			print "Creating git for user $username...\n";
-			git_init($username);
-		}
-		print run_as($username, "cd $workspace; git add --all .; git commit -m \"$msg\" .");
-		
-		// Clean inodes
-		read_files();
-		
-		if ($users[$username]["status"] == "active") {
-			print "User $username is online! Not cleaning inodes\n";
-			continue;
-		}
-		
-		// Prevent user from logging in below this point
-		bfl_lock("user $username");
-		
-		$usersvn = setup_paths($username)['svn'];
-		$lastver = `svnversion $workspace`;
-		$nochange = false;
-		if ($lastver === "1" || $lastver === "1\n") {
-			$nochange = true;
-		}
-		
-		$do_reinstall = false;
-		if (!$nochange && $users[$username]["status"] != "active" && $conf_max_user_inodes > 0) {
-			$total_usage_stats[$username]['inodes'] = intval(shell_exec("find $usersvn | wc -l"));
-			if ($total_usage_stats[$username]['inodes'] > $conf_max_user_inodes) {
-				print "$username - inodes ".$total_usage_stats[$username]['inodes']." > $conf_max_user_inodes";
-				$do_reinstall = true;
-			}
-		}
-		if (!$do_reinstall && !$nochange && $users[$username]["status"] != "active" && $conf_max_user_svn_disk_usage > 0) {
-			$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
-			if ($total_usage_stats[$username]['svn'] > $conf_max_user_svn_disk_usage) {
-				print "$username - svn disk usage ".$total_usage_stats[$username]['svn']." kB > $conf_max_user_svn_disk_usage kB";
-				$do_reinstall = true;
-			}
-		}
-		
-		if ($do_reinstall) {
-			$total_usage_stats[$username]['old.inodes'] = $total_usage_stats[$username]['inodes'];
-			if ($total_usage_stats[$username]['svn'])
-				$total_usage_stats[$username]['svn.old'] = $total_usage_stats[$username]['svn'];
-			print " - resetting svn\n";
-			print "Update stats\n";
-			$output = array();
-			print exec("$conf_base_path/bin/userstats " . $userdata['esa'] . " 2>&1", $output, $return_value);
-			$output = join("\n", $output);
-			if ($return_value != 0 || strstr($output, "Segmentation") || strstr($output, "FATAL")) {
-				print "Userstats failed for $username!\n";
-			} else {
-				print "Reinstall svn\n";
-				user_reinstall_svn($username);
-			}
-			$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $usersvn"));
-		
-			// Inode statistics update (TODO)
-		}
-		
-		bfl_unlock("user $username");
-		
-		// We have just changed user data?
-		if (array_key_exists("volatile-remote", $options))
-			sync_remote($username);
-		
-		// Prepare some per-user usage statistics
-		$user_ws_backup = setup_paths($username)['workspace'] . ".old";
-		if (file_exists($user_ws_backup))
-			$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-		$user_svn_backup = setup_paths($username)['svn'] . ".old";
-		if (file_exists($user_svn_backup) && !$total_usage_stats[$username]['svn.old'])
-			$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-		
-		// If free disk space is too low, wait until it cleans up
-		do {
-			$home_usage = -1; $root_usage = -1;
-			foreach(explode("\n", shell_exec("df")) as $line) {
-				$parts = preg_split("/\s+/", $line);
-				if (count($parts) < 6) continue;
-				if ($parts[5] == "/")
-					$root_usage = $parts[3];
-				if (starts_with($parts[5], $conf_home_path))
-					$home_usage = $parts[3];
-			}
-			if ($home_usage == -1) $home_usage = $root_usage;
-			$home_usage /= 1024;
-
-			if ($home_usage >= $conf_limit_diskspace * 5) break;
-			print "Disk usage $home_usage MB < " . ($conf_limit_diskspace * 5) . "MB\n";
-			print "Waiting until disk is freed\n\n";
-			sleep(120);
-		} while (1);
+		file_put_contents("$conf_base_path/data/maintenance_tasks", "clean_big_files $username,$time\n", FILE_APPEND);
+		file_put_contents("$conf_base_path/data/maintenance_tasks", "update_stats $username,$time\n", FILE_APPEND);
+		file_put_contents("$conf_base_path/data/maintenance_tasks", "git_update $username,$time\n", FILE_APPEND);
+		file_put_contents("$conf_base_path/data/maintenance_tasks", "clean_inodes $username,$time\n", FILE_APPEND);
 	}
-	
-	// Do we need cleanup?
-	print "\n\nCLEANUP USERS\n=============\n\n";
-	
-	// Second pass - delete backup workspace or svn if neccessary
-	$tries = 0; $max_tries = 100; $min_backup_for_erase = 30000;
-	print "HU $home_usage\n";
-	$current = 1;
-
-	foreach ($users_shuffled as $rand_user => $options) {
-		if ($rand_user == "") continue;
-		if ($conf_diskspace_cleanup <= 0 || $home_usage > $conf_diskspace_cleanup) break;
-
-		print "Cleanup: $rand_user ($current/$total) - ".date("d.m.Y h:i:s")."\n";
-		$current++;
-		$user_ws_backup = setup_paths($rand_user)['workspace'] . ".old";
-		print "UWB $user_ws_backup\n";
-		if (file_exists($user_ws_backup)) {
-			$backup_size = $total_usage_stats[$rand_user]['ws.old'];
-			if ($backup_size === false) {
-				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-				$backup_size = $total_usage_stats[$rand_user]['ws.old'];
-			}
-			print "Size $backup_size\n";
-			if ($backup_size > $min_backup_for_erase) {
-				`rm -fr $user_ws_backup`;
-				$stats = server_stats();
-				$total_usage_stats[$rand_user]['ws.old'] = 0;
-			}
-		} else
-			print "Not exists\n";
-			
-		$user_svn_backup = setup_paths($rand_user)['svn'] . ".old";
-		print "USB $user_svn_backup\n";
-		if (file_exists($user_svn_backup)) {
-			$backup_size = $total_usage_stats[$rand_user]['svn.old'];
-			print "Size $backup_size\n";
-			if ($backup_size === false) {
-				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-				$backup_size = $total_usage_stats[$rand_user]['svn.old'];
-			}
-			if ($backup_size > $min_backup_for_erase) {
-				`rm -fr $user_svn_backup`;
-				$stats = server_stats();
-				$total_usage_stats[$rand_user]['svn.old'] = 0;
-			}
-		} else
-			print "Not exists\n";
-		
-		$home_usage = -1; $root_usage = -1;
-		foreach(explode("\n", shell_exec("df")) as $line) {
-			$parts = preg_split("/\s+/", $line);
-			if (count($parts) < 6) continue;
-			if ($parts[5] == "/")
-				$root_usage = $parts[3];
-			if (starts_with($parts[5], $conf_home_path))
-				$home_usage = $parts[3];
-		}
-		if ($home_usage == -1) $home_usage = $root_usage;
-		$home_usage /= 1024;
-	}
-	
-	// Output usage stats to a file
-	print "\n\nUSAGE STATS\n===========\n\n";
-	$fp = fopen("$conf_base_path/log/usage_stats.txt", 'w');
-	fwrite($fp, "Root usage: $root_usage\nHome usage: $home_usage\n\n");
-	fwrite($fp, "USER            WS      WS.OLD  SVN     SVN.OLD SVN.INODES  STATS\n");
-	$users_sorted = $users;
-	ksort($users_sorted);
-	$total_ws = $total_ws_old = $total_svn = $total_svn_old = $total_stats = 0;
-	
-	$stats_paths = array("$conf_home_path/c9/stats");
-	foreach(scandir($stats_paths[0]) as $file) {
-		$path = $stats_paths[0] . "/$file";
-		if ($file != "." && $file != ".." && is_dir($path))
-			$stats_paths[] = $path;
-	}
-	
-	foreach ($users_sorted as $username => $options) {
-		if ($username == "") continue;
-		print "Usage stats: $username - ".date("d.m.Y h:i:s")."\n";
-		$user_ws = setup_paths($username)['workspace'];
-		$total_usage_stats[$username]['ws'] = intval(shell_exec("du -s $user_ws"));
-
-		$user_ws_backup = $user_ws . ".old";
-		if (!file_exists($user_ws_backup)) $total_usage_stats[$username]['ws.old'] = 0;
-		else if ($total_usage_stats[$username]['ws.old'] === false) {
-			if ($all_stats)
-				$total_usage_stats[$username]['ws.old'] = intval(shell_exec("du -s $user_ws_backup"));
-			else
-				$total_usage_stats[$username]['ws.old'] = "?";
-		}
-
-		$user_svn = setup_paths($username)['svn'];
-		if ($total_usage_stats[$username]['svn'] === false || $total_usage_stats[$username]['svn'] == "?") {
-			if ($all_stats)
-				$total_usage_stats[$username]['svn'] = intval(shell_exec("du -s $user_svn"));
-			else
-				$total_usage_stats[$username]['svn'] = "?";
-		}
-		if ($total_usage_stats[$username]['inodes'] === false) $total_usage_stats[$username]['inodes'] = "?";
-
-		$user_svn_backup = $user_svn . ".old";
-		if (!file_exists($user_svn_backup)) $total_usage_stats[$username]['svn.old'] = 0;
-		else if ($total_usage_stats[$username]['svn.old'] === false) {
-			if ($all_stats)
-				$total_usage_stats[$username]['svn.old'] = intval(shell_exec("du -s $user_svn_backup"));
-			else
-				$total_usage_stats[$username]['svn.old'] = "?";
-		}
-		
-		$stats_usage = 0;
-		foreach($stats_paths as $path) {
-			$stats_file = $path . "/$username.stats";
-			if (file_exists($stats_file)) $stats_usage += filesize($stats_file);
-		}
-		$stats_usage /= 1024;
-		
-		fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", $username, $total_usage_stats[$username]['ws'], $total_usage_stats[$username]['ws.old'], $total_usage_stats[$username]['svn'], $total_usage_stats[$username]['svn.old'], $total_usage_stats[$username]['inodes'], $stats_usage));
-		$total_ws += $total_usage_stats[$username]['ws'];
-		$total_ws_old += $total_usage_stats[$username]['ws.old'];
-		$total_svn += $total_usage_stats[$username]['svn'];
-		$total_svn_old += $total_usage_stats[$username]['svn.old'];
-		$total_stats += $stats_usage;
-	}
-	fwrite($fp, "\n\n");
-	fwrite($fp, sprintf("%-14s%-10d%-8d%-10d%-8d%-12d%d\n", "TOTAL", $total_ws, $total_ws_old, $total_svn, $total_svn_old, 0,  $total_stats));
-	fwrite($fp, "SUM TOTAL: " . ($total_ws+$total_ws_old+$total_svn+$total_svn_old+$total_stats) . "\n");
-	$nr_users = count($users_sorted);
-	fwrite($fp, sprintf("%-16s%-8d%-8d%-8d%-8d%-12d%d\n", "AVERAGE", $total_ws/$nr_users, $total_ws_old/$nr_users, $total_svn/$nr_users, $total_svn_old/$nr_users, 0,  $total_stats/$nr_users));
-	fclose($fp);
 }
 
 
@@ -2686,5 +2448,3 @@ function debug_log($msg) {
 	$msg = escapeshellarg($msg);
 	`echo $time $msg >> $conf_base_path/log/webidectl.log`;
 }
-
-?>

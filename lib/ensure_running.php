@@ -8,8 +8,8 @@
 // =========================================
 
 
-require(dirname(__FILE__) . "/config.php");
-require(dirname(__FILE__) . "/webidelib.php");
+require("config.php");
+require("webidelib.php");
 
 // check_php script that stops/starts php
 $check_php=`ps aux | grep check_php | grep -v grep`;
@@ -20,6 +20,11 @@ if (!$check_php)
 $stats_monitor=`ps aux | grep stats_monitor.php | grep -v grep`;
 if (!$stats_monitor)
 	proc_close(proc_open("nohup php $conf_base_path/lib/stats_monitor.php > $conf_base_path/server_stats.log 2>&1 &", array(), $foo));
+
+// Maintenance task
+$maintenance=`ps aux | grep maintenance.php | grep -v grep`;
+if (!$maintenance)
+	proc_close(proc_open("nohup php $conf_base_path/bin/maintenance.php 2>&1 &", array(), $foo));
 
 // Check for ssh tail processes that copy stats from other nodes to control node
 $is_control_node = false;
@@ -42,5 +47,3 @@ if ($is_control_node) {
 }
 
 
-	
-?>
