@@ -33,6 +33,7 @@ function assignment_table($course) {
 		$max = $root->maxTasks();
 	?>
 	<script src="static/js/assignment.js" type="text/javascript" charset="utf-8"></script>
+    <script src="static/js/autotest-genv2/scripts/helpers.js"></script>
 	<table cellspacing="0" cellpadding="2" border="0" class="assignment-table">
 	<thead>
 		<tr bgcolor="#dddddd">
@@ -133,8 +134,12 @@ function assignment_print($a, $course, $max, $level) {
 		$levelprint .= "&nbsp;&nbsp;&nbsp;";
 	if ($level > 0)
 		$levelprint .= "&#x2514;";
-	
-	?>
+
+    $js_link = $course->id . ", " . $course->year . ", ";
+    if ($course->external) $js_link .= "true, "; else $js_link .= "false, ";
+    $js_link .= $a->id . ", ";
+
+?>
 	<tr>
 		<td class="text cell stronger" style="<?=$style?>"><?=$levelprint . $a->name?></td>
 		<td><a href="<?=$edit_link?>"><i class="fa fa-gear"></i></a></td>
@@ -150,24 +155,37 @@ function assignment_print($a, $course, $max, $level) {
 	$i = 1;
 	foreach( $a->getItems() as $item) {
 		if (count($item->getItems()) == 0) {
-			$at_path = $item->filesPath() . "/.autotest";
+			$at_path = $item->filesPath() . "/.autotest2";
 			// FIXME: hack to get relative path
 			$absolute = $course->getPath() . "/assignment_files/";
 			$at_name = substr($at_path, strlen($absolute));
 			
+			$at_exists = false;
+			foreach($item->files as $file)
+				if ($file['filename'] == ".autotest2")
+					$at_exists = true;
+			
 			$count_tests = 0;
-			if (file_exists($at_path)) {
+			if ($at_exists) {
 				$autotest = json_decode(file_get_contents($at_path), true);
 				if (!empty($autotest) && array_key_exists("test_specifications", $autotest))
 					$count_tests = count($autotest['test_specifications']);
-			
+				if (!empty($autotest) && array_key_exists("tests", $autotest)) {
+					$count_tests = 0;
+					foreach ($autotest['tests'] as $test) {
+						if (!array_key_exists("options", $test) || !in_array("silent", $test['options']))
+							$count_tests++;
+					}
+				}
+				
+				
 				$link = "autotest/preview.php?fileData=$at_path";
-				$deploy_js_this = $deploy_js . $a->id . ", " . $item->id . ", '$at_name', 'all-users');";
+				$local_link = $js_link . $item->id . ", '$at_name'";
 				
 				?>
 				<td>
-					<a href="<?=$link?>"><i class="fa fa-check"></i> <?=$count_tests?></a>
-					<a href="#" onclick="<?=$deploy_js_this?>"><i class="fa fa-bolt"></i></a>
+                    <a href="#" onclick="return doOpenAutotestGenV2(<?=$local_link?>);"><i class="fa fa-check"></i> <?=$count_tests?></a>
+                    <a href="#" onclick="return deployAssignmentFile(<?=$local_link?>, 'all-users');"><i class="fa fa-bolt"></i></a>
 				</td>
 				<?php
 			} else {
