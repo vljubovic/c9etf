@@ -128,14 +128,8 @@ if (file_exists($login_watch_path) || file_exists($verify_watch_path)) {
 	if (file_exists($nodeup_path)) unlink($nodeup_path);
 	return;
 }
-print "ok";
-return;
 
-//$result = `sudo $conf_base_path/bin/webidectl is-node-up $login`;
 $result = background("is-node-up $login", "is-node-up-$login");
-
-
-//$idle = `ls -l $conf_base_path/watch`;
 
 if (trim($result) == "true") print "ok";
 else print "idle";
