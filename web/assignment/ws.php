@@ -40,14 +40,18 @@ function ws_from_path() {
 
 // List of courses
 function ws_courses() {
-	global $conf_current_year, $login;
+	global $conf_current_year, $login, $conf_admin_users;
 
 	$year = $conf_current_year;
 	if (isset($_REQUEST['year']))
 		$year = intval($_REQUEST['year']);
-
+	
+	$student = $login;
+	if (isset($_REQUEST['user']) && in_array($login, $conf_admin_users))
+		$student = $_REQUEST['user'];
+	
 	$result = ok("");
-	$result['data'] = Course::forStudent($login, $year);
+	$result['data'] = Course::forStudent($student, $year);
 	json($result);
 }
 
@@ -385,7 +389,7 @@ function ws_generatefile() {
 		file_put_contents($temporary, json_encode($zadaca, JSON_PRETTY_PRINT));
 	}
 	
-	if ($filename == ".autotest") {
+	if ($filename == ".autotest"|| $filename == ".autotest2") {
 		foreach(Cache::getFile("years.json") as $year)
 			if ($year['id'] == $course->year)
 				$year_name = $year['name'];
