@@ -85,7 +85,8 @@ $conf_nodes = array(
 	array("name" => "c9", "address" => "127.0.0.1", "type" => array( "control", "compute", "storage", "svn" ) ),
 );
 
-$conf_chroot = false;
+$conf_chroot = true;
+$conf_default_webide = "theia";
 
 
 

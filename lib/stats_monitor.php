@@ -69,7 +69,7 @@ while ($line = fgets($file)) {
 
 		$processes = 0;
 		foreach (ps_ax("") as $process) {
-			if (strstr($process['cmd'], "node server") || strstr($process['cmd'], "nodejs server"))
+			if (strstr($process['cmd'], "node server") || strstr($process['cmd'], "nodejs server") || strstr($process['cmd'], "theia start") && strstr($process['cmd'], "node"))
 				$processes++;
 		}
 	

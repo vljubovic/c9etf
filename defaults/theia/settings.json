@@ -7,5 +7,9 @@
         "**/.DS_Store": true,
         "**/.**": true
     },
-    "editor.autoIndent": true
+    "editor.autoIndent": true,
+
+    "clangd.path": "/usr/lib/llvm-10/bin/clangd",
+    "clangd.arguments": ["-log=verbose", "-pretty", "--background-index"]
 }
+

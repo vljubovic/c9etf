@@ -1,0 +1,42 @@
+{
+    "task": {
+        "run": "/usr/local/webide/runners/universal_runner.sh ${file} ${fileDirname}"
+    },
+    "children": {
+        "UUP": {
+            "task": {
+                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "OR": {
+            "task": {
+                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "TP": {
+            "task": {
+                "run": "sleep 1 && g++ -std=c++14 ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "ASP": {
+            "task": {
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "NA": {
+            "task": {
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "NASP": {
+            "task": {
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        },
+        "RG": {
+            "task": {
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+            }
+        }
+    }
+}

@@ -1,3 +1,23 @@
 {
-    "editor.autoSave": "on"
+    "editor.autoSave": "on",
+    "editor.acceptSuggestionOnEnter": "on",
+    "editor.tabCompletion": "on",
+    "editor.autoClosingBrackets": "always",
+    "editor.autoClosingQuotes": "always",
+    "editor.formatOnSave": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/.**": true
+    },
+    
+    "C_Cpp.intelliSenseEngine": "Disabled",
+    "C_Cpp.autocomplete": "Disabled",
+    "C_Cpp.errorSquiggles": "Disabled",
+
+    "clangd.path": "/usr/lib/llvm-10/bin/clangd",
+    "clangd.arguments": ["-log=verbose", "-pretty", "--background-index"]
 }

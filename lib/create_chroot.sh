@@ -44,17 +44,17 @@ mkdir $3/dev
 
 mkdir $3/etc
 chmod 755 $3/etc
-ln /etc/hosts $3/etc
-ln /etc/passwd $3/etc
-ln /etc/group $3/etc
-ln /etc/resolv.conf $3/etc
-ln /etc/ld.so.conf $3/etc
-ln /etc/ld.so.cache $3/etc
+cp /etc/hosts $3/etc
+cp /etc/passwd $3/etc
+cp /etc/group $3/etc
+cp /etc/resolv.conf $3/etc
+cp /etc/ld.so.conf $3/etc
+cp /etc/ld.so.cache $3/etc
 ln -s /proc/mounts $3/etc/mtab
-cp -alf /etc/alternatives $3/etc
+cp -a /etc/alternatives $3/etc
 
 # Needed for theia...
-ln /etc/manpath.config $3/etc
+cp /etc/manpath.config $3/etc
 
 # Theia configuration directory will be deployed into $3 by reset-config
 ln -s ../.theia $3/root/.theia
@@ -90,5 +90,4 @@ rm $3/root/.c9/project.settings
 ln -s ../../.c9/project.settings $3/root/.c9/project.settings
 rm $3/root/.c9/state.settings
 ln -s ../../.c9/state.settings $3/root/.c9/state.settings
-
 

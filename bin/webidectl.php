@@ -1049,7 +1049,7 @@ function activate_user($username, $ip_address) {
 
 function create_user($username) {
 	global $conf_base_path, $conf_nodes, $conf_c9_group, $conf_defaults_path, $users, $conf_home_path;
-	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr, $conf_chroot;
+	global $is_storage_node, $is_control_node, $is_svn_node, $storage_node_addr, $conf_chroot, $conf_default_webide;
 	
 	$forbidden_usernames = array('root', 'daemon', 'bin', 'sys', 'sync', 'games', 'man', 'lp', 'mail', 'news', 'uucp', 'proxy', 'www-data', 'backup', 'list', 'irc', 'gnats', 'nobody', 'libuuid', 'syslog', 'messagebus', 'landscape', 'sshd', 'c9test', 'c9');
 	if (in_array($username, $forbidden_usernames)) {
@@ -1129,6 +1129,7 @@ function create_user($username) {
 	$users[$username] = array();
 	$users[$username]['status'] = "inactive";
 	if ($conf_chroot) $users[$username]['workspace'] = "chroot";
+	if (isset($conf_default_webide)) $users[$username]['webide'] = $conf_default_webide;
 	write_files();
 	bfl_unlock("users file");
 	bfl_unlock("user $username");
@@ -1765,6 +1766,9 @@ function reset_config($username) {
 	exec ("rm -fr ".$userdata['workspace']."/.user");
 	run_as($username, "cp -R $conf_defaults_path/workspace/.user " . $userdata['workspace']);
 	
+	exec ("rm -fr ".$userdata['workspace']."/.theia");
+	run_as($username, "cp -R $conf_defaults_path/workspace/.theia " . $userdata['workspace']);
+	
 	exec ("rm -fr ".$userdata['home']."/.c9");
 	run_as($username, "cp -R $conf_defaults_path/c9 " . $userdata['home'] . "/.c9");
 	
@@ -2035,7 +2039,8 @@ function user_reinstall_svn($username) {
 	$userdata = setup_paths($username);
 
 	// Backup old data
-	$script  = "chmod -R 755 " . $userdata['workspace'] . ".old; chmod -R 755 " . $userdata['svn'] . ".old; ";
+	exec("rm -fr " . $userdata['workspace'] . ".old/.theia");
+	$script  = "chmod -R 0755 " . $userdata['workspace'] . ".old; chmod -R 0755 " . $userdata['svn'] . ".old; ";
 	
 	$script .= "rm -fr " . $userdata['workspace'] . ".old; ";
 	$script .= "mv " . $userdata['workspace'] . " " . $userdata['workspace'] . ".old; ";
@@ -2053,7 +2058,7 @@ function user_reinstall_svn($username) {
 	
 	// Copy old data into new workspace and add to SVN
 	print "COPY OLD DATA:\n";
-	$copy_paths = array("*", ".c9", ".user", ".gcc.out", ".git", ".login", ".logout");
+	$copy_paths = array("*", ".c9", ".user", ".gcc.out", ".git", ".login", ".logout", ".theia");
 	$svn_add_paths = array("*", ".gcc.out", ".login", ".logout");
 	
 	$script = "cd " . $userdata['home'] . "; ";
