@@ -27,6 +27,24 @@ function buildserviceCopyFile(bsInstance, username, code_path) {
 	xmlhttp.send();
 }
 
+function autotesterCopyFile(bsInstance, username, code_path) {
+	var xmlhttp = new XMLHttpRequest();
+	var url = "/autotester/copyFile.php?program=" + bsInstance + "&username=" + username + "&filename=" + code_path;
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			result = JSON.parse(xmlhttp.responseText);
+			if (result.success == "true") {
+				console.log("File copied");
+			}
+		}
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
+			console.log("Server error. Contact administrator");
+		}
+	}
+	xmlhttp.open("GET", url, true);
+	xmlhttp.send();
+}
+
 
 // Update progress bar (for startTestMulti)
 
@@ -108,22 +126,92 @@ function buildserviceVerifyTest(bsInstance, username, code_path, total) {
 	xmlhttp.send();		
 }
 
+function autotesterVerifyTest(bsInstance, username, code_path, total) {
+	var xmlhttp = new XMLHttpRequest();
+	var url = "/autotester/push.php?action=getResult&id="+bsInstance;
+	xmlhttp.onreadystatechange = function() {
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+			result = JSON.parse(xmlhttp.responseText);
+			if (result.success == "true" || result.success == true) {
+				// result.status has the same format as test results otherwise have
+				//totalTests = testSpecification.test_specifications.length;
+				var status = result.data;
+				console.log("autotesterVerifyTest "+bsInstance + " " +code_path+" status "+status.status);
+				
+				if ('status' in status && status.status != 1 && status.status != 7) {
+					if (status.status == 3 && total==0)
+						showMsg("Doesn't compile");
+					else if (status.status == 6 && total==0)
+						showMsg("Sources not found");
+					else if (!('test_results' in status) && total==0)
+						showMsg("Test successful, no results");
+					else {
+						testResults = status.test_results;
+						testsPassed = totalTests = 0;
+						for(test_id in testResults) {
+							test = testResults[test_id];
+							totalTests++;
+							if (test.status == "1")
+								testsPassed++;
+						}
+						if (total==0) showMsg("Result: "+testsPassed+"/"+totalTests);
+						console.log("autotesterVerifyTest "+code_path+" passed "+testsPassed+" of "+totalTests);
+					}
+					if (total > 0) 
+						buildserviceIncrementProgress(total);
+					else 
+						setTimeout(hideMsg,5000);
+					autotesterCopyFile(bsInstance, username, code_path);
+					return true;
+				}
+				
+				// When tests are just started, object doesn't have this member at all
+				console.log(status);
+				if ('test_results' in status)
+					// Requires IE9+, FF4+, Safari 5+
+					finishedTests = Object.keys(status.test_results).length+1;
+				else
+					finishedTests = 1;
+
+				//console.log("Testing in progress. Done "+finishedTests+" of "+totalTests);
+				if (total==0) showMsg("Testing "+finishedTests);
+				setTimeout(function(){ autotesterVerifyTest(bsInstance, username, code_path, total); }, 500);
+			} else {
+				// The only possibility is that instance doesn't exist, that is the testing finished in the meanwhil
+				setTimeout(function(){ autotesterVerifyTest(bsInstance, username, code_path, total); }, 500);
+			}
+			return false;
+		}
+		if (xmlhttp.readyState == 4 && xmlhttp.status == 500) {
+			showMsg("Test failed to run");
+			setTimeout(hideMsg,5000);
+			console.log("Server error. Contact administrator");
+			console.log("push.php readyState "+xmlhttp.readyState+" status "+xmlhttp.status);
+		}
+	}
+	xmlhttp.open("GET", url, true);
+	xmlhttp.send();		
+}
+
 
 // Start test for single project (if third param is 0)
 
 function buildserviceStartTest(username, code_path, total) {
-	var url = 'buildservice/submit_c9.php?sstudent='+username+'&filename='+code_path;
+	var url = 'buildservice/submit_c9.php?sstudent='+username+'&filename='+code_path+'&autotester=v2';
 	console.log("buildserviceStartTest("+username+","+code_path+","+total+")");
 	if (total==0) showMsg("Starting tests...");
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			result = JSON.parse(xmlhttp.responseText);
-			if (result.success == "true") {
+			if (result.success == "true" || result.success == true) {
 				bsInstance = result.instance;
 				if (total==0) showMsg("Testing started "+bsInstance);
 				console.log("Testing started "+code_path+" "+bsInstance);
-				setTimeout(function(){ buildserviceVerifyTest(bsInstance, username, code_path, total); }, 500);
+				if (result.version == "autotester")
+					setTimeout(function(){ autotesterVerifyTest(bsInstance, username, code_path, total); }, 500);
+				else
+					setTimeout(function(){ buildserviceVerifyTest(bsInstance, username, code_path, total); }, 500);
 			} else {
 				console.log("Success !true "+code_path);
 				if (total==0) {
