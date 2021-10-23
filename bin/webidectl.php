@@ -366,7 +366,7 @@ switch($action) {
 		foreach ($users as $username => $options) {
 			if ($options['status'] != "active") continue;
 			$nice_period = round( (time() - last_access($username) ) / 60 , 2 );
-			print "$username\t$nice_period\n";
+			print "$username $nice_period\n";
 		}
 		break;
 
