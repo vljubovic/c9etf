@@ -18,10 +18,12 @@ if (count($argv)>2) {
 }
 if (count($argv)>4 && $argv[3] == "nuke") {
 	$do_output = true;
-	$nuke_rev = $argv[4];
+	$nuke_rev_lower = $nuke_rev_upper = intval($argv[4]);
+	if (strstr($argv[4], "-")) 
+		list($nuke_rev_lower, $nuke_rev_upper) = explode("-", trim($argv[4]));
 	$output_file = $argv[1] . ".new";
 } else {
-	$nuke_rev = false;
+	$nuke_rev_lower = $nuke_rev_upper = false;
 	$do_output = false;
 }
 
@@ -50,19 +52,19 @@ while ($line = fgets($fh, 4096)) {
 			$event_size = $size;
 			if ($line == "    ),\n") { 
 				$in_events = false; 
-				if ($nuke_rev !== false) $do_output=true; 
+				if ($nuke_rev_lower !== false) $do_output=true; 
 			}
 			else {
 				$cur_event = $matches[1];
-				if ($nuke_rev !== false) {
-					if ($nuke_rev == $cur_event) $do_output=false; else $do_output=true;
+				if ($nuke_rev_lower !== false) {
+					if ($nuke_rev_lower <= $cur_event && $nuke_rev_upper >= $cur_event) $do_output=false; else $do_output=true;
 				}
 			}
 		}
 		if ($line == "  ),\n") {
 			print "Size: " . nicesize($size) . "\n";
 			$in_file = $in_events = false;
-			if ($nuke_rev !== false) $do_output=true;
+			if ($nuke_rev_lower !== false) $do_output=true;
 		}
 		if (preg_match("/^        'time' => (\d+),/", $line, $matches)) {
 			$cur_time = date ("d.m.Y H:i:s", $matches[1]);
