@@ -11,8 +11,8 @@
 require(dirname(__FILE__) . "/../lib/config.php");
 require(dirname(__FILE__) . "/../lib/webidelib.php");
 
-$courses = array("OR", "TP", "ASP", "NA");
-$old_year = 2017;
+$courses = array("OR", "TP", "ASP", "NA", "UUP", "DM", "RA", "NASP", "RG");
+$old_year = 2020;
 
 $users_file = $conf_base_path . "/users";
 eval(file_get_contents($users_file));
@@ -29,8 +29,21 @@ foreach($users as $username => $options) {
 	}
 	$workspace = setup_paths($username)['workspace'];
 	if (array_key_exists('volatile-remote', $options)) {
+		print " - volatile\n";
+		$inuse = "/lhome/" . substr($username,0,1) . "/" . $username . "/.in_use";
+		if (file_exists($inuse)) {
+				print "Deleting\n";
+				$home = "/home/" . substr($username,0,1) . "/" . $username;
+				$svn = "/home/c9/svn/" . $username;
+				`rm -rf $home`;
+				`rm -rf $svn`;
+				unlink($inuse);
+		} else {
+				print "Not in use\n";
+		}
 		print "  - sync-local\n";
 		exec("/usr/local/webide/bin/webidectl sync-local $username");
+		print "gotov sync-local\n";
 		if (!file_exists($workspace)) {
 			print "  - sync failed!\n";
 			continue;
