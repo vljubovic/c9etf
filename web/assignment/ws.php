@@ -402,25 +402,9 @@ function ws_generatefile() {
 	}
 	
 	if ($filename == ".autotest"|| $filename == ".autotest2") {
-		foreach(Cache::getFile("years.json") as $year)
-			if ($year['id'] == $course->year)
-				$year_name = $year['name'];
-		$course_data = $course->data;
-		
-		$autotest = array();
-		$autotest['id'] = intval(file_get_contents($conf_data_path . "/autotest_last_id.txt")) + 1;
-		file_put_contents($conf_data_path . "/autotest_last_id.txt", $autotest['id']);
-		$autotest['name'] = $course->name . " ($year_name), " . $task->parent->name . ", " . $task->name;
-		$autotest['language'] = $course_data['language'];
-		$autotest['required_compiler'] = $autotest['preferred_compiler'] = $course_data['compiler'];
-		$autotest['compiler_features'] = $course_data['compiler_features'];
-		$autotest['compiler_options'] = $course_data['compiler_options'];
-		$autotest['compiler_options_debug'] = $course_data['compiler_options_debug'];
-		$autotest['compile'] = $autotest['test'] = $autotest['debug'] = $autotest['profile'] = "true";
-		$autotest['run'] = "false";
-		$autotest['test_specifications'] = array();
-		
-		file_put_contents($temporary, json_encode($autotest, JSON_PRETTY_PRINT));
+		$contents = file_get_contents($course->getPath() . "/templates/$filename");
+		$contents = str_replace("===TITLE===", $task->parent->name . ", " . $task->name, $contents);
+		file_put_contents($temporary, $contents);
 	}
 	
 	$task->addFile($file, $temporary);
