@@ -326,6 +326,66 @@ function ws_getfile() {
 }
 
 
+function ws_updatefile() {
+	// Only txt files supported
+	global $login, $conf_base_path;
+	
+	// Validate input variables
+	$file = basename($_REQUEST['file']);
+	
+	try {
+		$course = Course::fromRequest();
+	} catch(Exception $e) {
+		json(error("ERR002", "Unknown course"));
+	}
+	
+	if (!$course->isAdmin($login) && !$course->isStudent($login))
+		json(error("ERR007", "Permission denied"));
+	
+	$root = $course->getAssignments();
+	$assignments = $root->getData();
+	if (empty($assignments))
+		json(error("ERR003", "No assignments for this course"));
+	
+	if (isset($_REQUEST['task_direct']))
+		$taskId = intval($_REQUEST['task_direct']);
+	else if (isset($_REQUEST['task']))
+		$taskId = intval($_REQUEST['task']);
+	else
+		json(error("ERR005", "Unknown task"));
+	$task = $root->findById( $taskId );
+	if ($task === false)
+		json(error("ERR005", "Unknown task"));
+	
+	// Look for task file
+	if (empty($file))
+		json(error("ERR006", "File not found - $file"));
+	
+	$found_file_path = $task->filesPath() . "/$file";
+	if (!file_exists($found_file_path))
+		$found_file_path = $course->getPath() . "/files/$file";
+	if (!file_exists($found_file_path))
+		json(error("ERR006", "File not found - $file"));
+	
+	$data = $_REQUEST['data'];
+	if ($file == ".autotest2") {
+		$json = json_decode($_REQUEST['data'], true);
+		foreach($json['tests'] as &$test) {
+			if (array_key_exists('options', $test) && array_key_exists('execute', $test) && in_array("silent", $test['options'])) {
+				unset($test['execute']);
+			}
+			if (array_key_exists('profile[memcheck]', $test) && array_key_exists('environment', $test['execute']) && !array_key_exists('environment', $test['profile[memcheck]']))
+				$test['profile[memcheck]']['environment'] = $test['execute']['environment'];
+			if (array_key_exists('profile[sgcheck]', $test) && array_key_exists('environment', $test['execute']) && !array_key_exists('environment', $test['profile[sgcheck]']))
+				$test['profile[sgcheck]']['environment'] = $test['execute']['environment'];
+		}
+		$data = json_encode($json, JSON_PRETTY_PRINT);
+	}
+	file_put_contents($found_file_path, $data, JSON_PRETTY_PRINT);
+	admin_log("ws_updatefile $found_file_path");
+	json(ok("filename $found_file_path task ".$task->id));
+}
+
 
 function ws_addfile() {
 	global $login, $conf_base_path;
@@ -596,6 +656,8 @@ else if ($_REQUEST['action'] == "files")
 	ws_files();
 else if ($_REQUEST['action'] == "getFile")
 	ws_getfile();
+else if ($_REQUEST['action'] == "updateFile")
+	ws_updatefile();
 else if ($_REQUEST['action'] == "addFile")
 	ws_addfile();
 else if ($_REQUEST['action'] == "generateFile")
