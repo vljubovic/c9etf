@@ -873,17 +873,6 @@ function activate_user($username, $ip_address) {
 	// Prevent logging in while clear_server is running
 	bfl_lock("clear server", false);
 	
-	// Prepare the mounts for chroot
-	if ($is_svn_node) {
-		if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
-			$home = $userdata['home'];
-			foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
-				list($rootdir,$userdir) = explode(",", trim($line));
-				`sudo mount --bind $rootdir $home$userdir`;
-			}
-		}
-	}
-	
 	if ($is_control_node) {
 		if (!check_limits(server_stats(), /* $output= */ true)) return;
 		bfl_lock("user $username");
@@ -1214,7 +1203,7 @@ function deactivate_user($username, $skip_svn = false) {
 		if (is_local($server) || empty($server))
 			stop_node($username, false);
 		else {
-			proc_close(proc_open("ssh $server \"$conf_base_path/bin/webidectl logout " . $userdata['esa'] . " &\" 2>&1 &", array(), $foo));
+			run_on($server, "$conf_base_path/bin/webidectl logout " . $userdata['esa']);
 			if ($conf_ssh_tunneling) {
 				foreach (ps_ax("localhost") as $process) {
 					if (strstr($process['cmd'], "ssh -N -L $port"))
@@ -1242,16 +1231,6 @@ function deactivate_user($username, $skip_svn = false) {
 			unlink($userdata['svn_watch']);
 		}
 		stop_inotify($username);
-		
-		// Unmount binded mounts for chroot
-		if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
-			$home = $userdata['home'];
-			`sudo umount $home/dev/pts`;
-			foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
-				list($rootdir,$userdir) = explode(",", trim($line));
-				`sudo umount $home$userdir`;
-			}
-		}
 		
 		// Commit remaining stuff to svn
 		$script  = "cd " . $userdata['workspace'] . "; ";
@@ -1546,6 +1525,22 @@ function start_node($username) {
 	$userdata = setup_paths($username);
 	$useropts = $users[$username];
 	
+	// Prepare the mounts for chroot
+	if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
+		$home = $userdata['home'];
+		foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
+			list($rootdir,$userdir,$opts) = explode(",", trim($line));
+			if (!`grep $home$userdir /proc/mounts`) {
+				if ($opts) $opts = "-o $opts"; else $opts = "";
+				if (!file_exists($home.$userdir)) `mkdir $home$userdir`;
+				`mount --rbind $opts $rootdir $home$userdir`;
+			}
+		}
+		/*$mount = `grep $home/dev/pts /proc/mounts`;
+		if (!strstr($mount,"devpts"))
+			`chroot $home mount -t devpts devpts /dev/pts`;*/
+	}
+	
 	if (array_key_exists('webide', $useropts))
 		$nodecmd     = "$conf_base_path/bin/start" . $useropts['webide'];
 	else
@@ -1570,7 +1565,7 @@ function start_node($username) {
 	chmod($lastfile, 0666);
 	if (array_key_exists('workspace', $useropts) && $useropts['workspace'] == "chroot") {
 		exec("echo chroot --userspec=$esa:$conf_c9_group $home $nodecmd /root $port $listen_addr $workspace $log_path $watch_path >> $log_path");
-		shell_exec("sudo chroot --userspec=$esa:$conf_c9_group $home $nodecmd /root $port $listen_addr $workspace $log_path $watch_path");
+		shell_exec("chroot --userspec=$esa:$conf_c9_group $home $nodecmd /root $port $listen_addr $workspace $log_path $watch_path");
 	} else
 		run_as($username, "$nodecmd $home $port $listen_addr $workspace $log_path $watch_path");
 }
@@ -1578,6 +1573,8 @@ function start_node($username) {
 // Stop nodejs instance and related user processes
 // Note: if user is still logged in, node will be restarted automatically by web server
 function stop_node($username, $cleanup) {
+	global $users, $conf_base_path;
+	
 	$userdata = setup_paths($username);
 
 	if (file_exists($userdata['node_watch'])) {
@@ -1609,6 +1606,18 @@ function stop_node($username, $cleanup) {
 			else if (strstr($process['cmd'], "nodejs "))
 				exec("kill ".$process['pid']);
 		}
+	}
+	
+	// Unmount binded mounts for chroot
+	if (array_key_exists('workspace', $users[$username]) && $users[$username]['workspace'] == "chroot") {
+		sleep(2);
+		$home = $userdata['home'];
+		//`umount $home/dev/pts`;
+		foreach(file("$conf_base_path/lib/chroot_paths") as $line) {
+			list($rootdir,$userdir,$opts) = explode(",", trim($line));
+			`umount -lf $home$userdir`;
+		}
+		`mount -t devpts devpts /dev/pts -o gid=5,mode=620,ptmxmode=000`; // Will be unmounted by umount -lf /rhome/.../dev
 	}
 }
 
