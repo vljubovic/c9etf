@@ -4,10 +4,13 @@ require_once("./../classes/Course.php");
 require_once("./../classes/GameNode.php");
 require_once("./helpers/common.php");
 
-$url = "/usr/local/webide/data/log";
-
 if (!($_SERVER['REMOTE_ADDR'] === '127.0.0.1')) {
-	jsonResponse(false, 403, array("message"=>"Nisi localhost, jarane!"));
+	jsonResponse(false, 403, array("message"=>"Access denied!"));
+}
+
+function log_this($text) {
+	global $username, $conf_base_path;
+	file_put_contents($conf_base_path . "/log/game_shifter.log", "$username - [". date("d.m.Y H:i:s")."] - $text\n", FILE_APPEND);
 }
 
 function replaceKeys(array $pairs, $code)
@@ -32,6 +35,8 @@ $oldTaskId = intval($input["oldTask_id"]);
 $newTaskId = intval($input["newTask_id"]);
 $redo = boolval($input["redo"]);
 
+log_this("assignment $assignmentId oldTaskId $oldTaskId newTaskId $newTaskId redo $redo");
+
 // Well...
 $course = null;
 try {
@@ -44,6 +49,7 @@ if ($newTaskId < 0 && $oldTaskId > 0) {
 	
 	if ($oldTaskNode === null) {
 		jsonResponse(false, 500, array("message" => "Task does not exist"));
+		log_this("Task does not exist");
 	}
 	
 	$pathArray = explode('/', $oldTaskNode->parent->path);
@@ -61,8 +67,9 @@ if ($newTaskId < 0 && $oldTaskId > 0) {
 		$taskString = "Task found: " . ($task ? "True." : "False.");
 		$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 		jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+		log_this("500 - $taskString $assignmentString");
 	}
-	proc_close(proc_open("sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &", array(), $foo));
+	proc_close(proc_open("sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" >> $conf_base_path/log/game_shifter.log &", array(), $foo));
 	jsonResponse(true, 200, array("message" => "Assignment turned in"));
 }
 if ($redo === false) {
@@ -71,6 +78,7 @@ if ($redo === false) {
 		$taskNode = GameNode::findTaskById($newTaskId, $course);
 		if ($taskNode === null) {
 			jsonResponse(false, 500, array("message" => "Task does not exist"));
+			log_this("Task does not exist");
 		}
 		$pathArray = explode('/', $taskNode->parent->path);
 		$taskPath = $taskNode->getAbsolutePath();
@@ -83,11 +91,11 @@ if ($redo === false) {
 		$pathArray = explode('/', $taskNode->path);
 		$task = end($pathArray);
 		
-		file_put_contents($url, "Line 99 $task $assignment\n", FILE_APPEND);
 		if ($task === false || $assignment === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+			log_this("500 - $taskString $assignmentString");
 		}
 		$filePairs = array();
 		$user = null;
@@ -95,9 +103,10 @@ if ($redo === false) {
 			$user = new User($username);
 		} catch (Exception $e) {
 			jsonResponse(false, 500, array("message" => $e->getMessage()));
+			log_this("500 - User exception - " . $e->getMessage() );
 		}
 		$replacementPairs = array(
-			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
+			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name,
 			"===COURSE===" => $taskNode->course->name,
 			"===STUDENT-FULL-NAME===" => $user->realname,
 			"===STUDENT-USERNAME===" => $user->login,
@@ -107,13 +116,15 @@ if ($redo === false) {
 		$sedovi = "$conf_base_path/data/sedovi";
 		file_put_contents($sedovi, "");
 		foreach ($replacementPairs as $key => $value) {
+			$value = str_replace("/", "\\/", $value);
 			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
 
-		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" >> $conf_base_path/log/game_shifter.log &";
 		proc_close(proc_open($cmd, array(), $foo));
+		log_this("Executed game-deploy $cmd");
 
-		jsonResponse(true, 200, array("message" => "Deployed from game to student"));
+		jsonResponse(true, 200, array("message" => "Deployed from game to student", "cmd" => $cmd));
 	} else {
 		// save student files to history and add files from game to student
 		$oldTaskNode = GameNode::findTaskById($oldTaskId, $course);
@@ -121,6 +132,7 @@ if ($redo === false) {
 		$taskNode = GameNode::findTaskById($newTaskId, $course);
 		if ($taskNode === null || $oldTaskNode === null) {
 			jsonResponse(false, 500, array("message" => "Task does not exist"));
+			log_this("Task does not exist");
 		}
 		
 		$pathArray = explode('/', $oldTaskNode->parent->path);
@@ -138,6 +150,7 @@ if ($redo === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+			log_this("500 - $taskString $assignmentString");
 		}
 		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" ";
 //		proc_close(proc_open($cmd, array(), $foo));
@@ -164,9 +177,10 @@ if ($redo === false) {
 			$user = new User($username);
 		} catch (Exception $e) {
 			jsonResponse(false, 500, array("message" => $e->getMessage()));
+			log_this("500 - User exception - " . $e->getMessage());
 		}
 		$replacementPairs = array(
-			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name ,
+			"===TITLE===" => $taskNode->parent->name . ", " . $taskNode->name,
 			"===COURSE===" => $taskNode->course->name,
 			"===STUDENT-FULL-NAME===" => $user->realname,
 			"===STUDENT-USERNAME===" => $user->login,
@@ -176,9 +190,10 @@ if ($redo === false) {
 		$sedovi = "$conf_base_path/data/sedovi";
 		file_put_contents($sedovi, "");
 		foreach ($replacementPairs as $key => $value) {
+			$value = str_replace("/", "\\/", $value);
 			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
-		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
+		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" >> $conf_base_path/game_shifter.log &";
 		proc_close(proc_open($cmd, array(), $foo));
 		jsonResponse(true, 200, array("message" => "Deployed from student to history and from game to student"));
 	}
@@ -188,6 +203,7 @@ if ($redo === false) {
 		$taskNode = GameNode::findTaskById($newTaskId, $course);
 		if ($taskNode === null) {
 			jsonResponse(false, 500, array("message" => "Task does not exist"));
+			log_this("Task does not exist");
 		}
 		$pathArray = explode('/', $taskNode->parent->path);
 		$taskPath = $taskNode->getAbsolutePath();
@@ -204,6 +220,7 @@ if ($redo === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+			log_this("500 - $taskString $assignmentString");
 		}
 		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" &";
 		proc_close(proc_open($cmd, array(), $foo));
@@ -215,6 +232,7 @@ if ($redo === false) {
 		$taskNode = GameNode::findTaskById($newTaskId, $course);
 		if ($taskNode === null || $oldTaskNode === null) {
 			jsonResponse(false, 500, array("message" => "Task does not exist"));
+			log_this("Task does not exist");
 		}
 		
 		$pathArray = explode('/', $oldTaskNode->parent->path);
@@ -232,6 +250,7 @@ if ($redo === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
 			jsonResponse(false, 500, array("message" => "$taskString $assignmentString"));
+			log_this("500 - $taskString $assignmentString");
 		}
 		$cmd = "sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" ";
 //		proc_close(proc_open($cmd, array(), $foo));
