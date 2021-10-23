@@ -7,6 +7,8 @@
 // This function provides a list of course files with some buttons
 // Meant to be called from admin.php
 function assignment_files($course) {
+	global $conf_sysadmins;
+	
 	$files = $course->getFiles();
 	
 	if (count($files)==0) print "<p>No files are defined</p>\n";
@@ -42,7 +44,7 @@ function assignment_files($course) {
 // This function performs actions clicked by button
 // Meant to be invoked directly
 function assignment_files_change() {
-	global $conf_admin_users, $conf_data_path, $conf_base_path, $login, $_REQUEST;
+	global $conf_admin_users, $conf_data_path, $conf_base_path, $login, $_REQUEST, $conf_sysadmins;
 	
 	require_once("../../lib/config.php"); // Webide config
 	require_once("../../lib/webidelib.php"); // Webide library
@@ -122,7 +124,7 @@ function assignment_files_change() {
 	}
 	if ($_REQUEST['action'] == "Delete") {
 		unlink($file_path);
-		admin_log("delete $file_path");
+		admin_log("assignment/files.php - delete $file_path");
 		print "<p>File deleted</p>";
 		print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 		print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
@@ -159,8 +161,8 @@ function assignment_files_change() {
 			$asgn['task_files'][$task][] = $destination;
 			assignment_update($asgn);
 		}
-
-		admin_log("upload $destination_path");
+		
+		admin_log("assignment/files.php - upload $destination_path");
 		print "<p>File uploaded.</p>\n";
 		print "<p><a href=\"$course_link\">Go back to course</a></p>\n";
 		print "<p><a href=\"$asgn_edit_link\">Edit assignment</a></p>\n";
