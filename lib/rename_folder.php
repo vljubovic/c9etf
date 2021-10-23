@@ -7,7 +7,7 @@ require(dirname(__FILE__) . "/../lib/webidelib.php");
 
 // Settings for read_stats/write_stats
 $svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore");
-$split_folder = array("OR", "OR2015", "TP2015", "OR2016", "TP2016");
+$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016", "OR2017", "TP2017", "OR2018", "TP2018", "UUP2018", "UUP");
 
 
 // Parameters
@@ -38,6 +38,7 @@ function read_stats($username) {
 	$stat_file = $conf_stats_path . "/" . "$username_efn.stats";
 	
 	$stats = NULL;
+	print "$stat_file\n";
 	if (file_exists($stat_file))
 		eval(file_get_contents($stat_file));
 	if ($stats == NULL) {
@@ -50,6 +51,7 @@ function read_stats($username) {
 	foreach ($stats as $key => $value) {
 		if (is_array($value) && array_key_exists("goto", $value)) {
 			$goto_path = $conf_stats_path . "/" . $value['goto'];
+			print "$goto_path\n";
 			eval(file_get_contents($goto_path));
 			foreach($stats_goto as $ks => $vs)
 				$stats[$ks] = $vs;
@@ -157,7 +159,9 @@ function rename_entry($username, $oldname, $newname, $prvi) {
 		$stats[$oldparent]['entries'] = $fixed_entries;
 	}
 	if ($newparent = daj_roditelja($newname)) {
-		if (!array_key_exists('entries', $stats[$newparent]))
+		if (!array_key_exists($newparent, $stats))
+			$stats[$newparent] = [];
+		if (!array_key_exists('entries', $stats[$newparent]) || $stats[$newparent]['entries'] === null)
 			$stats[$newparent]['entries'] = [];
 		if (!in_array($newname, $stats[$newparent]['entries']))
 			array_push($stats[$newparent]['entries'], $newname);
