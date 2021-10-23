@@ -70,27 +70,27 @@ function assignments_process(&$assignments, $parentPath, $courseFiles) {
 		else
 			$path = $assignments[$key]['path'] = $parentPath;
 		
-		if (array_key_exists('files', $value)) {
-			foreach ($courseFiles as $cfile) {
-				$found = false;
-				$ccfile = $cfile;
-				if (is_array($cfile) && array_key_exists('filename', $cfile))
-					$ccfile = $cfile['filename'];
-				foreach ($assignments[$key]['files'] as $file) {
-					$ffile = $file;
-					if (is_array($file) && array_key_exists('filename', $file))
-						$ffile = $file['filename'];
-					if ($ccfile == $ffile)
-						$found = true;
-				}
-				if (!$found)
-					$assignments[$key]['files'][] = $cfile;
+		if (!array_key_exists('files', $value)) $assignments[$key]['files'] = array();
+		foreach ($courseFiles as $cfile) {
+			$found = false;
+			$ccfile = $cfile;
+			if (is_array($cfile) && array_key_exists('filename', $cfile))
+				$ccfile = $cfile['filename'];
+			foreach ($assignments[$key]['files'] as $file) {
+				$ffile = $file;
+				if (is_array($file) && array_key_exists('filename', $file))
+					$ffile = $file['filename'];
+				if ($ccfile == $ffile)
+					$found = true;
 			}
+			if (!$found)
+				$assignments[$key]['files'][] = $cfile;
 		}
 			
 		if (array_key_exists('items', $value))
 			assignments_process($assignments[$key]['items'], $path, $courseFiles);
 	}
+	$assignments = array_values($assignments);
 }
 
 function ws_assignments() {
