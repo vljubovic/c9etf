@@ -193,8 +193,9 @@ if ($redo === false) {
 			$value = str_replace("/", "\\/", $value);
 			file_put_contents("$conf_base_path/data/sedovi", "sed -i 's/$key/$value/g'\n", FILE_APPEND);
 		}
-		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" >> $conf_base_path/game_shifter.log &";
+		$cmd = "$commandOne && sudo $conf_base_path/bin/game-deploy \"$username\" \"$action\" \"$courseString\" \"$assignment\" \"$assignmentName\" \"$task\" >> $conf_base_path/log/game_shifter.log &";
 		proc_close(proc_open($cmd, array(), $foo));
+		log_this("Executed game-deploy $cmd");
 		jsonResponse(true, 200, array("message" => "Deployed from student to history and from game to student"));
 	}
 } else {
