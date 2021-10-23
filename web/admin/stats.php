@@ -260,7 +260,8 @@ function admin_exam_stats() {
 					if ($test['status'] == 1) $passed++;
 				}
 				print "<td id=\"$username-Z$i\" style=\"width: 50px\">$passed/$tests</td>\n";
-				$score += ($passed/$tests) * 10;
+				if ($tests > 0)
+    				$score += ($passed/$tests) * 10;
 			} else 
 				print "<td id=\"$username-Z$i\" style=\"width: 50px\">/</td>\n";
 			$tasks[$username."-Z$i"] = $path;

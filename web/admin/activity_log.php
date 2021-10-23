@@ -89,7 +89,7 @@ function merge_down_recursive(&$stats, $subpath) {
 }
 
 function show_log($log, $skip_empty = true) {
-	$limit_stranica = 3000; // PROBA
+	$limit_stranica = 30000;
 	$vrijeme_limit = 60;
 	$paste_limit_linija = 5;
 

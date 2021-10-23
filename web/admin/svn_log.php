@@ -22,7 +22,7 @@ function admin_svn_log($user, $path) {
 	}
 	
 	$lastrev = $svn_info_xml->entry['revision'];
-	if ($lastrev > 1000) $firstrev=$lastrev-1000; else $firstrev=0;
+	/*if ($lastrev > 1000) $firstrev=$lastrev-1000; else*/ $firstrev=0; // Ovo ne radi???
 	
 	try {
 		$xml = `svn log -r$lastrev:$firstrev -v --xml $svn_url`;

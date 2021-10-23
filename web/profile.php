@@ -56,6 +56,7 @@ $gravatar = md5(trim(strtolower($email)));
 	<title>Your profile</title>
 	<link rel="stylesheet" href="static/css/dashboard.css">
 	<link rel="stylesheet" href="static/css/login.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 <body>

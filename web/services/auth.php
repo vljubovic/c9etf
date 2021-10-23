@@ -28,12 +28,11 @@ ini_set('default_charset', 'UTF-8');
 header('Content-Type: application/json; charset=UTF-8');
 
 $result = array();
-global $conf_game_spectators;
 
 if ($error == "") {
 	$result['success'] = true;
 	$result['sid'] = session_id();
-	$result['message'] = "Welcome to c9";
+	$result['message'] = "Welcome to c9 $login";
 	$result['roles'] = [];
 	if (in_array($login,$conf_sysadmins)) {
 		$result['roles'][] = 'sysadmin';

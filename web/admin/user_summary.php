@@ -9,7 +9,10 @@ function admin_user_summary($user) {
 	
 	$login = $user->login;
 	
-	$all = json_decode(file_get_contents("$conf_data_path/user_activity/$login.json"), true);
+	$all = [ 'actions' => [], 'last_online' => 0 ];
+	$activity_file = "$conf_data_path/user_activity/$login.json";
+	if (file_exists($activity_file))
+		$all = json_decode(file_get_contents($activity_file), true);
 	
 	$last_path = $conf_home_path . "/last/$login.last";
 	if (file_exists($last_path)) $last_access = intval(file_get_contents($last_path));

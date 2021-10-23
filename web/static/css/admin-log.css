@@ -40,6 +40,17 @@
 	width: 1.2em;
 }
 
+.log-del-lines {
+	background: #eee;
+}
+
+.log-del-lines:before {
+	content: '\f12d';
+	font-family: FontAwesome;
+	display: inline-block;
+	width: 1.2em;
+}
+
 .log-reformat {
 	background: #efe;
 }

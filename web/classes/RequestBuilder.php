@@ -70,7 +70,7 @@ class RequestBuilder
 		}
 		$code = curl_getinfo($this->request, CURLINFO_RESPONSE_CODE);
 		curl_close($this->request);
-		curl_init($this->request);
+		$this->request = curl_init();
 		return new Response($response, $code, false);
 	}
 	

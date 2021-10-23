@@ -688,9 +688,9 @@ class FSNode
 	protected static function mergeTreesIntoFirst(&$a, $b)
 	{
 		FSNode::takeKeysIfTheyExist($a, $b, ['id', 'name', 'type', 'hidden', 'show', 'binary', 'homeworkId']);
-		if ($a['hidden'] === "true") {
+		if (array_key_exists('hidden', $a) && $a['hidden'] === "true") {
 			$a['hidden'] = true;
-		} else if ($a['hidden'] === "false"){
+		} else if (array_key_exists('hidden', $a) && $a['hidden'] === "false"){
 			$a['hidden'] = false;
 		}
 		if (is_array($a) && is_array($b) && array_key_exists('children', $a) && array_key_exists('children', $b)) {

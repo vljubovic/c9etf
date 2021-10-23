@@ -102,6 +102,7 @@ class Assignment {
 	}
 	
 	// Add new assignment to the list of items
+	// FIXME? item should be parsed for this to work (call getItems once)
 	public function addItem($item) {
 		$newItem = clone $item;
 		$newItem->parent = $this;

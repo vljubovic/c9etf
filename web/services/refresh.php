@@ -33,6 +33,7 @@ $result['success'] = true;
 $result['message'] = 'You are logged in';
 $result['username'] = $login;
 $result['sid'] = $session_id;
+$result['roles'] = [];
 if (in_array($login,$conf_sysadmins)) {
 	$result['roles'][] = 'sysadmin';
 }

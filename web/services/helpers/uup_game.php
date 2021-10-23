@@ -28,7 +28,7 @@ function deployFile(Course $course) {
 		$response = (new RequestBuilder())
 			->setUrl("$game_server_url/uup-game/tasks/students/$assignmentId/$taskId")
 			->send();
-		$data = json_decode($response, true)['data'];
+		$data = json_decode($response->data, true)['data'];
 		if ($response->error) {
 			jsonResponse(false, 500, array("message" => "Game Server not responding"));
 		}
