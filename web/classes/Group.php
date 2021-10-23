@@ -17,6 +17,7 @@ class Group {
 			throw new Exception("Unknown group");
 		
 		$group = new Group();
+		$group->id = $id;
 		$group->name = $data['name'];
 		$group->course = Course::fromString($data['course']);
 		$group->members = $data['members'];
@@ -50,7 +51,7 @@ class Group {
 	 */
 	public function getMembers() {
 		if ($this->members === null) {
-			$data = Cache::getFile("groups/$this->id");
+			$data = Cache::getFile("groups/" . $this->id);
 			if ($data === false)
 				throw new Exception("Unknown group");
 			$this->members = $data['members'];
