@@ -3,6 +3,7 @@
 require_once(__DIR__."/config.php");
 require_once(__DIR__."/jsonlib.php");
 $webide_path = "/usr/local/webide";
+require_once($webide_path . "/lib/webidelib.php");
 
 session_start();
 
@@ -14,11 +15,21 @@ $filename = str_replace("../", "", $filename);
 
 if (isset($_REQUEST['username'])) $username = $_REQUEST['username']; else $username = $_SESSION['login'];
 
+// Is sent from theia
+if (starts_with($filename, "file://")) {
+	$filename = str_replace("file:///workspace/", "/", $filename);
+	if (ends_with($filename, ".zadaca"))
+		// FIXME hardcoded! Needs to be implemented in Theia
+		$filename = str_replace(".zadaca", "main.cpp", $filename);
+}
+
 // Saznajem ID studenta sa Zamgera
 if ($student==0 || isset($_REQUEST['username'])) {
 	$parameters = array( "sta" => "ws/osoba", "login" => $username );
-	if (isset($_SESSION['server_session']) !== "")
+	if (isset($_SESSION['server_session']) && $_SESSION['server_session'] !== "")
 		$parameters[session_name()] = $_SESSION['server_session'];
+	else
+		die("Niste prijavljeni na Zamger");
 	$result = json_request_retry("https://zamger.etf.unsa.ba/", $parameters);
 	if (!array_key_exists("success", $result)) {
 		die("JSON query podaciKorisnika failed: unknown reason\n");
@@ -30,6 +41,7 @@ if ($student==0 || isset($_REQUEST['username'])) {
 	$student = $result['data']['id'];
 }
 
+file_put_contents("/tmp/debug_slanje_zadace.log", "$username: $filename\n", FILE_APPEND);
 
 //$filename = "/home/c9/workspace/$username/$filename";
 
