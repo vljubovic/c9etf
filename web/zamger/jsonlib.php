@@ -105,7 +105,7 @@ function json_login()
 {
 	global $conf_json_base_apiv5, $conf_json_user, $conf_json_pass;
 
-	$url = $conf_json_base_apiv5."/auth";
+	$url = $conf_json_base_apiv5."auth";
 
 	$data = array("login" => $conf_json_user, "pass" => $conf_json_pass);
 	$result = json_request_retry ($url, $data, "POST");
