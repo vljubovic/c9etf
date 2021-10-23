@@ -2,6 +2,12 @@
 
 // WEBSERVICE for c9 module etf.zadaci
 
+// Write message to admin log
+function admin_log($msg) {
+	global $login, $conf_base_path;
+	$msg = date("Y-m-d H:i:s") . " - $login - $msg\n";
+	file_put_contents("$conf_base_path/log/admin.php.log", $msg, FILE_APPEND);
+}
 
 // Web service
 function ws_from_path() {
@@ -355,6 +361,7 @@ function ws_addfile() {
 	} else {
 		$blah = $task->addFile($file, $temporary);
 	}
+	admin_log("ws_addfile $file_path");
 	json(ok("filename $filename task ".$task->id." blah ".$blah));
 }
 
@@ -417,6 +424,7 @@ function ws_generatefile() {
 	}
 	
 	$task->addFile($file, $temporary);
+	admin_log("ws_generatefile $file_path");
 	json(ok(""));
 }
 
@@ -538,6 +546,7 @@ function ws_update_assignments() {
 	$dataJson = json_encode($data, JSON_PRETTY_PRINT);
 	
 	file_put_contents($path, $dataJson);
+	admin_log("ws_update_assignments $file_path");
 	json(ok(""));
 }
 
