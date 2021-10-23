@@ -147,10 +147,11 @@ function phpwebide($user, $cur_path, $editable, $tabs) {
 	}
 	</SCRIPT>
 
-	<form id="pwi_test_results_form" method="post" action="buildservice/render_result.php" target="_blank">
-	<input type="hidden" name="tests" value="">
-	<input type="hidden" name="test_results" value="">
-	<input type="hidden" name="test_id" value="">
+	<form id="pwi_test_results_form" method="post" action="autotester/render/render.php" target="_blank">
+	<input type="hidden" name="task" value="">
+	<input type="hidden" name="language" value="bs">
+	<input type="hidden" name="result" value="">
+	<input type="hidden" name="test" value="">
 	</form>
 
 	<?php
