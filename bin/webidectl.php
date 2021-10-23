@@ -2251,17 +2251,37 @@ function sync_remote($user) {
 // --------------------
 
 function bfl_lock($lock = "all", $take_lock = true) {
-	global $action;
+	global $action, $mypid;
 	
 	$bfl_file = "/tmp/webide.bfl";
 	$wait = 100000; // Initially wait 0.1s
 	$wait_inc = 100000; // Every time increase interval by 0.1s
 	$wait_add = $wait_inc;
 	$ultimate_limit = 100000000; // Break in after 100s
-
-	if (file_exists($bfl_file))
-	while (in_array($lock."\n", file($bfl_file))) {
+	
+	while (true) {
+		$found = false;
+		foreach(file($bfl_file) as $m_lock) {
+			$m_lock_parts = explode(",", trim($m_lock));
+			if ($m_lock_parts[0] === $lock) $found = true;
+		}
+		if (!$found) break;
+		
+		if (!file_exists("/proc/".$m_lock_parts[1])) {
+			debug_log("invalid lock entry, pid " . $m_lock_parts[1]);
+			
+			// We must reconstruct the file from scratch!
+			$new_lock_data = "";
+			foreach(file($bfl_file) as $m_lock) {
+				$m_lock_parts2 = explode(",", trim($m_lock));
+				if (count($m_lock_parts2) == 2 && $m_lock_parts2[1] != $m_lock_parts[1]) $new_lock_data .= $m_lock;
+			}
+			$new_lock_data .= "$lock,$mypid\n";
+			file_put_contents($bfl_file, $new_lock_data, LOCK_EX);
+			return;
+		}
 		debug_log("$action ceka na bfl $lock pid ".getmypid());
+		
 		print "Čekam na bfl - ak\n";
 		usleep($wait);
 		$wait += $wait_add;
@@ -2271,7 +2291,7 @@ function bfl_lock($lock = "all", $take_lock = true) {
 	
 	if ($take_lock) {
 //		debug_log("$action stavlja lock $lock pid ".getmypid());
-		file_put_contents($bfl_file, file_get_contents($bfl_file) . $lock . "\n");
+		file_put_contents($bfl_file, "$lock,$mypid\n", FILE_APPEND | LOCK_EX);
 	}
 }
 
@@ -2282,7 +2302,7 @@ function bfl_unlock($lock = "all") {
 	$new_locks = "";
 	if (file_exists($bfl_file))
 	foreach(file($bfl_file) as $m_lock)
-		if ($m_lock !== $lock . "\n") $new_locks .= $m_lock;
+		if (explode(",", trim($m_lock))[0] !== $lock) $new_locks .= $m_lock;
 	file_put_contents($bfl_file, $new_locks);
 }
 
