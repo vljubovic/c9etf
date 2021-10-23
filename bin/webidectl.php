@@ -26,7 +26,9 @@ if ($argc > 2 && $action != "broadcast") $user = trim($argv[2]); else $user = ""
 $watchfile = $conf_base_path."/watch/webidectl.$action.$user";
 if (file_exists($watchfile) && $action != "server-stats") {
 	$pid = trim(file_get_contents($watchfile));
-	if (file_exists("/proc/$pid"))
+	if ($action == "logout" && $argc > 3 && $argv[3] == "0")
+		`kill $pid`;
+	else if (file_exists("/proc/$pid"))
 		die("ERROR: webidectl already running $pid");
 }
 $mypid = getmypid();

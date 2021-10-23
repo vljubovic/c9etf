@@ -1,5 +1,10 @@
 <?php
 
+if(!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== "on") {
+	header('Location: https://c9.etf.unsa.ba');
+	exit(0);
+}
+
 session_start();
 
 require_once("../lib/config.php");
@@ -185,7 +190,7 @@ if (isset($_REQUEST['logout'])) {
 		</script>
 		<?php
 		if (isset($_REQUEST['zamjena']))
-			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa &", array(), $foo));
+			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa 0 &", array(), $foo));
 		else
 			proc_close(proc_open("sudo $conf_base_path/bin/webidectl logout $login_esa $conf_logout_delay &", array(), $foo));
 		return;
@@ -249,7 +254,7 @@ function is_elsewhere() {
         </div>
 	<p>Prijavite se sa <a href="https://zamger.etf.unsa.ba">Zamger</a> podacima,<br>
 	ili se <a href="register.php">registrujte za novi account</a>.</p>
-	<p>Novo: <a href="uputstva-c9.pdf">Uputstva za upotrebu</a>.</p>
+	<p><a href="uputstva-c9.pdf">Uputstva za korisnike</a>.</p>
 	<p><a href="faq.php">Često postavljana pitanja (FAQ)</a>.</p>
       </form>
 
