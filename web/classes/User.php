@@ -7,7 +7,7 @@ class User {
 		global $users;
 		$users = User::getAll();
 		if (!array_key_exists($login, $users))
-			throw new Exception("User not found");
+			throw new Exception("User $login not found");
 		
 		$this->login = $login;
 		$this->realname = $users[$login]->realname;
