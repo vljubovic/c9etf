@@ -2,7 +2,7 @@
 
 // =========================================
 // USERSTATS.PHP
-// C9@ETF project (c) 2015-2018
+// C9@ETF project (c) 2015-2021
 // 
 // Process SVN logs and update .stats files
 // =========================================
@@ -34,7 +34,7 @@ $create_time = 0;
 $time_break_limit = 60;
 
 // These folders will be kept in separate stats files for perfomance (TODO: tie to defined list of courses)
-$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016", "OR2017", "TP2017");
+$split_folder = array("OR", "TP", "OR2015", "TP2015", "OR2016", "TP2016", "OR2017", "TP2017", "OR2018", "TP2018", "UUP2018", "UUP");
 
 // Show debugging messages
 $DEBUG = true;
@@ -198,22 +198,28 @@ function clean_stats() {
 					unset($lastpos['del']);
 				}
 				
-				if ($evtext == "created") {
+				if ($evtext == "created" || $evtext == "rename") {
 					if (!array_key_exists('content', $value['events'][$i]) && $i != 0 && $value['events'][$i]['time'] == $value['events'][0]['time']) {
-						if ($DEBUG) print "[WWW] Empty created event, file $name event $i count ".count($value['events']) . "\n";
+						if ($DEBUG) print "[WWW] Empty $evtext event, file $name event $i count ".count($value['events']) . "\n";
 						array_splice($value['events'], $i, 1);
 						$i--;
 					} else if (!array_key_exists('content', $value['events'][$i]) && $i != 0) {
 						//print "Empty late created event, file $name event $i\n";
 					} else if (!array_key_exists('content', $value['events'][$i])) {
-						if ($DEBUG) print "[WWW] No content in created event, file $name event $i\n";
+						if ($DEBUG) print "[WWW] No content in $evtext event, file $name event $i\n";
 						$value['events'][$i]['content'] = "";
 						$remember = $i;
 					} else if (!preg_match('//u', $value['events'][$i]['content'])) {
-						if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (created)\n";
+						if ($DEBUG) print "[WWW] Invalid unicode file $name event $i ($evtext)\n";
 						$value['events'][$i]['content'] = "";
 					}
 					continue;
+				}
+				
+				// Checking Unicode in tool output
+				if (array_key_exists('output', $value['events'][$i]) && !preg_match('//u', $value['events'][$i]['output'])) {
+					if ($DEBUG) print "[WWW] Invalid unicode file $name event $i (output)\n";
+					$value['events'][$i]['output'] = '';
 				}
 				
 				// Checking diff contents
