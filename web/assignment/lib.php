@@ -3,11 +3,14 @@
 function assignment_get($id) {
 	global $assignments;
 	
-	$asgn = false;
 	foreach($assignments as $a) {
-		if ($a['id'] == $id) $asgn = $a;
+		if ($a['id'] == $id) return $a;
+		if (array_key_exists('items', $a)) {
+			$result = assignment_find_by_id($a['items'], $id);
+			if ($result) return $result;
+		}
 	}
-	return $asgn;
+	return false;
 }
 
 function assignment_update($asgn) {
@@ -93,7 +96,6 @@ function assignment_create_zadaca(&$asgn, $task) {
 
 
 function assignment_from_request() {
-
 	$homework_id='0';
 	$type = $_REQUEST['type'];
 	if ($type == "other") {
