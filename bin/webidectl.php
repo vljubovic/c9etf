@@ -97,7 +97,10 @@ switch($action) {
 	
 	// Login or create user
 	case "login":
-		$ip_address = $argv[3];
+		if ($argc > 3)
+			$ip_address = $argv[3];
+		else
+			$ip_address = "";
 
 		if (array_key_exists($username, $users)) {
 			if ($users[$username]["status"] == "active") {
@@ -272,6 +275,7 @@ switch($action) {
 					
 				// User possibly logged out in the meantime
 				$username = $process['user'];
+				if ($username == "root") continue;
 				if ($users[$username]['status'] == "inactive") {
 					print "User $username inactive\n";
 					if (is_local($node['address']))
@@ -1341,8 +1345,9 @@ function verify_user($username) {
 		}
 	} else {
 		if (!array_key_exists('server', $users[$username]))
-			$users[$username]['server'] = $conf_my_address;
-		$server = $users[$username]['server'];
+			$server = $conf_my_address;
+		else
+			$server = $users[$username]['server'];
 	}
 	
 	if (is_local($server) && $is_compute_node) {
@@ -1358,10 +1363,10 @@ function verify_user($username) {
 		// If it is, return port
 		$port = intval($users[$username]['port']);
 
-		// If user is not logged in, this is not a control node, we will log him in and restart node
+		// If user is not logged in and this is not a control node, we will not resurrect him
+		// Don't remember why though
 		if ($users[$username]["status"] !== "active") {
 			print "Logged out? ";
-			$users[$username]['status'] = "active";
 			$nodeup = false;
 			$port = 0; // Files will be rewritten
 		}
@@ -1396,6 +1401,7 @@ function verify_user($username) {
 				read_files();
 				if (!$is_control_node && $users[$username]["status"] !== "active")
 					$users[$username]['status'] = "active";
+				$users[$username]['server'] = $server;
 				$users[$username]['port'] = $port;
 				write_files();
 				if ($is_control_node) write_nginx_config();
@@ -1470,7 +1476,12 @@ function verify_user($username) {
 
 function kick_user($username) {
 	global $conf_nodes, $users, $conf_base_path;
-
+	
+	if (!array_key_exists($username, $users)) {
+		print "Unkown user $username.\n";
+		return;
+	}
+	
 	$best_node = ""; $best_value = 0;
 	foreach($conf_nodes as $node) {
 		if (!in_array("compute", $node['type'])) continue;
@@ -1965,14 +1976,7 @@ function clear_server() {
 // - delete backup folders if neccessary
 // - generate usage statistic
 function storage_nightly($all_stats) {
-	global $users, $conf_base_path, $conf_home_path;
-	global $conf_max_user_inodes, $conf_max_user_svn_disk_usage, $conf_limit_diskspace, $conf_diskspace_cleanup;
-	
-	$skip_users = array( );
-	
-	$total = count($users);
-	$current=1;
-	$total_usage_stats = array();
+	global $users, $conf_base_path;
 	
 	// shuffle_assoc
 	$keys = array_keys($users);
@@ -2103,7 +2107,7 @@ function git_init($username) {
 
 // Syncronize user files from volatile-remote server to local folder
 function sync_local($user) {
-	global $users, $conf_home_path;
+	global $users, $conf_home_path, $conf_c9_group;
 	
 	if (!array_key_exists("volatile-remote", $users[$user])) return;
 	if ($users[$user]["status"] == "active") return;
@@ -2114,7 +2118,12 @@ function sync_local($user) {
 	$remote_home = $users[$user]["volatile-remote"] . substr($userdata['home'], strlen($conf_home_path));
 	$remote_inuse = $remote_home . "/.in_use";
 	$local_inuse = $userdata['home'] . "/.in_use";
-	if (file_exists($local_inuse)) { 
+	if (!file_exists($userdata['home'])) {
+		mkdir($userdata['home']);
+		chown($userdata['home'], $user);
+		chgrp($userdata['home'], $conf_c9_group);
+	}
+	if (file_exists($local_inuse)) {
 		debug_log ("sync_local $user - failed (local in_use)");
 		print "ERROR: in use\n"; 
 		return; 
@@ -2296,8 +2305,6 @@ function bfl_lock($lock = "all", $take_lock = true) {
 }
 
 function bfl_unlock($lock = "all") {
-	global $action;
-	
 	$bfl_file = "/tmp/webide.bfl";
 	$new_locks = "";
 	if (file_exists($bfl_file))
