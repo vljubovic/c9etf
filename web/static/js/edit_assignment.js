@@ -121,6 +121,7 @@ function assignmentValidateName(idx, showAlert) {
 	// Name must be unique among tasks of same level within the same parent
 	// Start and end of range with same parent
 	var start = assignmentsGetParentIdx(idx); 
+	if (start == -1) start = 0; // No parent
 	var end = idx;
 	while (end < assignments.length && assignments[end].level >= assignments[idx].level)
 		end++;
@@ -269,7 +270,7 @@ function assignmentsUpdate() {
 	if (document.getElementById("hidden").checked) 
 		assignments[idx].hidden = true; 
 	else 
-		assignments[idx].false;
+		assignments[idx].hidden = false;
 	if (document.getElementById("homework_id").value) 
 		assignments[idx].homework_id = document.getElementById("homework_id").value;
 	else
@@ -527,7 +528,7 @@ function assignmentsGenerateFile(doGenerate) {
 	var asgn = assignments[idx];
 	
 	// Test to see what files can be generated
-	var generate = [ ".autotest" ];
+	var generate = [ ".autotest2" ];
 	if (assignmentIsHomework(idx))
 		generate.push(".zadaca");
 	
@@ -716,6 +717,7 @@ function assignmentsSendToServer() {
 
 
 function assignmentGetTreeNodes(idx, level) {
+	console.log("assignmentGetTreeNodes");
 	var subtree = [];
 	var asgn = false;
 	//console.log("assignmentGetTreeNodes "+idx+" "+level);
@@ -729,7 +731,7 @@ function assignmentGetTreeNodes(idx, level) {
 				delete asgn.visible;
 				delete asgn.selected;
 				
-				// Reduce footpring further
+				// Reduce footprint further
 				//if (!asgn.hidden) delete asgn.hidden;
 				if (!asgn.author) delete asgn.author;
 				if (!asgn.homework_id) delete asgn.homework_id;
