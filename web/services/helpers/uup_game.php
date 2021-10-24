@@ -1,7 +1,8 @@
 <?php
 
 function deployFile(Course $course) {
-	$url = "/usr/local/webide/data/log";
+	global $conf_game_url, $conf_base_path;
+	$log_file = "$conf_base_path/log/uup_game_helper.log";
 	if (isset($_REQUEST['fileName']) && isset($_REQUEST['taskId'])){
 		$fileName = $_REQUEST['fileName'];
 		$taskId = $_REQUEST['taskId'];
@@ -16,7 +17,7 @@ function deployFile(Course $course) {
 		$assignmentName = $taskNode->parent->name;
 		$pathArray = explode('/', $taskNode->path);
 		$task = end($pathArray);
-		file_put_contents($url, "Line 20 $task $assignment\n", FILE_APPEND);
+		file_put_contents($log_file, "Line 20 $task $assignment\n", FILE_APPEND);
 		if ($task === false || $assignment === false) {
 			$taskString = "Task found: " . ($task ? "True." : "False.");
 			$assignmentString = "Assignment found: " . ($assignment ? "True." : "False.");
@@ -24,9 +25,8 @@ function deployFile(Course $course) {
 		}
 
 		// get the users from uup game server
-		global $game_server_url;
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/tasks/students/$assignmentId/$taskId")
+			->setUrl("$conf_game_url/uup-game/tasks/students/$assignmentId/$taskId")
 			->send();
 		$data = json_decode($response->data, true)['data'];
 		if ($response->error) {
@@ -152,9 +152,9 @@ function getAdminAssignments($course)
  */
 function getStudentAssignments($course): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/assignments/all")
+		->setUrl("$conf_game_url/uup-game/assignments/all")
 		->send();
 	$data = json_decode($response->data, true);
 	if ($response->error) {
@@ -178,7 +178,7 @@ function getStudentAssignments($course): void
  */
 function createAssignment(Course $course): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		validateRequired(["name", "displayName", "active", "points", "challengePoints"], $input);
@@ -201,7 +201,7 @@ function createAssignment(Course $course): void
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/assignments/create")
+			->setUrl("$conf_game_url/uup-game/assignments/create")
 			->setHeaders($headers)
 			->setMethod("POST")
 			->setBody($payload)
@@ -226,7 +226,7 @@ function createAssignment(Course $course): void
 
 function editAssignment(Course $course): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		if (isset($_REQUEST['assignmentId'])) {
@@ -274,7 +274,7 @@ function editAssignment(Course $course): void
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/assignments/$id")
+			->setUrl("$conf_game_url/uup-game/assignments/$id")
 			->setHeaders($headers)
 			->setMethod("PUT")
 			->setBody($payload)
@@ -298,7 +298,7 @@ function editAssignment(Course $course): void
 
 function createTask(Course $course)
 {
-	global $game_server_url;
+	global $conf_game_url;
 	if (isset($_REQUEST["assignmentId"])) {
 		$assignmentId = $_REQUEST["assignmentId"];
 	} else {
@@ -328,7 +328,7 @@ function createTask(Course $course)
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/tasks/create")
+			->setUrl("$conf_game_url/uup-game/tasks/create")
 			->setHeaders($headers)
 			->setMethod("POST")
 			->setBody($payload)
@@ -354,7 +354,7 @@ function createTask(Course $course)
 
 function editTask(Course $course)
 {
-	global $game_server_url;
+	global $conf_game_url;
 	if (isset($_REQUEST["taskId"])) {
 		$taskId = $_REQUEST["taskId"];
 	} else {
@@ -381,7 +381,7 @@ function editTask(Course $course)
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/tasks/update/$taskId")
+			->setUrl("$conf_game_url/uup-game/tasks/update/$taskId")
 			->setHeaders($headers)
 			->setMethod("PUT")
 			->setBody($payload)
@@ -408,7 +408,7 @@ function editTask(Course $course)
 
 function deleteTask(Course $course)
 {
-	global $game_server_url;
+	global $conf_game_url;
 	if (isset($_REQUEST["taskId"])) {
 		$taskId = $_REQUEST["taskId"];
 	} else {
@@ -416,7 +416,7 @@ function deleteTask(Course $course)
 	}
 	$task = GameNode::findTaskById($taskId, $course);
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/$taskId")
+		->setUrl("$conf_game_url/uup-game/tasks/$taskId")
 		->setMethod("DELETE")
 		->send();
 
@@ -557,9 +557,9 @@ function deleteTaskFile(Course $course)
 
 function getTaskCategories(): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/categories/all")
+		->setUrl("$conf_game_url/uup-game/tasks/categories/all")
 		->send();
 	$data = json_decode($response->data, true);
 	if ($response->error) {
@@ -577,7 +577,7 @@ function getTaskCategories(): void
  */
 function buyPowerUp($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 
 	$powerUpType = $_REQUEST["type_id"];
 	if ($powerUpType === null) {
@@ -585,7 +585,7 @@ function buyPowerUp($login): void
 	}
 
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/powerups/buy/$login/$powerUpType")
+		->setUrl("$conf_game_url/uup-game/powerups/buy/$login/$powerUpType")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
@@ -603,7 +603,7 @@ function buyPowerUp($login): void
  */
 function getTasksForAssignment(): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignment_id = null;
 	if (isset($_REQUEST['assignment_id'])) {
 		$assignment_id = $_REQUEST['assignment_id'];
@@ -611,7 +611,7 @@ function getTasksForAssignment(): void
 		jsonResponse(false, 400, array('message' => "Assignment id is not set in query"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/assignments/$assignment_id/tasks")
+		->setUrl("$conf_game_url/uup-game/assignments/$assignment_id/tasks")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -628,9 +628,9 @@ function getTasksForAssignment(): void
  */
 function getPowerUpTypes(): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/powerups/types")
+		->setUrl("$conf_game_url/uup-game/powerups/types")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -647,9 +647,9 @@ function getPowerUpTypes(): void
  */
 function getChallengeConfig(): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/challenge/config")
+		->setUrl("$conf_game_url/uup-game/challenge/config")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -667,9 +667,9 @@ function getChallengeConfig(): void
  */
 function getStudentData($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/$login")
+		->setUrl("$conf_game_url/uup-game/$login")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -687,13 +687,13 @@ function getStudentData($login): void
  */
 function startAssignment($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	if ($assignmentId === null) {
 		jsonResponse(false,400, array("message" => "Set the assignment_id field"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/assignments/$assignmentId/$login/start")
+		->setUrl("$conf_game_url/uup-game/assignments/$assignmentId/$login/start")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
@@ -713,14 +713,13 @@ function startAssignment($login): void
  */
 function resetRetard(string $username,Course $course): void
 {
-	global $game_server_url;
 	global $conf_game_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	if ($assignmentId === null) {
 		jsonResponse(false, 400, array("message" => "assignment_id field not set"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/assignments/reset/$username/$assignmentId")
+		->setUrl("$conf_game_url/uup-game/assignments/reset/$username/$assignmentId")
 		->setMethod('GET')
 		->send();
 	$data = json_decode($response->data, true);
@@ -773,10 +772,10 @@ function resetRetard(string $username,Course $course): void
  */
 function setTokens($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$tokens = intval($_REQUEST["amount"]);
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/powerups/tokens/set/$login/$tokens")
+		->setUrl("$conf_game_url/uup-game/powerups/tokens/set/$login/$tokens")
 		->setMethod('GET')
 		->send();
 	$data = json_decode($response->data, true);
@@ -795,7 +794,7 @@ function setTokens($login): void
  */
 function turnTaskIn($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		$payload = json_encode($input);
@@ -805,7 +804,7 @@ function turnTaskIn($login): void
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/tasks/turn_in/$login/$assignmentId")
+			->setUrl("$conf_game_url/uup-game/tasks/turn_in/$login/$assignmentId")
 			->setMethod('POST')
 			->setHeaders($headers)
 			->setBody($payload)
@@ -826,11 +825,11 @@ function turnTaskIn($login): void
  */
 function swapTask($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST['assignment_id'];
 
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/swap/$login/$assignmentId")
+		->setUrl("$conf_game_url/uup-game/tasks/swap/$login/$assignmentId")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
@@ -849,11 +848,11 @@ function swapTask($login): void
  */
 function hint($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST['assignment_id'];
 
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/hint/$login/$assignmentId")
+		->setUrl("$conf_game_url/uup-game/tasks/hint/$login/$assignmentId")
 		->setMethod('POST')
 		->send();
 	$data = json_decode($response->data, true);
@@ -872,12 +871,12 @@ function hint($login): void
  */
 function getAvailableTasks($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST['assignment_id'];
 	$typeId = $_REQUEST['type_id'];
 
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/turned_in/$login/$assignmentId/$typeId")
+		->setUrl("$conf_game_url/uup-game/tasks/turned_in/$login/$assignmentId/$typeId")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -895,7 +894,7 @@ function getAvailableTasks($login): void
  */
 function secondChance($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$input = json_decode(file_get_contents('php://input'), true);
 	if ($input) {
 		$assignmentId = $_REQUEST['assignment_id'];
@@ -905,7 +904,7 @@ function secondChance($login): void
 			'Content-Length: ' . strlen($payload)
 		);
 		$response = (new RequestBuilder())
-			->setUrl("$game_server_url/uup-game/tasks/second_chance/$login/$assignmentId")
+			->setUrl("$conf_game_url/uup-game/tasks/second_chance/$login/$assignmentId")
 			->setMethod('PUT')
 			->setHeaders($headers)
 			->setBody($payload)
@@ -927,14 +926,14 @@ function secondChance($login): void
  */
 function getUsedHint($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	$taskNumber = $_REQUEST["task_number"];
 	if ($assignmentId === null || $taskNumber === null) {
 		jsonResponse(false, 400, array("message" => "Set assignment_id and task_number field"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/powerups/hints/used/$login/$assignmentId/$taskNumber")
+		->setUrl("$conf_game_url/uup-game/powerups/hints/used/$login/$assignmentId/$taskNumber")
 		->send();
 	$data = json_decode($response->data, true);
 
@@ -952,14 +951,14 @@ function getUsedHint($login): void
  */
 function getTaskPreviousPoints($login): void
 {
-	global $game_server_url;
+	global $conf_game_url;
 	$assignmentId = $_REQUEST["assignment_id"];
 	$taskNumber = $_REQUEST["task_number"];
 	if ($assignmentId === null || $taskNumber === null) {
 		jsonResponse(false, 400, array("message" => "Set assignment_id and task_number field"));
 	}
 	$response = (new RequestBuilder())
-		->setUrl("$game_server_url/uup-game/tasks/previousTask/points/get/$login/$assignmentId/$taskNumber")
+		->setUrl("$conf_game_url/uup-game/tasks/previousTask/points/get/$login/$assignmentId/$taskNumber")
 		->send();
 	$data = json_decode($response->data, true);
 

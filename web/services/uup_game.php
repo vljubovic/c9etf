@@ -1,5 +1,4 @@
 <?php
-$game_server_url = "http://localhost:8183";
 
 session_start();
 require_once("../../lib/config.php");
