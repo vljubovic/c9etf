@@ -385,13 +385,13 @@ function zamger_update_all($login) {
 				$all_student_id = $id;
 			}
 		}
-		$all_students = zamger_group_members($all_student_id);
+		$all_students = zamger_group_members($all_student_id, $conf_current_year);
 		
 		foreach($groups as $id => $name) {
 			$gr = array();
 			$gr['id'] = $id;
 			$gr['name'] = $name;
-			$gr['members'] = zamger_group_members($id);
+			$gr['members'] = zamger_group_members($id, $conf_current_year);
 			$gr['course'] = $course_id;
 			$gr['year'] = $conf_current_year;
 			$gr['course_type'] = "external";

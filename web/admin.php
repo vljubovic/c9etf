@@ -277,8 +277,9 @@ if ($logged_in) {
 			admin_log("user " . $user->login);
 			admin_user_summary($user);
 		}
-		
-		print "</div>\n";
+		?>
+		</div>
+        <?
 		
 	}
 	

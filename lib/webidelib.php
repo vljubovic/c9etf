@@ -124,13 +124,13 @@ function generateRandomString($length = 10) {
 
 function niceerror($msg) {
 	?>
-	<p style="color: red; weight: bold"><?=$msg?></p>
+	<p style="color: red; font-weight: bold"><?=$msg?></p>
 	<?php
 }
 
 function nicemessage($msg) {
 	?>
-	<p style="color: green; weight: bold"><?=$msg?></p>
+	<p style="color: green; font-weight: bold"><?=$msg?></p>
 	<?php
 }
 

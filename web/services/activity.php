@@ -51,7 +51,7 @@ foreach(explode("\n", `tail $tail_param $conf_syncsvn_log`) as $line) { // $conf
 		$parsed_line['file'] = ".login";
 		$result[]=$parsed_line;
 	}
-	if (preg_match("/^(\d+\.\d+\.\d+ \d+\:\d+\:\d+) \((\w+)\) - (.*?) - (.*?) - .*?$/", $line, $matches)) {
+	if (preg_match("/^(\d+\.\d+\.\d+ \d+:\d+:\d+) \((\w+)\) - (.*?) - (.*?) - .*?$/", $line, $matches)) {
 		$parsed_line = array();
 		$parsed_line['username'] = $matches[2];
 		$parsed_line['datum'] = $matches[1];
@@ -67,5 +67,3 @@ if (defined("JSON_PRETTY_PRINT"))
 	print json_encode($result, JSON_PRETTY_PRINT);
 else
 	print json_encode($result);
-
-?>

@@ -2,7 +2,7 @@
 
 
 function parse_stats($login, &$assignments, &$stats_parsed, &$last_access, $path_log) {
-	global $conf_base_path, $conf_stats_path, $conf_home_path;
+	global $conf_stats_path, $conf_home_path;
 	
 	$svn_ignore = array(".c9", ".svn", ".tmux", ".user", ".svn.fifo", ".inotify_pid", ".nakignore", "global_events", "last_update_rev", ".gcc.out");
 	

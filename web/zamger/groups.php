@@ -51,7 +51,7 @@ function zamger_without_group($course, $year) {
 	$result = zamger_group_members($id_ss, $year);
 	$all_students = $result['data']['studenti'];
 	
-	foreach ($grupe['data'] as $id => $name) {
+	foreach ($groups['data'] as $id => $name) {
 		if ($name == "(Svi studenti)") continue;
 		$group = zamger_group_members($id);
 		foreach ($group['data']['studenti'] as $login => $fullname) {

@@ -1,6 +1,6 @@
 <?php
 
-// ADMIN/USER_TABLE.PHP - admin.pgp pluggable module for active table of users in a group with
+// ADMIN/USER_TABLE.PHP - admin.php pluggable module for active table of users in a group with
 // various stats per folder/project and real-time updating
 
 
@@ -61,7 +61,7 @@ function admin_user_table($group_id, $members, $backlink) {
 	}
 	print "</thead></tr>\n";
 	foreach ($members as $login => $fullname) {
-		if ($users[$login]['status'] == "active")
+		if (array_key_exists($login, $users) && $users[$login]['status'] == "active")
 			$className = "";
 		else 
 			$className = "user-is-offline";

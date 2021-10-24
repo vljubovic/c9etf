@@ -421,7 +421,7 @@ function ws_addfile() {
 	} else {
 		$blah = $task->addFile($file, $temporary);
 	}
-	admin_log("ws_addfile $file_path");
+	admin_log("ws_addfile " . $course->getPath() . "/files/$filename");
 	json(ok("filename $filename task ".$task->id." blah ".$blah));
 }
 
@@ -468,7 +468,7 @@ function ws_generatefile() {
 	}
 	
 	$task->addFile($file, $temporary);
-	admin_log("ws_generatefile $file_path");
+	admin_log("ws_generatefile " . $task->filesPath() . "/" . $file['filename']);
 	json(ok(""));
 }
 
@@ -552,6 +552,7 @@ function ws_deploy_status() {
 		json(error("ERR006", "File not found"));
 
 	$users_file = $conf_base_path . "/users";
+	$users = array();
 	eval(file_get_contents($users_file));
 	$total = count($users);
 	$count = `cat $log_file | grep -v ERROR | wc -l`;
@@ -590,7 +591,7 @@ function ws_update_assignments() {
 	$dataJson = json_encode($data, JSON_PRETTY_PRINT);
 	
 	file_put_contents($path, $dataJson);
-	admin_log("ws_update_assignments $file_path");
+	admin_log("ws_update_assignments $path");
 	json(ok(""));
 }
 

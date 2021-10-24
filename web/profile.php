@@ -68,7 +68,7 @@ $gravatar = md5(trim(strtolower($email)));
 		<?php
 		if (!empty(trim($email))) {
 			?>
-		<div id="gravatar" style="position: absoloute; float:left; margin-left:20px; margin-right:20px">
+		<div id="gravatar" style="position: absolute; float:left; margin-left:20px; margin-right:20px">
 			<p class="box_title">Click on avatar to change it:</p>
 			<a href="https://www.gravatar.com/<?=$gravatar?>" target="_blank"><img src="https://www.gravatar.com/avatar/<?=$gravatar?>?s=200&amp;d=retro" width="200" height="200" /></a><br>
 			<p>Powered by <a href="https://gravatar.com" target="_blank">Gravatar</a></p>

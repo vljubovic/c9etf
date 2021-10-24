@@ -6,10 +6,10 @@ function assignment_table($course) {
 
 	if (empty($assignments)) {
 		?>
-			<font class="tekst info">
+			<div class="tekst info">
 				There are no assignments on this course.<br>
 				To create some assignments, use the form below.<br><br>
-			</font>
+			</div>
 		<?php
 	}
 	
@@ -125,10 +125,7 @@ function assignment_print($a, $course, $max, $level) {
 	}
 	
 	$edit_link = "assignment/edit.php?action=edit&amp;" . $course->urlPart() . "&amp;assignment=" . $a->id;
-	
-	$deploy_js = "return deployAssignmentFile(" . $course->id . ", " . $course->year . ", ";
-	if ($course->external) $deploy_js .= "true, "; else $deploy_js .= "false, ";
-	
+ 
 	$levelprint = "";
 	for ($i=0; $i<$level; $i++)
 		$levelprint .= "&nbsp;&nbsp;&nbsp;";

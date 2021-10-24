@@ -31,16 +31,16 @@ if ($prijavljen && empty($realname)) $realname = $login;
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<script>
-			var currentUserLogin='<?=$login?>';
-			var diskError = <?=$conf_limit_diskspace?>;
-			var diskWarn = <?=$conf_diskspace_cleanup?>;
-			var loadError = <?=$conf_limit_loadavg?>;
-			var loadWarn = <?=$conf_limit_loadavg_web?>;
-			var memError = <?=$conf_limit_memory_web?>;
-			var memWarn = <?=$conf_memory_emergency?>;
-			var userError = <?=$conf_limit_users?>;
-			var actUserError = <?=$conf_limit_active_users?>;
-			var actUserWarn = <?=$conf_limit_users_web?>;
+        const currentUserLogin = '<?=$login?>';
+        const diskError = <?=$conf_limit_diskspace?>;
+        const diskWarn = <?=$conf_diskspace_cleanup?>;
+        const loadError = <?=$conf_limit_loadavg?>;
+        const loadWarn = <?=$conf_limit_loadavg_web?>;
+        const memError = <?=$conf_limit_memory_web?>;
+        const memWarn = <?=$conf_memory_emergency?>;
+        const userError = <?=$conf_limit_users?>;
+        const actUserError = <?=$conf_limit_active_users?>;
+        const actUserWarn = <?=$conf_limit_users_web?>;
 	</script>
 	<script type="text/javascript" src="static/js/dashboard.js"></script>
 </head>

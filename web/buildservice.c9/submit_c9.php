@@ -133,12 +133,12 @@ function json_file_upload($url, $parameters, $files)
 	fclose($fp);
 
 	if ($http_result===FALSE) {
-		error("", "HTTP request failed for $url?$query (POST)");
+		error("", "HTTP request failed for $url (POST)");
 	}
 	$http_code = explode(" ", $http_response_header[0]);
 	$http_code = $http_code[1];
 	if ( !in_array($http_code, $allowed_http_codes) ) {
-		error("", "HTTP request returned code $http_code for $url?$query (POST)");
+		error("", "HTTP request returned code $http_code for $url (POST)");
 	}
 		
 	$result = json_decode($http_result, true); // Retrieve json as associative array

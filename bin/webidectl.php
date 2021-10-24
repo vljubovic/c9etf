@@ -1255,6 +1255,7 @@ function deactivate_user($username, $skip_svn = false) {
 		// REMOVED? Users file is updated only now, to prevent user from logging back in during other procedures
 		
 		// Sync locally changed files to remote
+		$now = time();
 		if (array_key_exists("volatile-remote", $users[$username])) {
 			if ($is_svn_node)
 				file_put_contents("$conf_base_path/data/maintenance_tasks", "sync_remote $username,$now\n", FILE_APPEND);
@@ -1864,7 +1865,7 @@ function kill_idle_logout($minutes, $output, $sleep) {
 
 // Logout all users and kill/restart all processes related to webide
 function clear_server() {
-	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr, $is_svn_node, $conf_nodes;
+	global $conf_base_path, $users, $is_compute_node, $is_control_node, $svn_node_addr, $is_svn_node, $conf_nodes, $conf_svn_problems_log;
 	
 	debug_log("clear server");
 	bfl_lock("clear server");
