@@ -279,8 +279,7 @@ if ($logged_in) {
 		}
 		?>
 		</div>
-        <?
-		
+        <?php
 	}
 	
 	
