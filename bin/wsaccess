@@ -50,6 +50,14 @@ case $cmd in
 		fi
 		cat "$path"
 		;;
+	mkdir)
+		if [ ! -e "$path" ]
+		then
+			mkdir -p "$path"
+			chown $user:c9 "$path"
+			chmod 755 "$path"
+		fi
+		;;
 	write)
 		if [ -e "$path" ]
 		then
@@ -60,6 +68,28 @@ case $cmd in
 			echo $x >> "$path"
 		done
 		chown $user:c9 "$path"
+		;;
+	delete)
+		if [ -d "$path" ]
+		then
+			rm -rf "$path"
+    else
+      rm "$path"
+		fi
+		;;
+	own)
+		if [ ! -e "$path" ]
+		then
+			echo ERROR: File doesn\'t exist
+			exit 2
+		fi
+    chown root "$path"
+    if [ -d "$path" ]
+    then
+      chmod 755 "$path"
+    else
+      chmod 644 "$path"
+    fi
 		;;
 	zip)
 		zipfile="$4"
@@ -76,7 +106,7 @@ case $cmd in
 		rm -f "$zipfile"
 		cd "$path"
 		find . -not -path '*/\.*' -type f -size -100k  | xargs zip -r "$zipfile"
-		chmod 644 "$zipfile"
+		chmod 666 "$zipfile"
 		cat "$zipfile"
 		;;
 	list)
@@ -128,6 +158,20 @@ case $cmd in
 		cp "$srcfile" "$dest"
 		chown $user "$path" -R
 		;;
+	undeploy)
+		srcfile="$path"
+		dest="$4"
+		if [ ! -e "$srcfile" ]
+		then
+			echo ERROR: Source file doesn\t exist $srcfile
+			exit 4
+		fi
+		if [ ! -e "$dest" ]
+		then
+			mkdir -p $dest
+		fi
+		cp "$srcfile" "$dest"
+		;;
 	svnrestore)
 		revision="$4"
 		head=`svn info "$path" | grep "Revision" | cut -d " " -f 2`
@@ -143,5 +187,8 @@ case $cmd in
 	git-show)
 		revision="$4"
 		su $user -c "cd \"$workspace\"; git show \"$revision:$relpath\""
+		;;
+	find)
+		ls -d /rhome/*/*/workspace/"$relpath"
 		;;
 esac

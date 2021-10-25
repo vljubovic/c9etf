@@ -62,6 +62,22 @@ class User {
 		}
 		return $result;
 	}
+	
+	/**
+	 * @return string User home path
+	 */
+	public function homePath() {
+		global $conf_home_path;
+		$username_efn = escape_filename($this->login);
+		return $conf_home_path . "/" . substr($username_efn,0,1) . "/" . $username_efn;
+	}
+	
+	/**
+	 * @return string User workspace
+	 */
+	public function workspacePath() {
+		return $this->homePath() . "/workspace";
+	}
 }
 
 
