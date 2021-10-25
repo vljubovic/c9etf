@@ -33,7 +33,7 @@ function replaceKeys(array $pairs, $code)
 function wsaccess(User $user, $cmd) {
 	global $conf_base_path;
 	$username = escapeshellarg($user->login);
-	$output = exec("sudo $conf_base_path/bin/wsaccess $username $cmd");
+	$output = shell_exec("sudo $conf_base_path/bin/wsaccess $username $cmd");
 	if (strstr($output, "ERROR"))
 		log_this("wsaccess: $output");
 	return $output;
@@ -58,7 +58,7 @@ function from_student_to_history(User $user, Course $course, $oldTaskId) {
 	
 	$history = "$conf_base_path/data/$courseString/task_history";
 	$src = "UUP_GAME/$assignmentString";
-    $dest = "$history/$username/$assignmentString/$taskString";
+	$dest = "$history/$username/$assignmentString/$taskString";
 	
 	$files = wsaccess($user, "list \"$src\"");
 	if (strstr($files, "ERROR")) {
@@ -107,28 +107,16 @@ function from_uup_to_student(User $user, Course $course, $newTaskId) {
 	
 	wsaccess($user, "delete \"$dest\"");
 	wsaccess($user, "mkdir \"$dest\"");
+	if (!file_exists("$conf_base_path/data/game_shifter"))
+		mkdir("$conf_base_path/data/game_shifter");
 	
 	foreach(scandir($game_files) as $file) {
 		if ($file == "." || $file == "..") continue;
 		$fileContent = replaceKeys($replacementPairs, file_get_contents("$game_files/$file"));
-		
-		// We will use wsaccess "write" so no temporary files are created, as that can always cause race conditions
-		// However, "write" requires that we redirect stdin
-		$descriptorspec = array(
-			0 => array("pipe", "r"),
-			1 => array("pipe", "w"),
-			2 => array("file", "/tmp/error-output.txt", "a")
-		);
-		$process = proc_open("sudo $conf_base_path/bin/wsaccess $username write \"$dest/$file\"", $descriptorspec, $pipes);
-		if (is_resource($process)) {
-			fwrite($pipes[0], $fileContent);
-			fclose($pipes[0]);
-			$rez = stream_get_contents($pipes[1]);
-			fclose($pipes[1]);
-			proc_close($process);
-		}
-		if (strstr($rez, "ERROR"))
-			log_this("wsaccess: $rez");
+		$temporaryFile = tempnam("$conf_base_path/data/game_shifter", "SHIFT");
+		file_put_contents($temporaryFile, $fileContent);
+		wsaccess($user, "deploy \"$dest/$file\" \"$temporaryFile\"");
+		unlink($temporaryFile);
 		if ($file == ".autotest2")
 			wsaccess($user, "own \"$dest/$file\"");
 	}
@@ -160,7 +148,7 @@ function from_history_to_student(User $user, Course $course, $newTaskId) {
 	
 	foreach(scandir($src) as $file) {
 		if ($file == "." || $file == "..") continue;
-		wsaccess($user, "deploy \"$src/$file\" \"$dest/$file\"");
+		wsaccess($user, "deploy \"$dest/$file\" \"$src/$file\"");
 		if ($file == ".autotest2")
 			wsaccess($user, "own \"$dest/$file\"");
 	}
