@@ -27,16 +27,15 @@ C9 admin page also uses php-svn package but it no longer supports php7 (see erra
 
 Optional:
 gdb
-gdbserver - without this debugging in C/C++ programs will just give an error
-astyle - formatting C/C++/Java programs
+gdbserver - without this debugging in C/C++ programs will just give an error (cloud9)
+astyle - formatting C/C++/Java programs (cloud9)
 sqlite3 - for debugging svn problems
-valgrind
+valgrind - (cloud9, hopefully theia soon)
 zip - required for automated testing (buildservice)
-clangd - for Theia webide C/C++ support 
+clangd - error reports (theia)
 
-Note: Ubuntu 18.04 recommends to install clangd using snap. Do NOT use it because
-snap doesn't support nonstandard home direcories (that we use). Install package 
-named clang-tools and add /usr/lib/llvm-6.0/bin to PATH.
+Note: Theia requires at least clangd 10 which is shipped with Ubuntu 20.04. If using
+older distro, you must install clangd from upstream
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 

@@ -91,12 +91,23 @@ require("$conf_base_path/update-cloud9.php");
 `ln -s $conf_base_path/c9fork/node_modules/c9/assert.js $conf_base_path/web/static/plugins/node_modules/assert.js`;
 `ln -s $conf_base_path/web/static $conf_base_path/web/static/static`;
 
-// Install Buildservice
+// Install Autotester
 echo "\n";
-echo `echo "\033[31mDownloading Buildservice\033[0m"`;
-`git clone $buildservice_git_url $conf_base_path/web/buildservice`;
+echo `echo "\033[31mDownloading Autotester\033[0m"`;
+`git clone $buildservice_git_url $conf_base_path/web/autotester`;
+`mkdir $conf_base_path/web/buildservice`; // Fix theia to use a different folder?
 `cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
 //`rm -fr $conf_base_path/web/buildservice.c9`;
+
+// Install Autotester editor
+echo "\n";
+echo `echo "\033[31mDownloading Autotester editor\033[0m"`;
+`git clone $autotester_editor_git_url $conf_base_path/web/static/js/autotest-genv2`;
+
+// Install Admin Panel v2 (unfinished)
+echo "\n";
+echo `echo "\033[31mDownloading Admin panel v2\033[0m"`;
+`git clone $adminpanel_v2_git_url $conf_base_path/adminpanel`;
 
 // Prepare SVN path
 `mkdir $conf_svn_path`;
