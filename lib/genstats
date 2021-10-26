@@ -9,7 +9,7 @@ local=(`tail -1 /usr/local/webide/server_stats.log`)
 nfs=(`tail -1 /usr/local/webide/c9nfs_stats.log`)
 prim=(`tail -1 /usr/local/webide/c9prim_stats.log`)
 second=(`tail -1 /usr/local/webide/c9sec_stats.log`)
-bstasks=(`wc -l /tmp/buildservice/queuefile`)
+bstasks=(`grep Q /tmp/autotester/queue | wc -l`)
 
 let "z = ${local[5]} + ${prim[5]} + ${second[5]}"
 
