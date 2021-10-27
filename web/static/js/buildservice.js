@@ -13,9 +13,9 @@ function buildserviceCopyFile(bsInstance, username, code_path) {
 	var xmlhttp = new XMLHttpRequest();
 	var url = "/buildservice/copyFile.php?program=" + bsInstance + "&username=" + username + "&filename=" + code_path;
 	xmlhttp.onreadystatechange = function() {
-		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+		if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
 			result = JSON.parse(xmlhttp.responseText);
-			if (result.success == "true") {
+			if (result.success === "true" || result.success === true) {
 				console.log("File copied");
 			}
 		}
@@ -33,7 +33,7 @@ function autotesterCopyFile(bsInstance, username, code_path) {
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			result = JSON.parse(xmlhttp.responseText);
-			if (result.success == "true") {
+			if (result.success === "true" || result.success === true) {
 				console.log("File copied");
 			}
 		}
@@ -128,7 +128,7 @@ function buildserviceVerifyTest(bsInstance, username, code_path, total) {
 
 function autotesterVerifyTest(bsInstance, username, code_path, total) {
 	var xmlhttp = new XMLHttpRequest();
-	var url = "/autotester/push.php?action=getResult&id="+bsInstance;
+	var url = "/autotester/server/push.php?action=getResult&id="+bsInstance;
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			result = JSON.parse(xmlhttp.responseText);

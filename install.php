@@ -95,8 +95,10 @@ require("$conf_base_path/update-cloud9.php");
 echo "\n";
 echo `echo "\033[31mDownloading Autotester\033[0m"`;
 `git clone $buildservice_git_url $conf_base_path/web/autotester`;
-`mkdir $conf_base_path/web/buildservice`; // Fix theia to use a different folder?
-`cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/buildservice`;
+`cp $conf_base_path/web/buildservice.c9/* $conf_base_path/web/autotester`;
+// Theia currently hardcoded to use folder buildservice/ instead of autotester/
+// Also hardcoded to look use autotester/render instead of autotester/tools/render
+`cp -R $conf_base_path/web/autotester/tools/render $conf_base_path/web/autotester`;
 //`rm -fr $conf_base_path/web/buildservice.c9`;
 
 // Install Autotester editor

@@ -1,6 +1,6 @@
 <?php
 
-// SUBMIT_C9.php - shortcut function to ZIP some files and submit to buildservice
+// SUBMIT_C9.php - shortcut function to ZIP some files and submit to autotester
 
 function error($code, $msg) {
 	print json_encode(get_error($code, $msg));
@@ -15,13 +15,15 @@ function get_error($code, $msg) {
 	return $result;
 }
 
+// Separate function to avoid polluting configuration space
+function extract_push_url() {
+	require_once("client/classes/Config.php");
+	return $conf_push_url;
+}
 
-if (!file_exists("config.php"))
-	error("ERR004", "Buildservice not configured");
-require_once("config.php");
-require_once("lib.php");
-$webide_path = "/usr/local/webide";
-
+require_once("client/clientlib.php");
+require_once("../../lib/config.php");
+$conf_push_url = extract_push_url();
 
 session_start();
 
@@ -45,25 +47,18 @@ $output_path = "$program_path/.at_result";
 
 // Create a ZIP file
 $zipfile = "/tmp/submit_$ss"."_".rand(1000,9999).".zip";
-`sudo $webide_path/bin/wsaccess $ss zip $program_path $zipfile`;
+`sudo $conf_base_path/bin/wsaccess $ss zip $program_path $zipfile`;
 
-$task_path = "$program_path/.autotest";
-$task = `sudo $webide_path/bin/wsaccess $ss read $task_path`;
-
-// Autotester v2.0
-$task2_path = "$program_path/.autotest2";
-$task2 = `sudo $webide_path/bin/wsaccess $ss read $task2_path`;
-if (substr($task2,0,6) !== "ERROR:" && isset($_REQUEST['autotester'])) {
-	// Buildservice v2 aka. autotester
-	$conf_push_url = "https://c9.etf.unsa.ba/autotester/server/push.php";
-	
+$task_path = "$program_path/.autotest2";
+$task = `sudo $conf_base_path/bin/wsaccess $ss read $task_path`;
+if (substr($task,0,6) !== "ERROR:") {
 	$atstatus_path = "$program_path/.at_status";
-	$atstatus_json = `sudo $webide_path/bin/wsaccess $ss read $atstatus_path`;
+	$atstatus_json = `sudo $conf_base_path/bin/wsaccess $ss read $atstatus_path`;
 	
 	$submit_task = true;
 	if (substr($atstatus_json,0,6) !== "ERROR:") {
 		$atstatus = json_decode($atstatus_json, true);
-		if (md5($task2) == $atstatus['task_md5']) {
+		if (md5($task) == $atstatus['task_md5']) {
 			$submit_task = false;
 			$programId = $atstatus['program'];
 		}
@@ -74,11 +69,11 @@ if (substr($task2,0,6) !== "ERROR:" && isset($_REQUEST['autotester'])) {
 	$result['message'] = "Instance created";
 	$result['version'] = "autotester";
 	
-	
 	if (!$submit_task) {
 		$result['atstatus'] = $atstatus;
 		$result['instance'] = $programId;
 		
+		// Use json_put_binary_file from clientlib
 		$spf = json_file_upload($conf_push_url,
 			array( "action" => "setProgramFile", "id" => $programId),
 			array( "program" => $zipfile )
@@ -93,7 +88,7 @@ if (substr($task2,0,6) !== "ERROR:" && isset($_REQUEST['autotester'])) {
 	}
 	
 	if ($submit_task) {
-		$taskDesc = json_decode($task2, true);
+		$taskDesc = json_decode($task, true);
 		if (!array_key_exists('languages', $taskDesc))
 			error("ERR003", "Invalid task description");
 		$language = $taskDesc['languages'][0]; // FIXME?
@@ -106,7 +101,7 @@ if (substr($task2,0,6) !== "ERROR:" && isset($_REQUEST['autotester'])) {
 		$atstatus_json = json_encode($atstatus, JSON_PRETTY_PRINT);
 		$tmpfile = tempnam("/tmp", "atstatus");
 		file_put_contents($tmpfile, $atstatus_json);
-		$output = `sudo $webide_path/bin/wsaccess $ss deploy $atstatus_path $tmpfile`;
+		$output = `sudo $conf_base_path/bin/wsaccess $ss deploy $atstatus_path $tmpfile`;
 		unlink($tmpfile);
 		
 		$result['instance'] = $programId;
@@ -126,40 +121,6 @@ if (substr($task2,0,6) !== "ERROR:" && isset($_REQUEST['autotester'])) {
 	
 	session_write_close();
 	
-	print json_encode($result);
-}
-
-else if (substr($task,0,6) !== "ERROR:") {
-	
-	$taskDesc = json_decode($task, true);
-	if (!array_key_exists('language', $taskDesc) || trim($taskDesc['language']) == "")
-		error("ERR003", "Invalid task description");
-	if (!array_key_exists('required_compiler', $taskDesc) || trim($taskDesc['required_compiler']) == "")
-		error("ERR003", "Invalid task description");
-	if (!array_key_exists('preferred_compiler', $taskDesc) || trim($taskDesc['preferred_compiler']) == "")
-		error("ERR003", "Invalid task description");
-	
-	// JSON stuff
-	
-	if ($conf_json_login_required)
-		$session_id = json_login();
-	
-	$taskid = json_query("setTask", array("task" => $task), "POST" );
-	if ($taskid == 0)
-		error("ERR002", "Task file doesn't exist ".$task_path);
-	
-	$progid = json_file_upload($conf_push_url,
-		array( "action" => "addProgram", "task" => $taskid['id'], "name" => "$ss/$orig_path"),
-		array( "program" => $zipfile )
-	);
-	
-	session_write_close();
-	
-	$result = array();
-	$result['success'] = "true";
-	$result['message'] = "Instance created";
-	$result['instance'] = $progid['id'];
-	$result['version'] = "buildservice";
 	print json_encode($result);
 }
 else
