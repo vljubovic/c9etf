@@ -63,6 +63,10 @@ if (in_array($login, $conf_admin_users) && !in_array($login, $conf_sysadmins)) {
 				$found = true;
 				break;
 			}
+			if (($course->id == 1 || $course->id == 2234) && starts_with($path, "UUP_GAME")) {
+				$found = true;
+				break;
+			}
 		}
 		if (!$found) {
 			$result = array ('success' => "false", "message" => "Permission denied");
