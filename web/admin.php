@@ -57,7 +57,7 @@ require_once("assignment/files.php");
 
 require_once("phpwebide/phpwebide.php");
 
-require_once("zamger/status_na_predmetu.php");
+//require_once("zamger/status_na_predmetu.php");
 
 $logged_in = false;
 $error = "";
@@ -216,9 +216,9 @@ if ($logged_in) {
 		}
 			
 		?>
-		<p style="color: green; weight: bold"><?=$msg?></p>
-		<p style="color: red; weight: bold"><?=$error?></p>
-		<script language="JavaScript">
+		<p style="color: green; font-weight: bold"><?=$msg?></p>
+		<p style="color: red; font-weight: bold"><?=$error?></p>
+		<script>
 		setTimeout(function(){ location.href='/admin.php<?=$return?>'; }, 2000);
 		</script>
 		<?php
@@ -393,13 +393,13 @@ if ($logged_in) {
 		?>
 		<p id="p-return"><a href="admin.php">Return to list of courses</a></p>
 		<h1>Active users</h1>
-		<script type="text/javascript" src="/static/js/activity.js"></script>
+		<script type="text/javascript" src="static/js/activity.js"></script>
 		<SCRIPT>
-		var global_activity = []; // Global array contains last activity for each user
-		var last_line = 0;
-		var frequency = 500; // Update frequency
-		var timenow = 0;
-		var activity_filter='<?php 
+		let global_activity = []; // Global array contains last activity for each user
+        let last_line = 0;
+        let frequency = 500; // Update frequency
+        let timenow = 0;
+        let activity_filter='<?php
 		if (isset($_REQUEST['path']))
 			print trim($_REQUEST['path']);
 		?>';
@@ -410,9 +410,8 @@ if ($logged_in) {
 
 		</SCRIPT>
 		<ul>
-			<p>Load average: <span id="loadavg"></div></p>
+            <p>Load average: <span id="loadavg"></span></p>
 			<div id="activeUsers"></div>
-			</p>
 		</ul>
 		<?php
 		admin_log("active users");
