@@ -5,12 +5,12 @@
     "children": {
         "UUP": {
             "task": {
-                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         },
         "OR": {
             "task": {
-                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && gcc ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         },
         "TP": {
@@ -20,22 +20,22 @@
         },
         "ASP": {
             "task": {
-                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         },
         "NA": {
             "task": {
-                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         },
         "NASP": {
             "task": {
-                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         },
         "RG": {
             "task": {
-                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension} && ./.${fileBasenameNoExtension} && echo"
+                "run": "sleep 1 && g++ ${file} -lm -o ${fileDirname}/.${fileBasenameNoExtension}  && ulimit -S -v 1000000 && ulimit -S -t 10 && ./.${fileBasenameNoExtension} && echo"
             }
         }
     }
