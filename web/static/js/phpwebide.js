@@ -1,6 +1,5 @@
 
 // PHPWEBIDE.JS - JavaScript portion of lightweight webide
-// Version: 2018/08/26 12:05
 
 
 // ------------ GLOBALS ----------------
@@ -646,6 +645,9 @@ function pwi_populate_deploy_menu() {
 		return;
 	let path = pwi_current_path;
 	if (path.split("/").length < 4) path += "/";
+
+	if (path.split("/")[0] == "UUP_GAME")
+		return pwi_populate_deploy_menu_uup_game();
 		
 	// Contact web service to get a list of files in menu
 	assignmentFromPath(path, function(t) {
@@ -687,6 +689,57 @@ function pwi_populate_deploy_menu() {
 	});
 }
 
+
+// Special Deploy function for UUP GAME
+function pwi_populate_deploy_menu_uup_game() {
+	let menu = document.getElementById('phpwebide_deploy_menu');
+	let button = document.getElementById('phpwebide_deploy_button');
+
+	// Clear existing menu
+	while (menu.firstChild)
+		menu.removeChild(menu.firstChild);
+
+	let pathParts = pwi_current_path.split("/");
+	if (pathParts.length < 2) return;
+
+	uupg_get_assignments(function(assignments) {
+		let asgn = assignments.find(function(asgn) {
+			return asgn.path == "/" + pathParts[1];
+		});
+		if (asgn) {
+			uupg_get_current_task(pwi_current_user, asgn.id, function(taskId) {
+				if (!taskId) return;
+				let taskDetails = asgn.children.find(function(taskDesc) {
+					return taskDesc.id = taskId;
+				});
+				let thereBeFiles = false;
+				taskDetails.children.forEach(function (file, i) {
+					if (!thereBeFiles) {
+						thereBeFiles = true;
+						button.style.display = "inline";
+					}
+
+					let element = document.createElement('h2');
+					element.className = "filelist filelist-file";
+					element.filename = file.name;
+
+					// Temporary scope hack
+					(function(taskId,fileName){
+						element.onclick = function() {
+							uupg_deploy_file_to_student(pwi_current_user, taskId, fileName);
+							setTimeout( function() {
+								pwi_editor_load(pwi_current_path,'file');
+							}, 3000);
+						}
+					})(taskId,file.name);
+
+					element.innerHTML = file.name;
+					menu.appendChild(element);
+				})
+			});
+		}
+	})
+}
 
 // Check if there's something to deploy
 function pwi_render_test_result(tests, results, test) {
