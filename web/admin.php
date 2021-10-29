@@ -49,6 +49,7 @@ require_once("classes/Course.php");
 require_once("admin/stats.php");
 require_once("admin/user_table.php");
 require_once("admin/user_summary.php");
+require_once("admin/tiled.php");
 
 require_once("admin/notices.php");
 
@@ -279,7 +280,7 @@ if ($logged_in) {
 		}
 		?>
 		</div>
-        <?php
+		<?php
 	}
 	
 	
@@ -387,7 +388,12 @@ if ($logged_in) {
 		
 		admin_user_table($group->id, $group->getMembers(), $link_here);
 	}
-	
+			
+	// Currently active users
+	else if (isset($_REQUEST['tiled'])) {
+        admin_tiled();
+	}
+
 	// Currently active users
 	else if (isset($_REQUEST['active'])) {
 		?>
@@ -396,10 +402,10 @@ if ($logged_in) {
 		<script type="text/javascript" src="static/js/activity.js"></script>
 		<SCRIPT>
 		let global_activity = []; // Global array contains last activity for each user
-        let last_line = 0;
-        let frequency = 500; // Update frequency
-        let timenow = 0;
-        let activity_filter='<?php
+		let last_line = 0;
+		let frequency = 500; // Update frequency
+		let timenow = 0;
+		let activity_filter='<?php
 		if (isset($_REQUEST['path']))
 			print trim($_REQUEST['path']);
 		?>';
@@ -410,7 +416,7 @@ if ($logged_in) {
 
 		</SCRIPT>
 		<ul>
-            <p>Load average: <span id="loadavg"></span></p>
+			<p>Load average: <span id="loadavg"></span></p>
 			<div id="activeUsers"></div>
 		</ul>
 		<?php
@@ -463,7 +469,7 @@ if ($logged_in) {
 		?>
 			<li style="margin-top: 30px"><a class="grouplnk" href="admin.php?group=active&amp;course=<?=$course->toString()?>&amp;path=<?=$course->abbrev?>">Users currently online</a></li>
 			<li><a class="grouplnk" href="admin.php?active=active&amp;path=<?=$course->abbrev?>">Active users</a></li>
-		</ul></p>
+		</ul>
 		</div>
 		<?php
 		
@@ -557,6 +563,7 @@ if ($logged_in) {
 		
 		<div style="position:absolute; top:200px; left:600px; width: 400px; border: 1px solid black; background: #ddd; font-size: small; padding: 5px" id="admin_news">
 		<h2>Admin news</h2>
+            <ul><li><b>29.10.2021</b> - probajte novi <a href="?admin.php?tiled">Tiled view</a></li></ul>
 		<input type="button" value="Close" onclick="document.getElementById('admin_news').style.display='none';">
 		</div>
 		
@@ -586,31 +593,31 @@ if ($logged_in) {
 
   <div class="site__container">
 
-    <div class="grid__container">
+	<div class="grid__container">
 
-      <form action="admin.php" method="post" class="form form--login">
-        <h1>ETF WebIDE</h1>
-        <?php if ($error !== "") print "<p style=\"color: red; font-weight: bold\">$error</p>\n"; ?>
-        <div class="form__field">
-          <label class="fontawesome-user" for="login__username"><span class="hidden">Username</span></label>
-          <input id="login__username" name="login" type="text" class="form__input" placeholder="Username" required>
-        </div>
+	  <form action="admin.php" method="post" class="form form--login">
+		<h1>ETF WebIDE</h1>
+		<?php if ($error !== "") print "<p style=\"color: red; font-weight: bold\">$error</p>\n"; ?>
+		<div class="form__field">
+		  <label class="fontawesome-user" for="login__username"><span class="hidden">Username</span></label>
+		  <input id="login__username" name="login" type="text" class="form__input" placeholder="Username" required>
+		</div>
 
-        <div class="form__field">
-          <label class="fontawesome-lock" for="login__password"><span class="hidden">Password</span></label>
-          <input id="login__password" name="password" type="password" class="form__input" placeholder="Password" required>
-        </div>
+		<div class="form__field">
+		  <label class="fontawesome-lock" for="login__password"><span class="hidden">Password</span></label>
+		  <input id="login__password" name="password" type="password" class="form__input" placeholder="Password" required>
+		</div>
 
-        <div class="form__field">
-          <input type="submit" value="Go">
-        </div>
-          <p><a href="uputstva-c9-nastavnici.pdf">Uputstva za nastavnike</a></p>
+		<div class="form__field">
+		  <input type="submit" value="Go">
+		</div>
+		  <p><a href="uputstva-c9-nastavnici.pdf">Uputstva za nastavnike</a></p>
 
-      </form>
+	  </form>
 
-    </div>
+	</div>
 
   </div>
-  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2019.</div>
+  <div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2021.</div>
 </body>
 </html>
