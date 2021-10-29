@@ -7,59 +7,59 @@
 
 // ==== SET THESE IN CODE ====
 // Path of current file
-//var pwi_current_path;
+//let pwi_current_path;
 
 // Current username
-//var pwi_current_user;
+//let pwi_current_user;
 
 
 // Tasks for tree loading
-var pwi_tree_load_paths = [];
+let pwi_tree_load_paths = [];
 
 // Show hidden files in tree?
-var pwi_tree_show_hidden = false;
+let pwi_tree_show_hidden = false;
 
 // Show deleted files in tree?
-var pwi_tree_show_deleted = false;
+let pwi_tree_show_deleted = false;
 
 // Editor Autosave
-var pwi_save_timeout, pwi_save_has_timeout=false;
+let pwi_save_timeout, pwi_save_has_timeout=false;
 
 // Definition of current homework
-var pwi_homework_data = false;
+let pwi_homework_data = false;
 
 // Definition of current testing status
-var pwi_tests_total = false;
-var pwi_tests_passed = false;
+let pwi_tests_total = false;
+let pwi_tests_passed = false;
 
 // Params for restoring from svn/git
-var pwi_current_restore_type = false;
-var pwi_current_restore_rev = false;
+let pwi_current_restore_type = false;
+let pwi_current_restore_rev = false;
 
-var pwi_was_doubleclick = 0;
+let pwi_was_doubleclick = 0;
 
-var pwi_tasks = [];
+let pwi_tasks = [];
 
 // Options for reconstruct feature
-var pwi_reconstruct_limit = 1000; // Maximum number of records 
+let pwi_reconstruct_limit = 1000; // Maximum number of records 
 // (too large number above will use a lot of memory and have slow response from web service)
 
 // Below is just global variables populated by ui ctls and web service
-var pwi_reconstruct_data = [];
-var pwi_reconstruct_play = false;
-var pwi_reconstruct_speed = 2;
-var pwi_reconstruct_path = "";
-var pwi_reconstruct_has_more = false;
-var pwi_reconstruct_realtime = false;
+let pwi_reconstruct_data = [];
+let pwi_reconstruct_play = false;
+let pwi_reconstruct_speed = 2;
+let pwi_reconstruct_path = "";
+let pwi_reconstruct_has_more = false;
+let pwi_reconstruct_realtime = false;
 
-var pwi_image = false;
+let pwi_image = false;
 
 
 // ------------ TREE FUNCTIONS ----------------
 
 // Function that rebuilds the whole tree
 function pwi_tree_load_all(path) {
-	var tree = document.getElementById("phpwebide_tree");
+	let tree = document.getElementById("phpwebide_tree");
 	// Remove existing child nodes, if any
 	while (tree.firstChild) {
 		tree.removeChild(tree.firstChild);
@@ -80,19 +80,19 @@ function pwi_tree_load_all(path) {
 
 // Find a node in subtree
 function pwi_find_node(path, tree) {
-	var children = tree.childNodes;
-	var found = false;
+	let children = tree.childNodes;
+	let found = false;
 	children.forEach(function(item){
 		//console.log("Searching "+path+" trying '"+item.id+"' type "+item.nodeName);
 		if (item.id == path) found = item;
 		else if (item.nodeName == "DIV") {
-			var content_str = "_content";
-			var substr_len = item.id.length - content_str.length;
+			let content_str = "_content";
+			let substr_len = item.id.length - content_str.length;
 			if (substr_len > 0) {
-				var subpath_id = path.substr(0, substr_len) + content_str;
+				let subpath_id = path.substr(0, substr_len) + content_str;
 				//console.log("Trying "+subpath_id);
 				if (subpath_id == item.id) {
-					var tmpfound = pwi_find_node(path, item);
+					let tmpfound = pwi_find_node(path, item);
 					if (tmpfound) found=tmpfound;
 				}
 			}
@@ -107,12 +107,12 @@ function pwi_find_node(path, tree) {
 // Set 'path' as currently selected node
 function pwi_tree_select(path) {
 	if (pwi_current_path) {
-		var selected = document.getElementById(pwi_current_path);
+		let selected = document.getElementById(pwi_current_path);
 		if (selected) selected.classList.remove("filelist-selected");
 	}
 	
-	var tree = document.getElementById("phpwebide_tree");
-	var node = pwi_find_node(path, tree);
+	let tree = document.getElementById("phpwebide_tree");
+	let node = pwi_find_node(path, tree);
 	console.log("pwi_tree_select "+path+" found node");
 	console.log(node);
 	if (node) node.classList.add("filelist-selected");
@@ -122,18 +122,18 @@ function pwi_tree_select(path) {
 
 // Recursively iterate through pats in 'pwi_tree_load_paths' and load them into tree
 function pwi_tree_load(final_callback) {
-	if (pwi_tree_load_paths.length == 0) {
+	if (pwi_tree_load_paths.length === 0) {
 		final_callback();
 		pwi_clear_task("pwi_tree_load");
 		return;
 	}
 	
 	pwi_add_task("pwi_tree_load");
-	var path = pwi_tree_load_paths.shift();
+	let path = pwi_tree_load_paths.shift();
 	console.log("loading "+path);
 
 	// Find parent node of path
-	var parent = document.getElementById("phpwebide_tree");
+	let parent = document.getElementById("phpwebide_tree");
 	if (path != '/') {
 		parent = pwi_find_node(path + "_content", parent);
 		
@@ -148,32 +148,32 @@ function pwi_tree_load(final_callback) {
 	}
 	
 	// AJAX call to list files
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user="+pwi_current_user+"&path="+encodeURIComponent(path)+"&type=tree";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user="+pwi_current_user+"&path="+encodeURIComponent(path)+"&type=tree";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
-				var response = JSON.parse(xmlhttp.responseText);
+				let response = JSON.parse(xmlhttp.responseText);
 				showMsg(response.message);
 				setTimeout(hideMsg,5000);
 				pwi_clear_task("pwi_tree_load");
 				return;
 			}
 			
-			var items = xmlhttp.responseText.split("\n");
+			let items = xmlhttp.responseText.split("\n");
 			for (i=0; i<items.length; i++) {
-				var item=items[i];
+				let item=items[i];
 				if (item.length <= 1 || item == "./" || item == "../") continue;
 				if (!pwi_tree_show_hidden && item[0] == ".") continue;
 				
-				var lastchr = item[item.length-1];
+				let lastchr = item[item.length-1];
 				if (lastchr == "=" || lastchr == ">" || lastchr == "@" || lastchr == "|") continue;
 				
 				// Prepare item name
 				if (lastchr == "*" || lastchr == "/") item = item.substr(0, item.length-1);
 				
 				// Create element
-				var element = document.createElement('h2');
+				let element = document.createElement('h2');
 				element.className = "filelist ";
 				
 				if (path == "/") 
@@ -186,7 +186,7 @@ function pwi_tree_load(final_callback) {
 					
 				if (lastchr == "/") {
 					element.className += "filelist-folder";
-					element.onclick = function() { var tid=this.id; setTimeout( function() { pwi_tree_onclick(tid);}, 100); }
+					element.onclick = function() { let tid=this.id; setTimeout( function() { pwi_tree_onclick(tid);}, 100); }
 					// Reload stats on doubleclick
 					if (typeof userTableLoad == "function") 
 						element.ondblclick = function() { pwi_tree_ondblclick(this.id); }
@@ -199,7 +199,7 @@ function pwi_tree_load(final_callback) {
 				parent.appendChild(element);
 				
 				if (lastchr == "/") {
-					var content = document.createElement('div');
+					let content = document.createElement('div');
 					content.id = element.id + "_content";
 					content.className = "filelist-folder-content";
 					parent.appendChild(content);
@@ -222,16 +222,16 @@ function pwi_tree_onclick(path) {
 	console.log("pwi_tree_onclick "+path);
 	
 	// Find clicked node
-	var node = document.getElementById("phpwebide_tree");
+	let node = document.getElementById("phpwebide_tree");
 	if (path != '/') {
 		node = pwi_find_node(path + "_content", node);
 		if (!node) return;
 	}
 	
-	var previously_selected = pwi_current_path;
+	//let previously_selected = pwi_current_path;
 	
 	// If there are child nodes, remove them
-	var removed = false;
+	let removed = false;
 	while (node.firstChild) {
 		node.removeChild(node.firstChild);
 		removed = true;
@@ -263,15 +263,16 @@ function pwi_tree_showhide() {
 }
 
 // Show/hide deleted files
-function pwi_tree_show_deleted() {
-	// TODO
+function pwi_tree_show_deleted_toggle() {
+	// TODO not implemented yet
+	pwi_tree_show_deleted = !pwi_tree_show_deleted;
 }
 
 
 // ------------ TOOLBAR FUNCTIONS ----------------
 
 // Update everything on toolbar
-function pwi_toolbar_update(rev) {
+function pwi_toolbar_update() {
 	pwi_toolbar_homework_button();
 	pwi_toolbar_test_button();
 	document.getElementById('phpwebide_restore_button').style.display = "none";
@@ -284,7 +285,7 @@ function pwi_toolbar_update(rev) {
 // Update homework button
 function pwi_toolbar_homework_button() {
 	// Find parent folder of file
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_homework_data = false;
 		document.getElementById('phpwebide_homework_button').style.display = "none";
@@ -293,9 +294,9 @@ function pwi_toolbar_homework_button() {
 	pwi_add_task("pwi_homework_button");
 	
 	// Find .zadaca file in folder
-	var zadaca_file = pwi_current_path.substr(0,x+1) + ".zadaca";
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user="+pwi_current_user+"&path="+zadaca_file;
+	let zadaca_file = pwi_current_path.substr(0,x+1) + ".zadaca";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user="+pwi_current_user+"&path="+zadaca_file;
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText == "ERROR: File doesn't exist\n") {
@@ -320,7 +321,7 @@ function pwi_toolbar_homework_button() {
 // Update test button
 function pwi_toolbar_test_button() {
 	// Find parent folder of file
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_tests_total = pwi_tests_passed = false;
 		document.getElementById('phpwebide_test_button').style.display = "none";
@@ -330,15 +331,15 @@ function pwi_toolbar_test_button() {
 	pwi_add_task("pwi_test_button");
 	
 	// Find .autotest file in folder
-	var autotest_file = pwi_current_path.substr(0,x+1) + ".autotest";
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user="+pwi_current_user+"&path="+autotest_file;
+	let autotest_file = pwi_current_path.substr(0,x+1) + ".autotest";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user="+pwi_current_user+"&path="+autotest_file;
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText == "ERROR: File doesn't exist\n") {
-				var autotest_file = pwi_current_path.substr(0,x+1) + ".autotest2";
-				var xmlhttp2 = new XMLHttpRequest();
-				var url = "services/file.php?user="+pwi_current_user+"&path="+autotest_file;
+				let autotest_file = pwi_current_path.substr(0,x+1) + ".autotest2";
+				let xmlhttp2 = new XMLHttpRequest();
+				let url = "services/file.php?user="+pwi_current_user+"&path="+autotest_file;
 				xmlhttp2.onreadystatechange = function() {
 					if (xmlhttp2.readyState == 4 && xmlhttp2.status == 200) {
 						if (xmlhttp2.responseText == "ERROR: File doesn't exist\n") {
@@ -346,7 +347,7 @@ function pwi_toolbar_test_button() {
 							document.getElementById('phpwebide_test_button').style.display = "none";
 							document.getElementById('phpwebide_test_results').style.display = "none";
 						} else {
-							var tests;
+							let tests;
 							try {
 								tests = JSON.parse(xmlhttp2.responseText);
 								pwi_tests_total = tests.tests.length-1; // HACK za invisible test
@@ -367,7 +368,7 @@ function pwi_toolbar_test_button() {
 				xmlhttp2.open("GET", url, true);
 				xmlhttp2.send();
 			} else {
-				var tests;
+				let tests;
 				try {
 					tests = JSON.parse(xmlhttp.responseText);
 					pwi_tests_total = tests.test_specifications.length;
@@ -393,7 +394,7 @@ function pwi_toolbar_test_button() {
 function pwi_toolbar_is_tested(tests) {
 	// Find parent folder of file
 	pwi_add_task("pwi_is_tested");
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_tests_total = pwi_tests_passed = false;
 		document.getElementById('phpwebide_test_results').style.display = "none";
@@ -401,9 +402,9 @@ function pwi_toolbar_is_tested(tests) {
 	}
 	
 	// Find .at_result file in folder
-	var at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user="+pwi_current_user+"&path="+at_result_file;
+	let at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user="+pwi_current_user+"&path="+at_result_file;
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			pwi_tests_passed = 0;
@@ -412,15 +413,15 @@ function pwi_toolbar_is_tested(tests) {
 			} else {
 				document.getElementById('phpwebide_test_results').style.display = "inline";
 				
-				var results_widget = document.getElementById('phpwebide_test_results_widget');
-				var results_button = document.getElementById('phpwebide_test_results_data');
+				let results_widget = document.getElementById('phpwebide_test_results_widget');
+				let results_button = document.getElementById('phpwebide_test_results_data');
 				
 				// Clear results widget
 				while (results_widget.firstChild)
 					results_widget.removeChild(results_widget.firstChild);
 				results_button.innerHTML = '';
 				
-				var results;
+				let results;
 				try {
 					results = JSON.parse(xmlhttp.responseText);
 				} catch(e) {
@@ -437,24 +438,24 @@ function pwi_toolbar_is_tested(tests) {
 				}
 				
 				// Position results widget below button
-				var rect = results_button.getBoundingClientRect();
+				let rect = results_button.getBoundingClientRect();
 				results_widget.style.left = rect.left + "px";
-				var top = rect.bottom;
+				let top = rect.bottom;
 				results_widget.style.top = top + "px";
 				results_widget.style.width = "200px"; // Set minimum width
 
 				
 				// Iterate through test results
-				var test_specifications;
+				let test_specifications;
 				if (tests.hasOwnProperty('tests'))
 					test_specifications = tests.tests;
 				if (tests.hasOwnProperty('test_specifications'))
 					test_specifications = tests.test_specifications;
-				for (var i=0; i<test_specifications.length; i++) {
+				for (let i=0; i<test_specifications.length; i++) {
 					if (!test_specifications[i].hasOwnProperty('id')) continue;
 					if (test_specifications[i].hasOwnProperty('options') && test_specifications[i].options.includes('silent')) continue;
 					
-					var found_result = false;
+					let found_result = false;
 					if (results.test_results.hasOwnProperty(test_specifications[i].id))
 						found_result = results.test_results[test_specifications[i].id];
 					
@@ -463,7 +464,7 @@ function pwi_toolbar_is_tested(tests) {
 						pwi_tests_passed++;
 					
 					// Populate results widget
-					var element = document.createElement('h2');
+					let element = document.createElement('h2');
 					element.className = "filelist ";
 					
 					// Temporary scope hack
@@ -503,34 +504,34 @@ function pwi_toolbar_is_tested(tests) {
 function pwi_toolbar_is_test_outdated() {
 	// Find parent folder of file
 	pwi_add_task("pwi_is_test_outdated");
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) {
 		return;
 	}
 	
-	var autotest_file = pwi_current_path.substr(0,x+1) + ".autotest";
-	var at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
+	let autotest_file = pwi_current_path.substr(0,x+1) + ".autotest";
+	let at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
 	
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(autotest_file) + "&type=mtime";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(autotest_file) + "&type=mtime";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-			var autotest_mtime = parseInt(xmlhttp.responseText);
+			let autotest_mtime = parseInt(xmlhttp.responseText);
 			
-			var xmlhttp2 = new XMLHttpRequest();
-			var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(at_result_file) + "&type=mtime";
-			xmlhttp.onreadystatechange = function() {
-				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-					var at_result_mtime = parseInt(xmlhttp.responseText);
+			let xmlhttp2 = new XMLHttpRequest();
+			let url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(at_result_file) + "&type=mtime";
+			xmlhttp2.onreadystatechange = function() {
+				if (xmlhttp2.readyState == 4 && xmlhttp2.status == 200) {
+					let at_result_mtime = parseInt(xmlhttp2.responseText);
 					if (at_result_mtime < autotest_mtime) {
-						var results_button = document.getElementById('phpwebide_test_results_data');
+						let results_button = document.getElementById('phpwebide_test_results_data');
 						results_button.innerHTML = "<i class=\"fa fa-clock-o\"></i> " + results_button.innerHTML;
 					}
 					pwi_clear_task("pwi_is_test_outdated");
 				}
 			}
-			xmlhttp.open("GET", url, true);
-			xmlhttp.send();
+			xmlhttp2.open("GET", url, true);
+			xmlhttp2.send();
 			
 		}
 	}
@@ -548,8 +549,8 @@ function pwi_toolbar_restore_button(type, rev) {
 
 // Update modified time
 function pwi_toolbar_modified_time() {
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(pwi_current_path) + "&type=mtime&format=d. m. Y. H:i:s";
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(pwi_current_path) + "&type=mtime&format=d. m. Y. H:i:s";
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			document.getElementById('phpwebide_modified_time').innerHTML = xmlhttp.responseText;
@@ -564,8 +565,8 @@ function pwi_toolbar_modified_time() {
 function pwi_send_homework() {
 	if (!pwi_homework_data) return;
 			
-	var xmlhttp = new XMLHttpRequest();
-	var url = "zamger/slanje_zadace.php?username=" + pwi_current_user + "&filename=" + pwi_current_path + "&zadaca=" + pwi_homework_data.id + "&zadatak=" + pwi_homework_data.zadatak;
+	let xmlhttp = new XMLHttpRequest();
+	let url = "zamger/slanje_zadace.php?username=" + pwi_current_user + "&filename=" + pwi_current_path + "&zadaca=" + pwi_homework_data.id + "&zadatak=" + pwi_homework_data.zadatak;
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText == "Ok.")
@@ -586,7 +587,7 @@ function pwi_send_homework() {
 // Start testing on current project (needs buildservice.js)
 function pwi_test_project() {
 	// Find parent folder of file
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_tests_total = pwi_tests_passed = false;
 		document.getElementById('phpwebide_test_results').style.display = "none";
@@ -598,9 +599,10 @@ function pwi_test_project() {
 
 
 // For now we will just open the .at_result_file
+// Can't remember where I wanted to call this
 function pwi_show_test_results() {
 	// Find parent folder of file
-	var x = pwi_current_path.lastIndexOf('/');
+	let x = pwi_current_path.lastIndexOf('/');
 	if (x==-1) { 
 		pwi_tests_total = pwi_tests_passed = false;
 		document.getElementById('phpwebide_test_results').style.display = "none";
@@ -608,7 +610,7 @@ function pwi_show_test_results() {
 	}
 	
 	// Find .at_result file in folder
-	var at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
+	let at_result_file = pwi_current_path.substr(0,x+1) + ".at_result";
 	
 	pwi_editor_load(at_result_file, "file"); 
 	pwi_tree_select(at_result_file);
@@ -617,7 +619,7 @@ function pwi_show_test_results() {
 
 // Redirect to URL for restoring older version of file
 function pwi_restore_revision() {
-	var url;
+	let url;
 	if (pwi_current_restore_type == "svn")
 		url = "admin.php?user=" + pwi_current_user + "&path=" + pwi_current_path + "&action=restore_revision&svn_rev=" + pwi_current_restore_rev;
 	else if (pwi_current_restore_type == "git") {
@@ -632,8 +634,8 @@ function pwi_restore_revision() {
 
 // Check if there's something to deploy
 function pwi_populate_deploy_menu() {
-	var menu = document.getElementById('phpwebide_deploy_menu');
-	var button = document.getElementById('phpwebide_deploy_button');
+	let menu = document.getElementById('phpwebide_deploy_menu');
+	let button = document.getElementById('phpwebide_deploy_button');
 	
 	// If menu is visible for some reason, hide it
 	menu.style.display = "none";
@@ -642,7 +644,7 @@ function pwi_populate_deploy_menu() {
 	// If path didn't change, that's it
 	if (menu.hasOwnProperty('pwi_path') && menu.pwi_path == pwi_current_path)
 		return;
-	var path = pwi_current_path;
+	let path = pwi_current_path;
 	if (path.split("/").length < 4) path += "/";
 		
 	// Contact web service to get a list of files in menu
@@ -651,7 +653,7 @@ function pwi_populate_deploy_menu() {
 		listAssignmentFiles(t.course, t.year, t.external, t.assignment, t.task, function(files) {
 			console.log("LENGTH "+files.length);
 			// No files to deploy
-			if (files.length == 0) return;
+			if (files.length === 0) return;
 			
 			// There are files
 			button.style.display = "inline";
@@ -660,11 +662,11 @@ function pwi_populate_deploy_menu() {
 			while (menu.firstChild)
 				menu.removeChild(menu.firstChild);
 		
-			for (var i=0; i<files.length; i++) {
-				var element = document.createElement('h2');
+			for (let i=0; i<files.length; i++) {
+				let element = document.createElement('h2');
 				element.className = "filelist filelist-file";
 				
-				var file = files[i];
+				let file = files[i];
 				if (typeof file === 'object') file = files[i].filename;
 				element.filename = file;
 				
@@ -688,12 +690,12 @@ function pwi_populate_deploy_menu() {
 
 // Check if there's something to deploy
 function pwi_render_test_result(tests, results, test) {
-	var form = document.getElementById('pwi_test_results_form');
+	let form = document.getElementById('pwi_test_results_form');
 	form.task.value = JSON.stringify(tests);
 	form.result.value = JSON.stringify(results);
 	form.test.value = test;
 	
-	var w = window.open('about:blank','Popup_Window','toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=0,width=700,height=700,left=312,top=234');
+	window.open('about:blank','Popup_Window','toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=0,width=700,height=700,left=312,top=234');
 	form.target = 'Popup_Window';
 	form.submit();
 }
@@ -704,10 +706,10 @@ function pwi_render_test_result(tests, results, test) {
 // ------------ EDITOR FUNCTIONS ----------------
 
 function pwi_editor_initialize(editable) {
-	var editor = ace.edit("editor");
+	let editor = ace.edit("editor");
 	
 	// Don't know why I need to resize twice ?
-	var newbottom = window.innerHeight - 220 - document.getElementById('phpwebide_tree').clientHeight;
+	let newbottom = window.innerHeight - 220 - document.getElementById('phpwebide_tree').clientHeight;
 	document.getElementById('editor').style.bottom = "" + newbottom + "px";
 	
 	if (!editable) { 
@@ -728,11 +730,11 @@ function pwi_editor_initialize(editable) {
 function pwi_editor_load(path, type, rev) {
 	pwi_add_task("pwi_editor_load "+path);
 	
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(path) + "&type=" + type;
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/file.php?user=" + pwi_current_user + "&path=" + encodeURIComponent(path) + "&type=" + type;
 	if (rev) url += "&rev=" + rev;
 	
-	if (pwi_image != false) {
+	if (pwi_image !== false) {
 		document.body.removeChild(pwi_image)
 		pwi_image = false;
 	}
@@ -740,7 +742,7 @@ function pwi_editor_load(path, type, rev) {
 		pwi_image = document.createElement("img");
 		pwi_image.src = url;
 		pwi_image.style.position = "absolute";
-		var rect = document.getElementById("editor").getBoundingClientRect();
+		let rect = document.getElementById("editor").getBoundingClientRect();
 		pwi_image.style.left = rect.left +  window.scrollX + "px";
 		pwi_image.style.top = rect.top +  window.scrollY + "px";
 		pwi_image.style.zIndex = 1000;
@@ -752,14 +754,14 @@ function pwi_editor_load(path, type, rev) {
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
-				var response = JSON.parse(xmlhttp.responseText);
+				let response = JSON.parse(xmlhttp.responseText);
 				showMsg(response.message);
 				setTimeout(hideMsg,5000);
 				pwi_clear_task("pwi_editor_load "+path);
 				return;
 			}
 			
-			var editor = ace.edit("editor");
+			let editor = ace.edit("editor");
 			editor.setValue(xmlhttp.responseText);
 			editor.getSession().setMode("ace/mode/c_cpp"); // FIXME hardcodirano
 			
@@ -769,13 +771,13 @@ function pwi_editor_load(path, type, rev) {
 			editor.gotoLine(1); 
 			
 			// Resize editor again
-			var newbottom = window.innerHeight - 220 - document.getElementById('phpwebide_tree').clientHeight;
+			let newbottom = window.innerHeight - 220 - document.getElementById('phpwebide_tree').clientHeight;
 			document.getElementById('editor').style.bottom = "" + newbottom + "px";
 
 			editor.focus();
 			
 			if (type == "file") {
-				pwi_toolbar_update(path);
+				pwi_toolbar_update();
 				pwi_set_address_bar(path);
 				if (typeof pwi_tabs_reset == "function") pwi_tabs_reset();
 			}
@@ -790,14 +792,14 @@ function pwi_editor_load(path, type, rev) {
 // Try to update address bar with new path
 function pwi_set_address_bar(path) {
 	if (window.hasOwnProperty('history') && typeof window.history.pushState === "function") {
-		var url = window.location.href, newurl;
-		var x = url.lastIndexOf('&path=');
+		let url = window.location.href, newurl;
+		let x = url.lastIndexOf('&path=');
 		if (x>0) {
 			newurl = url.substr(0,x) + "&path="+path;
-			var y = url.indexOf('&', x+1);
+			let y = url.indexOf('&', x+1);
 			if (y>0)
 				newurl += url.substr(y);
-			var stateObj = { foo: "bar" };
+			let stateObj = { foo: "bar" };
 			window.history.pushState(stateObj, document.title, newurl);
 		}
 	}
@@ -807,7 +809,7 @@ function pwi_set_address_bar(path) {
 // Old autosave functions for webide - FIXME
 
 function pwi_schedule_save(e) {
-	//alert("hello");
+	console.log("Schedule save " + e);
 	if (pwi_save_has_timeout) clearTimeout(pwi_save_timeout);
 	pwi_save_timeout = setTimeout('pwi_do_save()', 5000);
 	pwi_save_has_timeout = true;
@@ -816,11 +818,11 @@ function pwi_schedule_save(e) {
 function pwi_do_save() {
 	pwi_save_has_timeout = false;
 	
-	var mypostrequest=new ajaxRequest(); // FIXME replace with standard AJAX
+	let mypostrequest = new XMLHttpRequest();
 	mypostrequest.onreadystatechange=function() {
 		if (mypostrequest.readyState==4){
 			if (mypostrequest.status==200 || window.location.href.indexOf("http")==-1){
-				var xmldata=mypostrequest.responseText; //retrieve result as an text
+				let xmldata=mypostrequest.responseText; //retrieve result as an text
 				if (xmldata.indexOf("GRESKA") > -1)
 					document.getElementById('status').innerHTML = xmldata; //"Greška pri snimanju A";
 				else
@@ -831,40 +833,22 @@ function pwi_do_save() {
 			}
 		}
 	}
-	var editor = ace.edit("editor");
-	var code = encodeURIComponent(editor.getSession().getValue())
+	let editor = ace.edit("editor");
+	let code = encodeURIComponent(editor.getSession().getValue())
 
 	// FIXME broken
 	sta = akcija = student = zadaca = zadatak = projekat = "";
-	/*var sta = encodeURIComponent('<?=$_REQUEST[sta]?>');
-	var akcija = encodeURIComponent("slanje");
-	var student = encodeURIComponent(<?=$student?>);
-	var zadaca = encodeURIComponent(<?=$zadaca?>);
-	var zadatak = encodeURIComponent(<?=$zadatak?>);
-	var projekat = encodeURIComponent(<?=$projekat?>);*/
+	/*let sta = encodeURIComponent('<?=$_REQUEST[sta]?>');
+	let akcija = encodeURIComponent("slanje");
+	let student = encodeURIComponent(<?=$student?>);
+	let zadaca = encodeURIComponent(<?=$zadaca?>);
+	let zadatak = encodeURIComponent(<?=$zadatak?>);
+	let projekat = encodeURIComponent(<?=$projekat?>);*/
 
-	var parameters="sta="+sta+"&akcija="+akcija+"&student="+student+"&zadaca="+zadaca+"&zadatak="+zadatak+"&projekat="+projekat+"&code="+code;
+	let parameters="sta="+sta+"&akcija="+akcija+"&student="+student+"&zadaca="+zadaca+"&zadatak="+zadatak+"&projekat="+projekat+"&code="+code;
 	mypostrequest.open("POST", "index.php", true)
 	mypostrequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
 	mypostrequest.send(parameters)
-}
-
-function ajaxRequest() {
-	var activexmodes=["Msxml2.XMLHTTP", "Microsoft.XMLHTTP"] //activeX versions to check for in IE
-	if (window.ActiveXObject){ //Test for support for ActiveXObject in IE first (as XMLHttpRequest in IE7 is broken)
-		for (var i=0; i<activexmodes.length; i++){
-			try{
-				return new ActiveXObject(activexmodes[i])
-			}
-			catch(e){
-			//suppress error
-			}
-		}
-	}
-	else if (window.XMLHttpRequest) // if Mozilla, Safari etc
-		return new XMLHttpRequest()
-	else
-		return false
 }
 
 
@@ -874,8 +858,8 @@ function ajaxRequest() {
 
 function pwi_add_task(task) {
 	console.log("pwi_add_task "+task);
-	var found=false;
-	for (var i=0; i<pwi_tasks.length; i++)
+	let found=false;
+	for (let i=0; i<pwi_tasks.length; i++)
 		if (pwi_tasks[i] == task)
 			found=true;
 	if (!found) pwi_tasks.push(task);
@@ -885,11 +869,11 @@ function pwi_add_task(task) {
 
 function pwi_clear_task(task) {
 	console.log("pwi_clear_task "+task);
-	for (var i=0; i<pwi_tasks.length; i++) {
+	for (let i=0; i<pwi_tasks.length; i++) {
 		if (pwi_tasks[i] == task)
 			pwi_tasks.splice(i,1);
 	}
-	if (pwi_tasks.length == 0) document.getElementById('phpwebide_spinner').style.display = "none";
+	if (pwi_tasks.length === 0) document.getElementById('phpwebide_spinner').style.display = "none";
 }
 
 
@@ -901,13 +885,13 @@ function pwi_reconstruct(path="", start=1) {
 	if (path == "") path = pwi_current_path;
 	pwi_add_task("pwi_reconstruct "+path);
 	
-	var xmlhttp = new XMLHttpRequest();
-	var url = "services/stats_reconstruct.php?user=" + pwi_current_user + "&filename=" + encodeURIComponent(path) + "&start=" + start + "&limit=" + pwi_reconstruct_limit;
+	let xmlhttp = new XMLHttpRequest();
+	let url = "services/stats_reconstruct.php?user=" + pwi_current_user + "&filename=" + encodeURIComponent(path) + "&start=" + start + "&limit=" + pwi_reconstruct_limit;
 	
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			if (xmlhttp.responseText.includes("{\"success\":\"false\",")) {
-				var response = JSON.parse(xmlhttp.responseText);
+				let response = JSON.parse(xmlhttp.responseText);
 				showMsg(response.message);
 				setTimeout(hideMsg,5000);
 				pwi_clear_task("pwi_reconstruct "+path);
@@ -916,17 +900,17 @@ function pwi_reconstruct(path="", start=1) {
 			
 			pwi_reconstruct_path = path;
 			
-			var response = JSON.parse(xmlhttp.responseText);
+			let response = JSON.parse(xmlhttp.responseText);
 			pwi_reconstruct_data = response.data;
 			pwi_reconstruct_has_more = response.hasMore;
 			pwi_reconstruct_show(0);
 			
-			var slider = document.getElementById('phpwebide_reconstruct_slider');
+			let slider = document.getElementById('phpwebide_reconstruct_slider');
 			slider.min = 0;
 			slider.max = pwi_reconstruct_data.length;
 			slider.value = 0;
 			
-			var speed_ctl = document.getElementById('phpwebide_reconstruct_speed').value;
+			let speed_ctl = document.getElementById('phpwebide_reconstruct_speed').value;
 			pwi_reconstruct_speed_change(speed_ctl);
 			pwi_reconstruct_play_stop();
 			
@@ -948,7 +932,7 @@ function pwi_reconstruct_next(i) {
 		if (i == pwi_reconstruct_data.length && pwi_reconstruct_has_more)
 			pwi_reconstruct( pwi_reconstruct_path, pwi_reconstruct_data[i-1].version );
 		else if (i < pwi_reconstruct_data.length) {
-			var delay = 1000 / pwi_reconstruct_speed;
+			let delay = 1000 / pwi_reconstruct_speed;
 			if (pwi_reconstruct_realtime && pwi_reconstruct_data[i] && pwi_reconstruct_data[i+1])
 				delay = (pwi_reconstruct_data[i+1].timestamp - pwi_reconstruct_data[i].timestamp) * delay;
 			pwi_reconstruct_play = setTimeout(function() { 
@@ -965,7 +949,7 @@ function pwi_reconstruct_show(i) {
 		return;
 	}
 	
-	var editor = ace.edit("editor");
+	let editor = ace.edit("editor");
 	editor.setOptions({
 		highlightActiveLine: true,
 	});
@@ -987,7 +971,7 @@ function pwi_reconstruct_show(i) {
 	
 	document.getElementById('phpwebide_modified_time').innerHTML = pwi_reconstruct_data[i].datetime;
 	
-	var slider = document.getElementById('phpwebide_reconstruct_slider');
+	let slider = document.getElementById('phpwebide_reconstruct_slider');
 	slider.value = i;
 }
 
@@ -998,8 +982,16 @@ function pwi_reconstruct_slider_change(value) {
 
 
 function pwi_reconstruct_speed_change(value) { pwi_reconstruct_speed = value; }
-function pwi_reconstruct_realtime_toggle(value) { 
-	if (value) pwi_reconstruct_realtime = true; else pwi_reconstruct_realtime = false; 
+function pwi_reconstruct_realtime_toggle(value) {
+	pwi_reconstruct_realtime = value;
+	// Don't wait for the next step, as it may be very long
+	if (!value) {
+		const slider = document.getElementById('phpwebide_reconstruct_slider');
+		clearTimeout(pwi_reconstruct_play);
+		pwi_reconstruct_play = setTimeout(function() {
+			pwi_reconstruct_next( slider.value + 1 );
+		}, 10);
+	}
 }
 
 function pwi_reconstruct_play_stop() {
@@ -1010,7 +1002,7 @@ function pwi_reconstruct_play_stop() {
 		document.getElementById('phpwebide_reconstruct_play_icon').className = "fa fa-play";
 	}
 	else {
-		var slider = document.getElementById('phpwebide_reconstruct_slider');
+		const slider = document.getElementById('phpwebide_reconstruct_slider');
 		pwi_reconstruct_play = setTimeout(function() { 
 			pwi_reconstruct_next(slider.value); 
 		}, 1000 / pwi_reconstruct_speed);

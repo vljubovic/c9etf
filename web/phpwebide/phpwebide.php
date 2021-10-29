@@ -12,7 +12,7 @@ function phpwebide($user, $cur_path, $editable, $tabs) {
 	?>
 	<div id="phpwebide_treebuttons">
 	<span class="tree-button"><a href="#" onclick="pwi_tree_showhide(); return false;"><i class="fa fa-eye-slash fa-2x"></i> Hidden</a></span>
-	<span class="tree-button"><a href="#" onclick="pwi_tree_show_deleted(); return false;"><i class="fa fa-trash-o fa-2x"></i> Deleted</a></span>
+	<span class="tree-button"><a href="#" onclick="pwi_tree_show_deleted_toggle(); return false;"><i class="fa fa-trash-o fa-2x"></i> Deleted</a></span>
 	</div>
 	<div id="phpwebide_tree"></div>
 	
@@ -44,7 +44,7 @@ function phpwebide($user, $cur_path, $editable, $tabs) {
 			<label for="phpwebide_reconstruct_speed">Speed x:</label>
 			<input type="number" id="phpwebide_reconstruct_speed" name="phpwebide_reconstruct_speed" min="1" max="10" value="2" onchange="pwi_reconstruct_speed_change(this.value);">
 			
-			<input type="checkbox" id="phpwebide_reconstruct_realtime" name="phpwebide_reconstruct_realtime" onchange="pwi_reconstruct_realtime_toggle(this.value);">
+			<input type="checkbox" id="phpwebide_reconstruct_realtime" name="phpwebide_reconstruct_realtime" onchange="pwi_reconstruct_realtime_toggle(this.checked);">
 			<label for="phpwebide_reconstruct_realtime">Real-time</label>
 		</span>
 		
@@ -62,9 +62,9 @@ function phpwebide($user, $cur_path, $editable, $tabs) {
 		<div id="tabs-container">
 			<ul class="tabs-menu">
 				<li><a id="activity-click" href="#activity" onclick="return pwi_tab_show('activity', this, pwi_current_user, pwi_current_path);">User activity</a></li>
-				<li><a id="svn-click" href="#SVN" onclick="return pwi_tab_show('svn', this, pwi_current_user, pwi_current_path);">SVN</a></li>
-				<li><a id="git-click" href="#Git" onclick="return pwi_tab_show('git', this, pwi_current_user, pwi_current_path);">Git</a></li>
-				<li><a id="deleted-click" href="#Deleted" onclick="return pwi_tab_show('deleted', this, pwi_current_user, pwi_current_path);">Deleted files</a></li>
+				<li><a id="svn-click" href="#" onclick="return pwi_tab_show('svn', this, pwi_current_user, pwi_current_path);">SVN</a></li>
+				<li><a id="git-click" href="#" onclick="return pwi_tab_show('git', this, pwi_current_user, pwi_current_path);">Git</a></li>
+				<li><a id="deleted-click" href="#" onclick="return pwi_tab_show('deleted', this, pwi_current_user, pwi_current_path);">Deleted files</a></li>
 			</ul>
 			<div style="clear: both;"></div>
 			<div class="tab">
