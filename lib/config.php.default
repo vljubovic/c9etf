@@ -141,6 +141,7 @@ $conf_zamger = false;
 // =========================================
 
 $cloud9_git_url = "https://github.com/c9/core";
+$theia_git_url = "https://github.com/rfejzic1/theia_etf";
 $buildservice_git_url = "https://github.com/etf-sarajevo/autotester";
 $autotester_editor_git_url = "https://github.com/vljubovic/autotest-genv2.git";
 $adminpanel_v2_git_url = "https://github.com/tsijercic1/c9_admin_panel.git";

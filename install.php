@@ -73,6 +73,7 @@ foreach($web_readable as $path) {
 // INSTALLATION
 
 // Install Cloud9
+/*
 `mkdir $conf_base_path/c9util`; // This is where update script will copy engine.io.js
 require("$conf_base_path/update-cloud9.php");
 `mv $conf_base_path/c9upstream $conf_base_path/c9fork`;
@@ -90,6 +91,14 @@ require("$conf_base_path/update-cloud9.php");
 `ln -s $conf_base_path/c9fork/node_modules/c9 $conf_base_path/web/static/plugins/node_modules/c9`;
 `ln -s $conf_base_path/c9fork/node_modules/c9/assert.js $conf_base_path/web/static/plugins/node_modules/assert.js`;
 `ln -s $conf_base_path/web/static $conf_base_path/web/static/static`;
+*/
+
+// Install Theia
+echo "\n";
+echo `echo "\033[31mDownloading Theia\033[0m"`;
+`git clone $theia_git_url theia`;
+`cd theia; ../install-theia-c9.sh; cd..`;
+
 
 // Install Autotester
 echo "\n";
@@ -126,22 +135,22 @@ echo `echo "\033[31mDownloading Admin panel v2\033[0m"`;
 `echo $conf_nginx_user ALL=NOPASSWD: USERSTATS >> /etc/sudoers`;
 `echo $conf_nginx_user ALL=NOPASSWD: WSACCESS >> /etc/sudoers`;
 
-// Make a backup of some file that randomly gets deleted (!?)
+/*// Make a backup of some file that randomly gets deleted (!?)
 `mkdir $conf_base_path/c9util`;
-`cp $conf_base_path/c9fork/node_modules/engine.io-client/engine.io.js $conf_base_path/c9util`;
+`cp $conf_base_path/c9fork/node_modules/engine.io-client/engine.io.js $conf_base_path/c9util`;*/
 
 // Add cron tasks
 `echo "45 *     * * *   root    $conf_base_path/bin/webidectl culling" >> /etc/crontab`;
 `echo "20 3     * * *   root    php $conf_base_path/lib/nightly_tasks.php" >> /etc/crontab`;
 `echo "5 *     * * *   root    php $conf_base_path/lib/ensure_running.php" >> /etc/crontab`;
- // This is stupid...
-`echo "0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/c9fork/node_modules/engine.io-client" >> /etc/crontab`;
+/* // This is stupid...
+`echo "0,5,10,15,20,25,30,35,40,45,50,55 * * * *   root    cp $conf_base_path/c9util/engine.io.js $conf_base_path/c9fork/node_modules/engine.io-client" >> /etc/crontab`;*/
 
-// Files that have to be fixed permissions to 644
+/*// Files that have to be fixed permissions to 644
 $user_readable = array("c9fork/build/standalone/skin/default/dark.css");
 foreach($user_readable as $path) {
 	`chmod 644 $conf_base_path/$path`;
-}
+}*/
 
 
 // Install new nginx config

@@ -580,7 +580,7 @@ if ($logged_in) {
 		
 	?>
 
-	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2019.</div>
+	<div id="copyright">Admin panel for C9 WebIDE by Vedran Ljubović<br>&copy; Elektrotehnički fakultet Sarajevo / Faculty of Electrical Engineering Sarajevo 2015-2021.</div>
 	</body></html>
 	<?php
 	

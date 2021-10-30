@@ -7,7 +7,7 @@ C9@ETF project (c) 2015-2019
 
 INSTALL INSTRUCTIONS
 
-Install the following packages on Ubuntu 16.04 LTS or 18.04 LTS:
+Install the following packages Ubuntu Linux (tested with 16.04 LTS, 18.04 LTS, 20.04 LTS):
 build-essential
 nginx
 php-fpm 
@@ -23,19 +23,17 @@ apache2-utils
 
 On Ubuntu 20.04 LTS also add: locales-all
 
-C9 admin page also uses php-svn package but it no longer supports php7 (see errata).
-
 Optional:
 gdb
 gdbserver - without this debugging in C/C++ programs will just give an error (cloud9)
 astyle - formatting C/C++/Java programs (cloud9)
 sqlite3 - for debugging svn problems
 valgrind - (cloud9, hopefully theia soon)
-zip - required for automated testing (buildservice)
-clangd - error reports (theia)
+zip - required for automated testing (autotester)
+clangd - static code analysis and autocomplete (theia)
 
 Note: Theia requires at least clangd 10 which is shipped with Ubuntu 20.04. If using
-older distro, you must install clangd from upstream
+older distro, you must install clangd from upstream.
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
@@ -122,44 +120,34 @@ editing /etc/nginx, you should now edit file
 The best idea is to run letsencrypt and then manually copy all changes from 
 /etc/nginx/... to nginx.skeleton.conf
 
-- buildservice
+- autotester
 By default after first installation the automated testing functionality doesn't
-work. You have to configure buildservice using instructions at
-http://github.com/etf-sarajevo/buildservice
+work. You have to configure autotester (both server and client!) using instructions at
+http://github.com/etf-sarajevo/autotester
 
-Buildservice config.php is in folder /usr/local/webide/web/buildservice
+Autotester config.php is in folder /usr/local/webide/web/autotester
+
+- admin panel v2
+Currently install script will also install unfinished version of admin panel v2
+(accessible via https://c9.yourdomain.com/adminpanel). We currently do not support
+this software.
 
 
 
-UPDATING CLOUD9
+UPDATING THEIA
 
-To update your Cloud9 IDE from upstream, you can use update-cloud9 script. First
+To update your Theia IDE from upstream, you can use update-theia.php script. First
 update the C9@ETF so that you receive latest versions of patches
 
  $ cd /usr/local/webide
  $ sudo git pull
- $ sudo php update-cloud9.php
+ $ sudo php update-theia.php
 
-This installs Cloud9 into a folder named c9upstream and applies all the patches.
+This installs Theia into a folder named theia-upstream and applies all the patches.
 Please look closely if all the patches are applied correctly, otherwise system 
 may not work. Look for messages such as "Hunk #1 FAILED" or "File not found".
 If any of these happen, please let us know so we can fix our patches.
 
-If everything looks good, you can temporarily replace your old install with the 
-new one (make sure all users are logged out otherwise they might complain ;)
-
- $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9old
- $ sudo mv /usr/local/webide/c9upstream /usr/local/webide/c9fork
- 
-If all works well you can remove old directory to free up some space. Otherwise,
-its easy to revert to the old version:
-
- $ sudo mv /usr/local/webide/c9fork /usr/local/webide/c9upstream
- $ sudo mv /usr/local/webide/c9old /usr/local/webide/c9fork
-
-Note that git will reset permissions on all modified files to your umask, so if
-you set umask to 022 as recommended, after git pull many of files will become 
-unreadable and the web interface will break. Unfortunatelly, the only solution 
-for this is to use a script such as git-cache-meta.sh 
-https://gist.github.com/andris9/1978266.
- 
+If everything looks good, you can remove folder with older version of theia to
+preserve space
+ $ sudo rm -rf theia-old
