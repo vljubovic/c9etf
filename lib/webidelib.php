@@ -37,11 +37,12 @@ function setup_paths($username) {
 
 // Safe string to use for filename with no surprises
 function escape_filename($raw) {
-	return preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $raw);
+	return preg_replace('/[^A-Za-z0-9_\-.]/', '_', $raw);
 }
 
 function is_local($host) {
-	return $host == "localhost" || $host == "127.0.0.1";
+	global $conf_my_address;
+	return $host == "localhost" || $host == "127.0.0.1" || $host == $conf_my_address;
 }
 
 // This functions should be in standard lib ;) they shorten the code significantly
