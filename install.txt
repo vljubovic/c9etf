@@ -7,7 +7,7 @@ C9@ETF project (c) 2015-2019
 
 INSTALL INSTRUCTIONS
 
-Install the following packages Ubuntu Linux (tested with 16.04 LTS, 18.04 LTS, 20.04 LTS):
+Install the following packages on Ubuntu Linux (tested with 16.04, 18.04, 20.04):
 build-essential
 nginx
 php-fpm 
@@ -37,8 +37,8 @@ older distro, you must install clangd from upstream.
 
 Make sure that nginx and php-fpm processes are started automatically with OS startup.
 
-We strongly suggest that ntp is installed and configured so that time is accurate,
-or at least that clocks on all nodes are synchronized.
+We strongly suggest that either systemd-timesyncd or ntp is installed and configured so
+that time is accurate, or at least that clocks on all nodes are synchronized.
 
 
 
@@ -124,8 +124,6 @@ The best idea is to run letsencrypt and then manually copy all changes from
 By default after first installation the automated testing functionality doesn't
 work. You have to configure autotester (both server and client!) using instructions at
 http://github.com/etf-sarajevo/autotester
-
-Autotester config.php is in folder /usr/local/webide/web/autotester
 
 - admin panel v2
 Currently install script will also install unfinished version of admin panel v2

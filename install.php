@@ -8,7 +8,11 @@
 // Software installation
 // =========================================
 
-
+if (!file_exists(dirname(__FILE__) . "/lib/config.php")) {
+	echo `echo "\033[31mconfig.php is missing\033[0m"`;
+	echo "Please configure your system first.\n";
+	exit(1);
+}
 require(dirname(__FILE__) . "/lib/config.php");
 
 
@@ -19,7 +23,7 @@ echo "\n";
 // Create c9 user
 `groupadd $conf_c9_group`;
 `useradd $conf_c9_user -g $conf_c9_group -d $conf_home_path/$conf_c9_user -m`;
-`chmod 770 $conf_home_path/$conf_c9_user`;
+`chmod 775 $conf_home_path/$conf_c9_user`;
 `mkdir $conf_home_path/$conf_c9_user/workspace`;
 `chown $conf_c9_user:$conf_c9_group $conf_home_path/$conf_c9_user/workspace`;
 
@@ -47,6 +51,7 @@ foreach($web_writable as $path) {
 	`chown $conf_nginx_user $conf_base_path/$path`;
 	`chmod 755 $conf_base_path/$path`;
 }
+
 
 // Directories and files that should be readable from web but not by users
 $web_readable = array("users");
@@ -97,7 +102,7 @@ require("$conf_base_path/update-cloud9.php");
 echo "\n";
 echo `echo "\033[31mDownloading Theia\033[0m"`;
 `git clone $theia_git_url theia`;
-`cd theia; ../install-theia-c9.sh; cd..`;
+`cd theia; ../install-theia-c9.sh; cd ..`;
 
 
 // Install Autotester
