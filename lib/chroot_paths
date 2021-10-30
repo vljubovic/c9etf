@@ -4,7 +4,6 @@
 /usr,/usr,
 /var,/var,
 /proc,/proc,
-/sys,/sys,
 /dev,/dev,
 /home/c9,/home/c9,
 /usr/local/webide/defaults/workspace/.theia,/workspace/.theia,ro
