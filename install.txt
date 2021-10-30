@@ -21,7 +21,9 @@ subversion
 git
 apache2-utils
 
-On Ubuntu 20.04 LTS also add: locales-all
+On Ubuntu 20.04 LTS also add: locales-all, net-tools
+
+Theia dependencies: pkg-config, libsecret-1-dev
 
 Optional:
 gdb

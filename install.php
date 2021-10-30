@@ -161,6 +161,7 @@ foreach($user_readable as $path) {
 // Install new nginx config
 echo "\n";
 echo `echo "\033[31mReconfiguring nginx\033[0m"`;
+`touch /tmp/webide.bfl`;
 `$conf_base_path/bin/webidectl reset-nginx`;
 
 // Ensure some c9 services are running
