@@ -36,6 +36,8 @@ do
 			echo Stopping php
 			/usr/local/webide/lib/stop_php
 			php_up=0
+			echo ============================== `date` >> /usr/local/webide/log/high_load.log
+			`ps aux` >> /usr/local/webide/log/high_load.log
 		fi
 	fi
     
@@ -49,6 +51,8 @@ do
 			echo Stopping php
 			/usr/local/webide/lib/stop_php
 			php_up=0
+			echo ============================== `date` >> /usr/local/webide/log/high_load.log
+			`ps aux` >> /usr/local/webide/log/high_load.log
 		else
 			if (( $(echo "$load < $trigger_start" |bc -l) ))
 			then

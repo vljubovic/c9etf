@@ -16,6 +16,11 @@ $check_php=`ps aux | grep check_php | grep -v grep`;
 if (!$check_php)
 	proc_close(proc_open("nohup $conf_base_path/lib/check_php > /dev/null 2>&1 &", array(), $foo));
 
+// check_php script that stops/starts php
+$killold=`ps aux | grep killold | grep -v grep`;
+if (!$killold)
+	proc_close(proc_open("nohup $conf_base_path/lib/killold.sh > /dev/null 2>&1 &", array(), $foo));
+
 // Server stats monitoring (needed to see if there are sufficient resources)
 $stats_monitor=`ps aux | grep stats_monitor.php | grep -v grep`;
 if (!$stats_monitor)
