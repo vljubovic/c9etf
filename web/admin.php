@@ -117,7 +117,7 @@ if ($logged_in) {
 		// Logout user
 		if ($_REQUEST['action'] == "logout") {
 			$user = escapeshellarg($_REQUEST['user']);
-			$output = exec("sudo $conf_base_path/bin/webidectl logout $user");
+			$output = exec("sudo $conf_base_path/bin/webidectl logout $user 0");
 			if (strstr($output, "ERROR")) {
 				$error = "There was an error!<br>$output";
 			} else {
